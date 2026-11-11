@@ -171,13 +171,13 @@ export default function SearchPage() {
     <main className="min-h-screen bg-slate-950 text-white">
       <Header />
 
-      <section className="mx-auto max-w-7xl px-6 py-12">
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="mb-10">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-green-400">
+          <p className="mb-3 break-words text-xs font-semibold sm:text-sm uppercase tracking-widest text-green-400">
             Discover Football
           </p>
 
-          <h1 className="text-4xl font-bold md:text-5xl">
+          <h1 className="text-3xl font-bold sm:text-4xl md:text-5xl">
             Global Search
           </h1>
 
@@ -187,11 +187,11 @@ export default function SearchPage() {
           </p>
         </div>
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6 md:p-8">
+        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 md:p-8">
           <form onSubmit={handleSearch}>
             <label
               htmlFor="global-search"
-              className="mb-3 block text-sm font-semibold text-slate-300"
+              className="mb-3 block break-words text-xs font-semibold sm:text-sm text-slate-300"
             >
               What are you looking for?
             </label>
@@ -209,7 +209,7 @@ export default function SearchPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="rounded-xl bg-green-500 px-8 py-4 font-bold text-slate-950 transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-xl bg-green-500 w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 font-bold text-slate-950 transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? "Searching..." : "Search"}
               </button>
@@ -221,7 +221,7 @@ export default function SearchPage() {
                   key={item.id}
                   type="button"
                   onClick={() => setCategory(item.id)}
-                  className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
+                  className={`rounded-full px-5 py-2 break-words text-xs font-semibold sm:text-sm transition ${
                     category === item.id
                       ? "bg-green-500 text-slate-950"
                       : "border border-slate-700 text-slate-300 hover:border-green-500 hover:text-green-400"
@@ -260,7 +260,7 @@ export default function SearchPage() {
             {(category === "all" || category === "teams") && (
               <section>
                 <div className="mb-5 flex items-center justify-between">
-                  <h2 className="text-2xl font-bold">Teams</h2>
+                  <h2 className="text-xl font-bold sm:text-2xl">Teams</h2>
                   <span className="text-sm text-slate-400">
                     {teams.length} found
                   </span>
@@ -275,16 +275,16 @@ export default function SearchPage() {
                     {teams.map((item) => (
                       <article
                         key={item.team.id}
-                        className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-5"
+                        className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 sm:p-5"
                       >
                         {item.team.logo ? (
                           <img
                             src={item.team.logo}
                             alt={`${item.team.name} logo`}
-                            className="h-14 w-14 object-contain"
+                            className="h-12 w-12 sm:h-14 sm:w-14 object-contain"
                           />
                         ) : (
-                          <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-slate-800 font-bold text-green-400">
+                          <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-lg bg-slate-800 font-bold text-green-400">
                             {item.team.name.slice(0, 2).toUpperCase()}
                           </div>
                         )}
@@ -312,7 +312,7 @@ export default function SearchPage() {
             {(category === "all" || category === "leagues") && (
               <section>
                 <div className="mb-5 flex items-center justify-between">
-                  <h2 className="text-2xl font-bold">Leagues</h2>
+                  <h2 className="text-xl font-bold sm:text-2xl">Leagues</h2>
                   <span className="text-sm text-slate-400">
                     {leagues.length} found
                   </span>
@@ -327,16 +327,16 @@ export default function SearchPage() {
                     {leagues.map((item) => (
                       <article
                         key={item.league.id}
-                        className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-5"
+                        className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 sm:p-5"
                       >
                         {item.league.logo ? (
                           <img
                             src={item.league.logo}
                             alt={`${item.league.name} logo`}
-                            className="h-14 w-14 object-contain"
+                            className="h-12 w-12 sm:h-14 sm:w-14 object-contain"
                           />
                         ) : (
-                          <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-slate-800 font-bold text-green-400">
+                          <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-lg bg-slate-800 font-bold text-green-400">
                             L
                           </div>
                         )}
@@ -362,7 +362,7 @@ export default function SearchPage() {
             {category === "matches" && (
               <section>
                 <div className="mb-5">
-                  <h2 className="text-2xl font-bold">
+                  <h2 className="text-xl font-bold sm:text-2xl">
                     Match Results
                   </h2>
 
@@ -386,7 +386,7 @@ export default function SearchPage() {
                       <Link
                         key={match.fixture.id}
                         href={`/match/${match.fixture.id}`}
-                        className="block rounded-xl border border-slate-800 bg-slate-900 p-5 transition hover:border-green-500"
+                        className="block rounded-xl border border-slate-800 bg-slate-900 p-4 sm:p-5 transition hover:border-green-500"
                       >
                         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
                           <span>
@@ -397,14 +397,14 @@ export default function SearchPage() {
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                          <div className="flex items-center gap-2">
+                        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-3">
+                          <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
                             <img
                               src={match.teams.home.logo}
                               alt=""
                               className="h-8 w-8 object-contain"
                             />
-                            <span className="text-sm font-semibold">
+                            <span className="break-words text-xs font-semibold sm:text-sm">
                               {match.teams.home.name}
                             </span>
                           </div>
@@ -420,7 +420,7 @@ export default function SearchPage() {
                           </div>
 
                           <div className="flex items-center justify-end gap-2 text-right">
-                            <span className="text-sm font-semibold">
+                            <span className="break-words text-xs font-semibold sm:text-sm">
                               {match.teams.away.name}
                             </span>
                             <img

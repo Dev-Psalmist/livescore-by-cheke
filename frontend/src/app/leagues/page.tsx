@@ -292,14 +292,14 @@ export default function LeaguesPage() {
     <main className="min-h-screen bg-slate-950 text-white">
       <Header />
 
-      <section className="mx-auto max-w-7xl px-6 py-12">
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
 
         <div className="mb-10">
           <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-green-400">
             Explore World Football
           </p>
 
-          <h1 className="text-4xl font-bold md:text-5xl">
+          <h1 className="text-2xl font-bold sm:text-3xl sm:text-4xl md:text-5xl">
             Football Leagues
           </h1>
 
@@ -323,7 +323,7 @@ export default function LeaguesPage() {
           <button
             onClick={fetchLeagues}
             disabled={loading}
-            className="rounded-lg bg-green-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-green-400 disabled:opacity-50"
+            className="w-full rounded-lg bg-green-500 px-5 py-3 font-semibold sm:w-auto text-slate-950 transition hover:bg-green-400 disabled:opacity-50"
           >
             {loading ? "Loading..." : "Refresh Leagues"}
           </button>
@@ -376,14 +376,14 @@ export default function LeaguesPage() {
                 <button
                   key={league.league.id}
                   onClick={() => selectLeague(league)}
-                  className={`rounded-xl border p-5 text-left transition hover:-translate-y-1 hover:border-green-500 ${
+                  className={`rounded-xl border p-4 text-left sm:p-5 transition hover:-translate-y-1 hover:border-green-500 ${
                     isSelected
                       ? "border-green-500 bg-green-500/10"
                       : "border-slate-800 bg-slate-900"
                   }`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-slate-800 p-2">
+                    <div className="flex h-14 w-14 shrink-0 sm:h-16 sm:w-16 items-center justify-center rounded-lg bg-slate-800 p-2">
                       <img
                         src={league.league.logo}
                         alt={`${league.league.name} logo`}
@@ -437,7 +437,7 @@ export default function LeaguesPage() {
                   Selected Competition
                 </p>
 
-                <h2 className="text-3xl font-bold">
+                <h2 className="text-2xl font-bold sm:text-3xl">
                   {selectedLeague.league.name}
                 </h2>
 
@@ -450,7 +450,7 @@ export default function LeaguesPage() {
             <div className="mb-8 flex flex-wrap gap-3">
               <button
                 onClick={() => setActiveView("standings")}
-                className={`rounded-lg px-6 py-3 font-semibold transition ${
+                className={`w-full rounded-lg px-4 py-3 text-sm font-semibold sm:w-auto sm:px-6 transition ${
                   activeView === "standings"
                     ? "bg-green-500 text-slate-950"
                     : "border border-slate-700 text-slate-300 hover:border-green-500"
@@ -461,7 +461,7 @@ export default function LeaguesPage() {
 
               <button
                 onClick={() => setActiveView("fixtures")}
-                className={`rounded-lg px-6 py-3 font-semibold transition ${
+                className={`w-full rounded-lg px-4 py-3 text-sm font-semibold sm:w-auto sm:px-6 transition ${
                   activeView === "fixtures"
                     ? "bg-green-500 text-slate-950"
                     : "border border-slate-700 text-slate-300 hover:border-green-500"

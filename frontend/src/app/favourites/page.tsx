@@ -17,13 +17,13 @@ export default function FavouritesPage() {
     <main className="min-h-screen bg-slate-950 text-white">
       <Header />
 
-      <section className="mx-auto max-w-7xl px-6 py-12">
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="mb-10">
           <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-green-400">
             Your Personal Football Collection
           </p>
 
-          <h1 className="text-4xl font-bold md:text-5xl">
+          <h1 className="text-3xl font-bold sm:text-4xl md:text-5xl">
             My Favourites
           </h1>
 
@@ -44,7 +44,7 @@ export default function FavouritesPage() {
               ♡
             </div>
 
-            <h2 className="text-2xl font-bold">
+            <h2 className="text-xl font-bold sm:text-2xl">
               No Favourite Teams Yet
             </h2>
 
@@ -65,7 +65,7 @@ export default function FavouritesPage() {
         {loaded && favourites.length > 0 && (
           <>
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-2xl font-bold">
+              <h2 className="text-xl font-bold sm:text-2xl">
                 Saved Teams
               </h2>
 
@@ -78,10 +78,10 @@ export default function FavouritesPage() {
               {favourites.map((item) => (
                 <article
                   key={item.team.id}
-                  className="rounded-xl border border-slate-800 bg-slate-900 p-6 transition hover:border-green-500"
+                  className="rounded-xl border border-slate-800 bg-slate-900 p-4 sm:p-6 transition hover:border-green-500"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-slate-800 p-3">
+                    <div className="flex h-16 w-16 sm:h-20 sm:w-20 shrink-0 items-center justify-center rounded-xl bg-slate-800 p-3">
                       {item.team.logo ? (
                         <img
                           src={item.team.logo}
@@ -89,7 +89,7 @@ export default function FavouritesPage() {
                           className="max-h-full max-w-full object-contain"
                         />
                       ) : (
-                        <span className="text-2xl font-bold text-green-400">
+                        <span className="text-xl font-bold sm:text-2xl text-green-400">
                           {item.team.name.substring(0, 2).toUpperCase()}
                         </span>
                       )}

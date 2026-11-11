@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { connection, NextResponse } from "next/server";
 
 export async function GET() {
+  await connection();
   try {
     const apiKey = process.env.API_FOOTBALL_KEY;
 
@@ -30,7 +31,7 @@ export async function GET() {
     if (!response.ok || (data.errors && Object.keys(data.errors).length > 0)) {
       return NextResponse.json(
         { error: data.errors || "Unable to retrieve leagues." },
-        { status: response.status || 502 }
+        { status: response.ok ? 502 : response.status }
       );
     }
 

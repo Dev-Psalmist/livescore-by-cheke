@@ -117,14 +117,14 @@ export default function FixturesPage() {
     <main className="min-h-screen bg-slate-950 text-white">
       <Header />
 
-      <section className="mx-auto max-w-7xl px-6 py-12">
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
 
         <div className="mb-10">
           <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-green-400">
             Plan Your Football Experience
           </p>
 
-          <h1 className="text-4xl font-bold md:text-5xl">
+          <h1 className="text-3xl font-bold sm:text-4xl md:text-5xl">
             Upcoming Fixtures
           </h1>
 
@@ -135,14 +135,14 @@ export default function FixturesPage() {
         </div>
 
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <h2 className="text-2xl font-bold">
+          <h2 className="text-xl font-bold sm:text-2xl">
             Scheduled Matches
           </h2>
 
           <button
             onClick={fetchFixtures}
             disabled={loading}
-            className="rounded-lg bg-green-500 px-5 py-3 font-semibold text-slate-950 transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-lg bg-green-500 px-5 py-3 font-semibold sm:w-auto text-slate-950 transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Refreshing..." : "Refresh Fixtures"}
           </button>
@@ -168,7 +168,7 @@ export default function FixturesPage() {
         )}
 
         {!loading && !error && matches.length === 0 && (
-          <div className="rounded-xl border border-slate-800 p-10 text-center">
+          <div className="rounded-xl border border-slate-800 p-6 text-center sm:p-10">
             <h3 className="text-xl font-semibold">
               No Upcoming Fixtures
             </h3>

@@ -56,7 +56,7 @@ export default function StandingsTable({
             </h3>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overscroll-x-contain touch-pan-x">
             <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="bg-slate-800/70 text-xs uppercase text-slate-400">
                 <tr>

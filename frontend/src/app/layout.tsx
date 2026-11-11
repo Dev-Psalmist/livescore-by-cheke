@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import StartupSplash from "@/components/StartupSplash";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,17 +20,17 @@ export const metadata: Metadata = {
   },
 
   description:
-    "LiveScore by Cheke brings you live football scores, match fixtures, results, league standings, team information and match updates from around the world.",
+    "LiveScore by Cheke brings you live sports scores, match fixtures, results, league standings, team information and match updates from around the world.",
 
   applicationName: "LiveScore by Cheke",
 
   keywords: [
     "LiveScore",
-    "Live football scores",
+    "Live sports scores",
     "Football fixtures",
     "Football results",
     "League standings",
-    "Football teams",
+    "Sports teams",
     "LiveScore by Cheke",
   ],
 
@@ -39,22 +40,31 @@ export const metadata: Metadata = {
     },
   ],
 
+  icons: {
+    icon: "/brand/livescore-icon.svg",
+    shortcut: "/brand/livescore-icon.svg",
+    apple: "/brand/livescore-icon.svg",
+  },
+
   openGraph: {
     title: "LiveScore by Cheke",
     description:
-      "Every Match. Every Goal. Every Moment. Follow live football scores, fixtures and competitions.",
+      "Every sport. Every moment. Follow live scores, fixtures and competitions.",
     siteName: "LiveScore by Cheke",
     type: "website",
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: LayoutProps<"/">) {
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="flex min-h-full flex-col">
+        <StartupSplash />
         {children}
       </body>
     </html>

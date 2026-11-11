@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { connection, NextRequest, NextResponse } from "next/server";
 
 function getLagosDate(date: Date) {
   return new Intl.DateTimeFormat("en-CA", {
@@ -10,6 +10,7 @@ function getLagosDate(date: Date) {
 }
 
 export async function GET(request: NextRequest) {
+  await connection();
   try {
     const apiKey = process.env.API_FOOTBALL_KEY;
 
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
     if (!response.ok || (data.errors && Object.keys(data.errors).length > 0)) {
       return NextResponse.json(
         { error: data.errors || "Unable to retrieve league fixtures." },
-        { status: response.status || 502 }
+        { status: response.ok ? 502 : response.status }
       );
     }
 

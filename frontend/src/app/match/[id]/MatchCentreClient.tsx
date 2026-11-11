@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import Header from "@/components/Header";
@@ -9,6 +9,8 @@ import LineupPitch from "@/components/LineupPitch";
 import EventTimeline from "@/components/EventTimeline";
 import MatchInsights from "@/components/MatchInsights";
 import PlayerPerformance from "@/components/PlayerPerformance";
+import MatchNotifications from "@/components/MatchNotifications";
+import YouTubeHighlights from "@/components/YouTubeHighlights";
 
 interface MatchEvent {
   time: {
@@ -224,6 +226,13 @@ interface MatchResponse {
     statistics?: EndpointDiagnostic;
     players?: EndpointDiagnostic;
   };
+}
+
+interface MatchStatusResponse {
+  success?: boolean;
+  status?: MatchDetails["fixture"]["status"];
+  goals?: MatchDetails["goals"];
+  error?: unknown;
 }
 
 interface MatchCentreClientProps {
@@ -502,7 +511,12 @@ export default function MatchCentreClient({
   const [refreshing, setRefreshing] = useState(false);
 
   const [error, setError] = useState("");
+  const [statusRefreshError, setStatusRefreshError] = useState("");
   const [activeTab, setActiveTab] = useState("events");
+
+  // Prevent a second status request from starting
+  // while the previous request is still running.
+  const statusRefreshInFlight = useRef(false);
 
   const loadMatch = useCallback(
     async (isRefresh = false) => {
@@ -530,6 +544,7 @@ export default function MatchCentreClient({
 
         setMatch(data.match);
         setDiagnostics(data.diagnostics);
+        setStatusRefreshError("");
       } catch (err) {
         setError(
           err instanceof Error
@@ -547,6 +562,88 @@ export default function MatchCentreClient({
   useEffect(() => {
     void loadMatch();
   }, [loadMatch]);
+
+  // Automatically refresh only the score and match status.
+  // Live matches refresh every 5 seconds.
+  // Half-time refreshes every 15 seconds.
+  // Upcoming and finished matches are not polled.
+  useEffect(() => {
+    if (!match) return;
+
+    const currentStatus =
+      match.fixture.status.short.toUpperCase();
+
+    const shouldPoll = LIVE_STATUSES.includes(currentStatus);
+
+    if (!shouldPoll) return;
+
+    const isHalfTime = currentStatus === "HT";
+    const intervalMs = isHalfTime ? 15000 : 5000;
+
+    let cancelled = false;
+
+    const refreshMatchStatus = async () => {
+      if (statusRefreshInFlight.current) return;
+
+      statusRefreshInFlight.current = true;
+
+      try {
+        const response = await fetch(
+          `/api/football/match-status?id=${encodeURIComponent(id)}`,
+          { cache: "no-store" }
+        );
+
+        const data: MatchStatusResponse = await response.json();
+
+        if (
+          !response.ok ||
+          !data.success ||
+          !data.status ||
+          !data.goals
+        ) {
+          throw new Error(
+            getErrorMessage(data.error) ||
+              "Unable to retrieve the latest score."
+          );
+        }
+
+        if (cancelled) return;
+
+        setMatch((currentMatch) => {
+          if (!currentMatch) return currentMatch;
+
+          return {
+            ...currentMatch,
+            fixture: {
+              ...currentMatch.fixture,
+              status: data.status!,
+            },
+            goals: data.goals!,
+          };
+        });
+
+        setStatusRefreshError("");
+      } catch (refreshError) {
+        if (!cancelled) {
+          setStatusRefreshError(
+            getErrorMessage(refreshError)
+          );
+        }
+      } finally {
+        statusRefreshInFlight.current = false;
+      }
+    };
+
+    const interval = window.setInterval(
+      refreshMatchStatus,
+      intervalMs
+    );
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [id, match?.fixture.status.short]);
 
   const isLive = match
     ? LIVE_STATUSES.includes(
@@ -779,6 +876,13 @@ export default function MatchCentreClient({
           </div>
         )}
 
+        {statusRefreshError && (
+          <div className="mb-6 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-300">
+            Automatic score refresh failed: {statusRefreshError}.
+            The last successfully retrieved score remains displayed.
+          </div>
+        )}
+
         {/* MATCH INSIGHTS */}
 
         <MatchInsights
@@ -791,20 +895,29 @@ export default function MatchCentreClient({
           elapsed={match.fixture.status.elapsed}
         />
 
+        <MatchNotifications
+          matchId={id}
+          events={events}
+          status={match.fixture.status.short}
+          homeTeam={homeTeam}
+          awayTeam={awayTeam}
+        />
+
         {/* NAVIGATION TABS */}
 
-        <div className="mb-6 mt-8 flex flex-wrap gap-3">
+        <div className="mb-6 mt-8 flex flex-wrap items-center gap-2 sm:gap-3">
           {[
             { id: "events", label: "Match Events" },
             { id: "statistics", label: "Statistics" },
             { id: "players", label: "Player Performance" },
             { id: "lineups", label: "Lineups" },
+            { id: "highlights", label: "Highlights" },
           ].map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`rounded-lg px-5 py-3 text-sm font-bold transition ${
+              className={`rounded-lg px-3 py-2 text-xs font-bold transition sm:px-5 sm:py-3 sm:text-sm ${
                 activeTab === tab.id
                   ? "bg-green-500 text-black"
                   : "bg-[#111c2b] text-gray-400 hover:text-white"
@@ -818,7 +931,7 @@ export default function MatchCentreClient({
             type="button"
             onClick={() => void loadMatch(true)}
             disabled={refreshing}
-            className="ml-auto rounded-lg border border-white/10 px-5 py-3 text-sm font-bold text-green-400 hover:bg-white/5 disabled:opacity-50"
+            className="w-full rounded-lg border border-white/10 px-4 py-3 text-sm font-bold sm:ml-auto sm:w-auto sm:px-5 text-green-400 hover:bg-white/5 disabled:opacity-50"
           >
             {refreshing ? "Refreshing..." : "↻ Refresh"}
           </button>
@@ -837,7 +950,7 @@ export default function MatchCentreClient({
         {/* MATCH STATISTICS */}
 
         {activeTab === "statistics" && (
-          <section className="rounded-xl border border-white/10 bg-[#111c2b] p-6">
+          <section className="rounded-xl border border-white/10 bg-[#111c2b] p-3 sm:p-6">
             <div className="mb-6">
               <h3 className="text-lg font-bold">
                 Match Statistics
@@ -1012,6 +1125,20 @@ export default function MatchCentreClient({
                 })}
               </div>
             )}
+          </section>
+        )}
+
+        {/* OFFICIAL YOUTUBE MATCH HIGHLIGHTS */}
+
+        {activeTab === "highlights" && (
+          <section className="rounded-xl border border-white/10 bg-[#111c2b] p-5 md:p-6">
+            <YouTubeHighlights
+              kind="all"
+              homeTeam={match.teams.home.name}
+              awayTeam={match.teams.away.name}
+              league={match.league.name}
+              limit={6}
+            />
           </section>
         )}
 

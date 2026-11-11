@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { connection, NextRequest, NextResponse } from "next/server";
 
 const API_BASE = "https://v3.football.api-sports.io";
 
@@ -42,6 +42,7 @@ async function fetchFootballData(
 }
 
 export async function GET(request: NextRequest) {
+  await connection();
   try {
     const apiKey = process.env.API_FOOTBALL_KEY;
 

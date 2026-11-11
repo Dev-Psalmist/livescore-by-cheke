@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { connection, NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
+  await connection();
   try {
     const apiKey = process.env.API_FOOTBALL_KEY;
 
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
             ? "The football data provider has reached its request limit. Please try again later."
             : errorMessage,
         },
-        { status: isRateLimited ? 429 : response.status || 502 }
+        { status: isRateLimited ? 429 : response.ok ? 502 : response.status }
       );
     }
 

@@ -7,6 +7,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import LiveMatchCard from "@/components/LiveMatchCard";
 import FixtureCard from "@/components/FixtureCard";
+import NewsFeed from "@/components/NewsFeed";
+import YouTubeHighlights from "@/components/YouTubeHighlights";
 
 import type { Match } from "@/types/football";
 
@@ -241,7 +243,7 @@ export default function HomePage() {
 
       {/* HERO SECTION */}
       <section className="relative overflow-hidden border-b border-slate-800 bg-gradient-to-br from-green-950 via-slate-950 to-slate-950">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 px-6 py-20 md:grid-cols-2 md:py-28">
+        <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-12 sm:gap-12 sm:px-6 sm:py-16 md:grid-cols-2 md:py-28">
 
           <div>
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-green-500/30 bg-green-500/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-green-400">
@@ -249,7 +251,7 @@ export default function HomePage() {
               Your Football World
             </div>
 
-            <h1 className="text-5xl font-black leading-tight md:text-7xl">
+            <h1 className="text-4xl font-black leading-tight sm:text-5xl md:text-7xl">
               Every Match.
               <br />
               Every Goal.
@@ -259,23 +261,23 @@ export default function HomePage() {
               </span>
             </h1>
 
-            <p className="mt-7 max-w-xl text-base leading-8 text-slate-300 md:text-lg">
+            <p className="mt-5 max-w-xl text-sm leading-7 text-slate-300 sm:mt-7 sm:text-base sm:leading-8 md:text-lg">
               Stay connected to the beautiful game. Follow live
               football scores, discover upcoming fixtures, explore
               competitions and keep track of your favourite teams.
             </p>
 
-            <div className="mt-9 flex flex-wrap gap-4">
+            <div className="mt-7 flex flex-wrap gap-3 sm:mt-9 sm:gap-4">
               <Link
                 href="/live"
-                className="rounded-xl bg-green-500 px-7 py-4 font-bold text-slate-950 transition hover:bg-green-400"
+                className="rounded-xl bg-green-500 px-5 py-3 text-sm font-bold text-slate-950 sm:px-7 sm:py-4 sm:text-base transition hover:bg-green-400"
               >
                 Explore Live Scores →
               </Link>
 
               <Link
                 href="/fixtures"
-                className="rounded-xl border border-slate-600 px-7 py-4 font-bold text-white transition hover:border-green-500 hover:text-green-400"
+                className="rounded-xl border border-slate-600 px-5 py-3 text-sm font-bold text-white sm:px-7 sm:py-4 sm:text-base transition hover:border-green-500 hover:text-green-400"
               >
                 View Fixtures
               </Link>
@@ -285,7 +287,7 @@ export default function HomePage() {
           {/* DASHBOARD SUMMARY */}
           <div className="grid grid-cols-2 gap-4">
 
-            <div className="rounded-2xl border border-green-500/20 bg-slate-900/80 p-7">
+            <div className="rounded-2xl border border-green-500/20 bg-slate-900/80 p-4 sm:p-7">
               <div className="mb-5 flex items-center gap-2">
                 <span className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
                 <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
@@ -293,7 +295,7 @@ export default function HomePage() {
                 </span>
               </div>
 
-              <p className="text-5xl font-black text-green-400">
+              <p className="text-4xl font-black text-green-400 sm:text-5xl">
                 {liveLoading ? "..." : liveError ? "—" : liveMatches.length}
               </p>
 
@@ -302,12 +304,12 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-7">
+            <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-4 sm:p-7">
               <div className="mb-5 text-xs font-bold uppercase tracking-widest text-slate-400">
                 Today's Fixtures
               </div>
 
-              <p className="text-5xl font-black text-white">
+              <p className="text-4xl font-black text-white sm:text-5xl">
                 {fixturesLoading
                   ? "..."
                   : fixturesError
@@ -347,7 +349,7 @@ export default function HomePage() {
       </section>
 
       {/* LIVE MATCHES */}
-      <section className="mx-auto max-w-7xl px-6 py-16">
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
 
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -444,7 +446,7 @@ export default function HomePage() {
 
       {/* UPCOMING FIXTURES */}
       <section className="border-y border-slate-800 bg-slate-900/40">
-        <div className="mx-auto max-w-7xl px-6 py-16">
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
 
           <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -540,8 +542,16 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* FOOTBALL HIGHLIGHTS */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <YouTubeHighlights kind="all" limit={3} compact />
+      </div>
+
+      {/* FOOTBALL NEWS */}
+      <NewsFeed limit={3} />
+
       {/* DISCOVER MORE */}
-      <section className="mx-auto max-w-7xl px-6 py-16">
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
 
         <div className="mb-8">
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-green-400">
@@ -616,7 +626,7 @@ export default function HomePage() {
       </section>
 
       {/* BRAND MESSAGE */}
-      <section className="mx-auto max-w-7xl px-6 pb-16">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 pb-16">
         <div className="rounded-2xl border border-green-500/20 bg-gradient-to-r from-green-950 to-slate-900 p-8 md:p-12">
           <h2 className="text-3xl font-black md:text-4xl">
             Football Is More Than a Game.

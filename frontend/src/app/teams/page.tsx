@@ -88,13 +88,13 @@ export default function TeamsPage() {
     <main className="min-h-screen bg-slate-950 text-white">
       <Header />
 
-      <section className="mx-auto max-w-7xl px-6 py-12">
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="mb-10">
           <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-green-400">
             Explore World Football
           </p>
 
-          <h1 className="text-4xl font-bold md:text-5xl">
+          <h1 className="text-3xl font-bold sm:text-4xl md:text-5xl">
             Football Teams
           </h1>
 
@@ -104,7 +104,7 @@ export default function TeamsPage() {
           </p>
         </div>
 
-        <section className="mb-12 rounded-2xl border border-slate-800 bg-slate-900 p-6 md:p-8">
+        <section className="mb-12 rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 md:p-8">
           <h2 className="mb-2 text-2xl font-bold">
             Find a Team
           </h2>
@@ -128,7 +128,7 @@ export default function TeamsPage() {
             <button
               type="submit"
               disabled={loading}
-              className="rounded-xl bg-green-500 px-8 py-4 font-bold text-slate-950 transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-xl bg-green-500 px-6 py-3 font-bold sm:w-auto sm:px-8 sm:py-4 text-slate-950 transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? "Searching..." : "Search Teams"}
             </button>
@@ -181,10 +181,10 @@ export default function TeamsPage() {
               {teams.map((item) => (
                 <article
                   key={item.team.id}
-                  className="rounded-xl border border-slate-800 bg-slate-900 p-6 transition hover:-translate-y-1 hover:border-green-500"
+                  className="rounded-xl border border-slate-800 bg-slate-900 p-4 transition sm:p-6 hover:-translate-y-1 hover:border-green-500"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-slate-800 p-3">
+                    <div className="flex h-16 w-16 shrink-0 sm:h-20 sm:w-20 items-center justify-center rounded-xl bg-slate-800 p-3">
                       {item.team.logo ? (
                         <img
                           src={item.team.logo}
@@ -257,7 +257,7 @@ export default function TeamsPage() {
         )}
 
         {!loading && !searched && !error && (
-          <div className="rounded-xl border border-dashed border-slate-800 p-12 text-center">
+          <div className="rounded-xl border border-dashed border-slate-800 p-6 text-center sm:p-12">
             <h3 className="text-xl font-semibold">
               Discover Football Teams
             </h3>

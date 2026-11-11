@@ -117,13 +117,13 @@ export default function LiveScoresPage() {
     <main className="min-h-screen bg-slate-950 text-white">
       <Header />
 
-      <section className="mx-auto max-w-7xl px-6 py-12">
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
         <div className="mb-10">
           <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-green-400">
             Follow Every Moment
           </p>
 
-          <h1 className="text-4xl font-bold md:text-5xl">
+          <h1 className="text-3xl font-bold sm:text-4xl md:text-5xl">
             Live Football Scores
           </h1>
 
@@ -136,13 +136,13 @@ export default function LiveScoresPage() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
-            <h2 className="text-2xl font-bold">Matches in Progress</h2>
+            <h2 className="text-xl font-bold sm:text-2xl">Matches in Progress</h2>
           </div>
 
           <button
             onClick={() => void loadMatches()}
             disabled={loading}
-            className="rounded-lg bg-green-500 px-5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full rounded-lg bg-green-500 px-5 py-3 text-sm sm:w-auto sm:py-2 font-semibold text-slate-950 transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Loading..." : "Refresh Scores"}
           </button>
@@ -155,7 +155,7 @@ export default function LiveScoresPage() {
         )}
 
         {loading && matches.length === 0 && (
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-10 text-center">
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 text-center sm:p-10">
             <p className="text-slate-300">
               Loading live football scores...
             </p>
@@ -180,7 +180,7 @@ export default function LiveScoresPage() {
         )}
 
         {!loading && !error && matches.length === 0 && (
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-10 text-center">
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 text-center sm:p-10">
             <h3 className="text-xl font-semibold">No Live Matches</h3>
 
             <p className="mt-2 text-slate-400">
