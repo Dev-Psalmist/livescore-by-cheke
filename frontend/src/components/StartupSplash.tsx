@@ -52,16 +52,31 @@ export default function StartupSplash() {
           Every sport. Every moment.
         </p>
 
-        <div className="mt-10 flex items-center gap-2" aria-hidden="true">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400 motion-reduce:animate-none" />
-          <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400 [animation-delay:200ms] motion-reduce:animate-none" />
-          <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400 [animation-delay:400ms] motion-reduce:animate-none" />
+        <div className="mt-10 flex items-center gap-3" aria-hidden="true">
+          {[0, 1, 2].map((dot) => (
+            <span
+              key={dot}
+              className="h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)] animate-[synchronized-bounce_0.7s_ease-in-out_infinite] motion-reduce:animate-none"
+              style={{ animationDelay: `${dot * 0.18}s` }}
+            />
+          ))}
         </div>
 
-        <p className="mt-3 text-[10px] font-medium tracking-[0.2em] text-slate-500">
+        <p className="mt-4 text-[10px] font-medium tracking-[0.2em] text-slate-500">
           LOADING YOUR SPORTS WORLD
         </p>
       </div>
+
+      <style jsx>{`
+        @keyframes synchronized-bounce {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-12px);
+          }
+        }
+      `}</style>
     </div>
   );
 }
