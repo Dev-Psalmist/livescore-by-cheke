@@ -5,6 +5,8 @@ export async function GET() {
     const apiKey = process.env.API_FOOTBALL_KEY;
 
     if (!apiKey) {
+      console.error("API_FOOTBALL_KEY is missing.");
+
       return NextResponse.json(
         { error: "Football API key is missing." },
         { status: 500 }
@@ -22,16 +24,20 @@ export async function GET() {
       }
     );
 
+    const data = await response.json();
+
     if (!response.ok) {
+      console.error("API-Football HTTP error:", response.status);
+
       return NextResponse.json(
         { error: "Unable to retrieve live football data." },
         { status: response.status }
       );
     }
 
-    const data = await response.json();
-
     if (data.errors && Object.keys(data.errors).length > 0) {
+      console.error("API-Football returned errors:", data.errors);
+
       return NextResponse.json(
         { error: data.errors },
         { status: 502 }
@@ -44,7 +50,9 @@ export async function GET() {
       matches: data.response,
     });
 
-  } catch {
+  } catch (error) {
+    console.error("Live football route failed:", error);
+
     return NextResponse.json(
       { error: "Something went wrong while fetching live matches." },
       { status: 500 }

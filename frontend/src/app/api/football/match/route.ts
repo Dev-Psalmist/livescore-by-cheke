@@ -2,10 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 
 const API_BASE_URL = "https://v3.football.api-sports.io";
 
+type EndpointResult = {
+  data: any[];
+  diagnostic: {
+    endpoint: string;
+    httpStatus: number | null;
+    success: boolean;
+    results: number;
+    errors: any;
+    message: string;
+  };
+};
+
+// Fetch optional match information and retain diagnostic details.
 async function fetchOptionalMatchData(
   endpoint: string,
-  matchId: string
-) {
+  matchId: string,
+  apiKey: string
+): Promise<EndpointResult> {
   try {
     const url = new URL(`${API_BASE_URL}/${endpoint}`);
     url.searchParams.set("fixture", matchId);
@@ -13,25 +27,86 @@ async function fetchOptionalMatchData(
     const response = await fetch(url.toString(), {
       method: "GET",
       headers: {
-        "x-apisports-key": process.env.API_FOOTBALL_KEY || "",
+        "x-apisports-key": apiKey,
       },
       cache: "no-store",
     });
 
-    if (!response.ok) {
-      return [];
+    let data: any;
+
+    try {
+      data = await response.json();
+    } catch {
+      return {
+        data: [],
+        diagnostic: {
+          endpoint,
+          httpStatus: response.status,
+          success: false,
+          results: 0,
+          errors: null,
+          message: "The API returned an invalid JSON response.",
+        },
+      };
     }
 
-    const data = await response.json();
+    const apiErrors = data.errors ?? null;
 
-    if (data.errors && Object.keys(data.errors).length > 0) {
-      return [];
+    const hasApiErrors =
+      apiErrors !== null &&
+      (Array.isArray(apiErrors)
+        ? apiErrors.length > 0
+        : typeof apiErrors === "object"
+          ? Object.keys(apiErrors).length > 0
+          : Boolean(apiErrors));
+
+    const results = Array.isArray(data.response)
+      ? data.response
+      : [];
+
+    if (!response.ok || hasApiErrors) {
+      return {
+        data: [],
+        diagnostic: {
+          endpoint,
+          httpStatus: response.status,
+          success: false,
+          results: 0,
+          errors: apiErrors,
+          message: "The API request failed or returned an error.",
+        },
+      };
     }
 
-    return Array.isArray(data.response) ? data.response : [];
-  } catch {
-    // Optional information should not prevent the Match Centre loading.
-    return [];
+    return {
+      data: results,
+      diagnostic: {
+        endpoint,
+        httpStatus: response.status,
+        success: true,
+        results: results.length,
+        errors: null,
+        message:
+          results.length > 0
+            ? "Data retrieved successfully."
+            : "The API request succeeded but returned no data.",
+      },
+    };
+  } catch (error) {
+    return {
+      data: [],
+      diagnostic: {
+        endpoint,
+        httpStatus: null,
+        success: false,
+        results: 0,
+        errors: null,
+        message:
+          error instanceof Error
+            ? error.message
+            : "An unexpected network error occurred.",
+      },
+    };
   }
 }
 
@@ -56,7 +131,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // First, retrieve the main fixture information.
+    // 1. Retrieve the main fixture.
     const fixtureUrl = new URL(`${API_BASE_URL}/fixtures`);
     fixtureUrl.searchParams.set("id", matchId);
 
@@ -81,7 +156,11 @@ export async function GET(request: NextRequest) {
             fixtureData.errors ||
             "Unable to retrieve match information.",
         },
-        { status: fixtureResponse.ok ? 502 : fixtureResponse.status }
+        {
+          status: fixtureResponse.ok
+            ? 502
+            : fixtureResponse.status,
+        }
       );
     }
 
@@ -94,24 +173,62 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Retrieve events, lineups and statistics independently.
-    const [events, lineups, statistics] = await Promise.all([
-      fetchOptionalMatchData("fixtures/events", matchId),
-      fetchOptionalMatchData("fixtures/lineups", matchId),
-      fetchOptionalMatchData("fixtures/statistics", matchId),
+    // 2. Retrieve optional match information independently.
+    // A failure in one optional endpoint will not prevent
+    // the other match information from being returned.
+    const [
+      eventsResult,
+      lineupsResult,
+      statisticsResult,
+      playersResult,
+    ] = await Promise.all([
+      fetchOptionalMatchData(
+        "fixtures/events",
+        matchId,
+        apiKey
+      ),
+
+      fetchOptionalMatchData(
+        "fixtures/lineups",
+        matchId,
+        apiKey
+      ),
+
+      fetchOptionalMatchData(
+        "fixtures/statistics",
+        matchId,
+        apiKey
+      ),
+
+      fetchOptionalMatchData(
+        "fixtures/players",
+        matchId,
+        apiKey
+      ),
     ]);
 
-    // Return everything in one Match Centre response.
+    // 3. Return match data and diagnostics.
     return NextResponse.json({
       success: true,
+
       match: {
         ...match,
-        events,
-        lineups,
-        statistics,
+        events: eventsResult.data,
+        lineups: lineupsResult.data,
+        statistics: statisticsResult.data,
+        players: playersResult.data,
+      },
+
+      diagnostics: {
+        events: eventsResult.diagnostic,
+        lineups: lineupsResult.diagnostic,
+        statistics: statisticsResult.diagnostic,
+        players: playersResult.diagnostic,
       },
     });
-  } catch {
+  } catch (error) {
+    console.error("Match Centre API error:", error);
+
     return NextResponse.json(
       {
         error:
