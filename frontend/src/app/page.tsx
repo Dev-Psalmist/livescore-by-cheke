@@ -57,11 +57,13 @@ interface ApiUpcomingFixture {
   };
   teams: {
     home: {
+      id: number;
       name: string;
       code: string | null;
       logo: string;
     };
     away: {
+      id: number;
       name: string;
       code: string | null;
       logo: string;
