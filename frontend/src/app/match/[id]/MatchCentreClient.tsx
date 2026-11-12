@@ -1596,8 +1596,9 @@ export default function MatchCentreClient({
           <section className="rounded-2xl border border-white/[0.07] bg-[#101d2d] p-4 sm:p-6">
             <SectionHeading eyebrow={match.league.name} title="Competition Table" description="Official standings returned by the football data provider." />
             {tableError ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">{tableError}</p> : standings.length === 0 ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">Standings are not available for this competition or season.</p> : (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[820px] text-left text-xs">
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[820px] text-left text-xs">
                   <thead className="bg-[#0c1725] text-[10px] uppercase tracking-wider text-slate-500">
                     <tr><th className="p-3">Pos</th><th className="p-3">Club</th><th className="p-3">P</th><th className="p-3">W</th><th className="p-3">D</th><th className="p-3">L</th><th className="p-3">GF</th><th className="p-3">GA</th><th className="p-3">GD</th><th className="p-3">Form</th><th className="p-3">Pts</th></tr>
                   </thead>
@@ -1623,8 +1624,9 @@ export default function MatchCentreClient({
                     })}
                   </tbody>
                 </table>
-              </div>
-              <p className="mt-3 text-[10px] text-slate-500">GF: goals for · GA: goals against · GD: goal difference. Form and qualification notes are supplied by the competition data provider.</p>
+                </div>
+                <p className="mt-3 text-[10px] text-slate-500">GF: goals for · GA: goals against · GD: goal difference. Form and qualification notes are supplied by the competition data provider.</p>
+              </>
             )}
           </section>
         )}
