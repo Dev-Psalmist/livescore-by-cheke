@@ -222,6 +222,7 @@ interface MatchStatusResponse {
   success?: boolean;
   status?: MatchDetails["fixture"]["status"];
   goals?: MatchDetails["goals"];
+  events?: MatchEvent[];
   error?: unknown;
 }
 
@@ -553,7 +554,8 @@ export default function MatchCentreClient({
     void loadMatch();
   }, [loadMatch]);
 
-  // Live score polling: 5 seconds during play and 15 seconds at half-time.
+  // Refresh the score and event timeline together, with a conservative
+  // polling interval to avoid unnecessary provider requests.
   useEffect(() => {
     if (!match) return;
 
@@ -566,10 +568,10 @@ export default function MatchCentreClient({
     // Check upcoming fixtures periodically so the countdown switches to
     // the official live status as soon as the provider reports kickoff.
     const intervalMs = isScheduledStatus
-      ? 30000
+      ? 60000
       : currentStatus === "HT"
-        ? 15000
-        : 5000;
+        ? 60000
+        : 30000;
 
     let cancelled = false;
 
@@ -610,6 +612,9 @@ export default function MatchCentreClient({
               status: data.status!,
             },
             goals: data.goals!,
+            events: Array.isArray(data.events)
+              ? data.events
+              : currentMatch.events,
           };
         });
 
