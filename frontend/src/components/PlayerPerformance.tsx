@@ -410,7 +410,13 @@ function TeamPlayers({ team }: { team: PlayerTeam }) {
 
         <div className="min-w-0">
           <h3 className="truncate font-bold text-white">
-            {team.team.name}
+            <Link
+              href={`/team/${team.team.id}`}
+              title={`View ${team.team.name} team profile`}
+              className="rounded-sm transition hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            >
+              {team.team.name}
+            </Link>
           </h3>
           <p className="mt-0.5 text-xs text-slate-500">
             Individual match performance
