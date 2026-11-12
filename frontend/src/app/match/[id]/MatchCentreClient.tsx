@@ -11,6 +11,7 @@ import MatchInsights from "@/components/MatchInsights";
 import PlayerPerformance from "@/components/PlayerPerformance";
 import MatchNotifications from "@/components/MatchNotifications";
 import YouTubeHighlights from "@/components/YouTubeHighlights";
+import MatchOdds from "@/components/MatchOdds";
 
 interface MatchEvent {
   time: {
@@ -1640,7 +1641,7 @@ export default function MatchCentreClient({
         )}
 
         {activeTab === "betting" && (
-          <section className="rounded-2xl border border-white/[0.07] bg-[#101d2d] p-6 sm:p-8"><SectionHeading eyebrow="Match markets" title="Betting Odds" description="Odds are shown only when a verified odds provider is connected." /><div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.05] p-5"><p className="font-bold text-amber-300">Odds provider not configured</p><p className="mt-2 text-sm leading-6 text-slate-400">LiveScore by Cheke does not currently have a verified betting-odds data source. We will not display estimated or invented odds.</p></div></section>
+          <MatchOdds matchId={id} />
         )}
 
         {/* API DATA DIAGNOSTICS */}
