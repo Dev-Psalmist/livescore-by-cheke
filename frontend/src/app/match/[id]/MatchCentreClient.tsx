@@ -576,11 +576,7 @@ export default function MatchCentreClient({
 
     // Check upcoming fixtures periodically so the countdown switches to
     // the official live status as soon as the provider reports kickoff.
-    const intervalMs = isScheduledStatus
-      ? 60000
-      : currentStatus === "HT"
-        ? 60000
-        : 30000;
+    const intervalMs = 60000;
 
     let cancelled = false;
 
