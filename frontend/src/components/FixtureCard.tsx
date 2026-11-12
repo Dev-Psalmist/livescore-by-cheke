@@ -7,24 +7,45 @@ interface FixtureCardProps {
 
 export default function FixtureCard({ match }: FixtureCardProps) {
   return (
-    <Link
-      href={`/match/${match.id}`}
-      className="group flex flex-col gap-4 border-b border-white/[0.06] p-4 transition-all duration-300 last:border-b-0 hover:bg-white/[0.035] sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:px-5 sm:py-5"
-    >
+    <article className="group flex flex-col gap-4 border-b border-white/[0.06] p-4 transition-all duration-300 last:border-b-0 hover:bg-white/[0.035] sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:px-5 sm:py-5">
       <div className="flex min-w-0 flex-1 items-center gap-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.06] bg-[#1d2b39] text-xs font-black text-emerald-400 transition-colors group-hover:border-emerald-500/30 group-hover:bg-emerald-500/10">
+        <Link
+          href={`/match/${match.id}`}
+          aria-label={`View ${match.homeTeam.name} vs ${match.awayTeam.name} match centre`}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/[0.06] bg-[#1d2b39] text-xs font-black text-emerald-400 transition-colors hover:border-emerald-500/30 hover:bg-emerald-500/10"
+        >
           VS
-        </div>
+        </Link>
 
         <div className="min-w-0 flex-1">
           <p className="mb-2 truncate text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">
             {match.league}
           </p>
 
-          <p className="break-words text-sm font-bold leading-relaxed text-slate-200 transition-colors group-hover:text-white sm:text-base">
-            {match.homeTeam.name}
+          <p className="break-words text-sm font-bold leading-relaxed text-slate-200 sm:text-base">
+            {match.homeTeam.id ? (
+              <Link
+                href={`/team/${match.homeTeam.id}`}
+                aria-label={`View ${match.homeTeam.name} team profile`}
+                className="transition-colors hover:text-emerald-400 focus-visible:text-emerald-400"
+              >
+                {match.homeTeam.name}
+              </Link>
+            ) : (
+              match.homeTeam.name
+            )}
             <span className="mx-2 font-medium text-slate-600">vs</span>
-            {match.awayTeam.name}
+            {match.awayTeam.id ? (
+              <Link
+                href={`/team/${match.awayTeam.id}`}
+                aria-label={`View ${match.awayTeam.name} team profile`}
+                className="transition-colors hover:text-emerald-400 focus-visible:text-emerald-400"
+              >
+                {match.awayTeam.name}
+              </Link>
+            ) : (
+              match.awayTeam.name
+            )}
           </p>
         </div>
       </div>
@@ -39,10 +60,14 @@ export default function FixtureCard({ match }: FixtureCardProps) {
           </p>
         </div>
 
-        <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 transition-all group-hover:translate-x-1 group-hover:text-emerald-400">
+        <Link
+          href={`/match/${match.id}`}
+          aria-label={`View ${match.homeTeam.name} vs ${match.awayTeam.name} match centre`}
+          className="whitespace-nowrap text-[10px] font-black uppercase tracking-wider text-slate-500 transition-all hover:translate-x-1 hover:text-emerald-400 focus-visible:text-emerald-400"
+        >
           View →
-        </span>
+        </Link>
       </div>
-    </Link>
+    </article>
   );
 }
