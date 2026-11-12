@@ -822,9 +822,11 @@ export default function MatchCentreClient({
     diagnostics ?? {}
   ).filter((item) => item && !item.success);
 
-  const isFinished = ["FT", "AET", "PEN"].includes(
-    match.fixture.status.short.toUpperCase()
-  );
+  const statusCode = match.fixture.status.short.toUpperCase();
+  const isFinished = ["FT", "AET", "PEN", "AWD", "WO"].includes(statusCode);
+  const isPostponed = statusCode === "PST";
+  const isCancelled = ["CANC", "ABD"].includes(statusCode);
+  const isDisrupted = ["SUSP", "INT", "INTERRUPTED"].includes(statusCode);
 
   return (
     <main className="min-h-screen bg-[#070f1b] text-white">
@@ -910,16 +912,24 @@ export default function MatchCentreClient({
 
                 <div className="mt-4 flex justify-center">
                   {isLive ? (
-                    <span className="inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-black text-red-400">
-                      <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                    <span className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black ${
+                      isDisrupted
+                        ? "border border-amber-500/20 bg-amber-500/10 text-amber-300"
+                        : "border border-red-500/20 bg-red-500/10 text-red-400"
+                    }`}>
+                      <span className={`h-2 w-2 animate-pulse rounded-full ${isDisrupted ? "bg-amber-400" : "bg-red-500"}`} />
                       {getMatchTime()}
                     </span>
                   ) : (
                     <span
                       className={`rounded-full px-4 py-2 text-xs font-bold ${
-                        isFinished
-                          ? "border border-slate-700 bg-slate-800 text-slate-300"
-                          : "border border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                        isCancelled
+                          ? "border border-red-500/20 bg-red-500/10 text-red-300"
+                          : isPostponed
+                            ? "border border-amber-500/20 bg-amber-500/10 text-amber-300"
+                            : isFinished
+                              ? "border border-slate-700 bg-slate-800 text-slate-300"
+                              : "border border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
                       }`}
                     >
                       {getMatchTime()}
