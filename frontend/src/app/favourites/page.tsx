@@ -133,7 +133,7 @@ export default function FavouritesPage() {
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {favourites.map((item) => (
+              {favourites.map((item, index) => (
                 <article
                   key={item.team.id}
                   className="group overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 transition duration-300 hover:-translate-y-1 hover:border-green-500/60 hover:shadow-xl hover:shadow-green-950/20"
@@ -221,7 +221,13 @@ export default function FavouritesPage() {
                       </p>
                     </div>
 
-                    <FavouriteTeamFixtures teamId={item.team.id} teamName={item.team.name} />
+                    {index < 6 ? (
+                      <FavouriteTeamFixtures teamId={item.team.id} teamName={item.team.name} />
+                    ) : (
+                      <p className="mt-5 rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-xs text-slate-500">
+                        Fixture snapshots are shown for your first six saved teams to keep data requests efficient.
+                      </p>
+                    )}
 
                     <button
                       type="button"
