@@ -32,12 +32,8 @@ function isLive(status: string) {
   return ["1H", "2H", "HT", "ET", "BT", "P", "LIVE"].includes(status);
 }
 
-function readableApiError(error: unknown): string {
-  const message = typeof error === "string" ? error : error ? JSON.stringify(error) : "";
-  if (/request limit|daily limit|quota exceeded/i.test(message)) {
-    return "The football data provider's daily request limit has been reached. Match data will be available again when the quota resets. No scores or fixtures have been substituted.";
-  }
-  return message || "Unable to load matches.";
+function readableApiError(_error: unknown): string {
+  return "Unable to load data right now. Please try again later.";
 }
 
 export default function DateFixtureBrowser() {
@@ -58,7 +54,7 @@ export default function DateFixtureBrowser() {
       setFixtures(data.matches || []);
     } catch (err) {
       setFixtures([]);
-      setError(err instanceof Error ? err.message : "Unable to load matches.");
+      setError("Unable to load data right now. Please try again later.");
     } finally {
       setLoading(false);
     }
