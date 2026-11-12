@@ -2,7 +2,7 @@ import { connection, NextRequest, NextResponse } from "next/server";
 
 const API_BASE = "https://v3.football.api-sports.io";
 
-type SearchType = "all" | "teams" | "leagues" | "matches";
+type SearchType = "all" | "teams" | "players" | "leagues" | "matches";
 
 async function fetchFootballData(
   endpoint: string,
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!["all", "teams", "leagues", "matches"].includes(type)) {
+    if (!["all", "teams", "players", "leagues", "matches"].includes(type)) {
       return NextResponse.json(
         {
           success: false,
@@ -108,6 +108,19 @@ export async function GET(request: NextRequest) {
         success: true,
         type,
         leagues,
+      });
+    }
+
+    if (type === "players") {
+      const players = await fetchFootballData(
+        `/players?search=${encodedQuery}`,
+        apiKey
+      );
+
+      return NextResponse.json({
+        success: true,
+        type,
+        players,
       });
     }
 
@@ -155,10 +168,14 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // "All" searches teams and leagues together.
-    const [teams, leagues] = await Promise.all([
+    // "All" searches teams, players and leagues together.
+    const [teams, players, leagues] = await Promise.all([
       fetchFootballData(
         `/teams?search=${encodedQuery}`,
+        apiKey
+      ),
+      fetchFootballData(
+        `/players?search=${encodedQuery}`,
         apiKey
       ),
       fetchFootballData(
@@ -171,6 +188,7 @@ export async function GET(request: NextRequest) {
       success: true,
       type,
       teams,
+      players,
       leagues,
     });
   } catch (error) {
