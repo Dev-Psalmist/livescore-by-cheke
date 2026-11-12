@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 
 const API = "https://v3.football.api-sports.io";
 const WINDOW_DAYS = 14;
-const EXCLUDED = /\\b(u\\s?17|u\\s?18|u\\s?19|u\\s?20|u\\s?21|u\\s?23|under[- ]?(17|18|19|20|21|23)|youth|academy|reserve|reserves| ii\\b|b team)\\b/i;
+const EXCLUDED = /\b(u\s?17|u\s?18|u\s?19|u\s?20|u\s?21|u\s?23|under[- ]?(17|18|19|20|21|23)|youth|academy|reserve|reserves| ii\b|b team)\b/i;
 const LIVE_STATUSES = ["1H", "HT", "2H", "ET", "BT", "P", "LIVE", "INT", "SUSP"];
-const INTERNATIONAL = /world cup|world cup qualifier|qualification.*world cup|nations league|african cup of nations|afcon|africa cup|euro qualifier|european championship|uefa euro|copa america|asian cup|afc asian|gold cup|concacaf|copa afric|caf champions league|caf confederation cup|international friendly|friendlies/i;
+const INTERNATIONAL = /world cup|world cup qualifier|qualification.*world cup|nations league|african cup of nations|afcon|africa cup|euro qualifier|european championship|uefa euro|copa america|asian cup|afc asian|gold cup|concacaf|copa afric|caf champions league|caf confederation cup|international friendly/i;
+const REGIONAL_COUNTRIES = /^(world|africa|europe|asia|south america|north and central america)$/i;
 
 const POPULARITY: Array<[RegExp, number]> = [
   [/fifa world cup|world cup qualifier/i, 110],
@@ -20,8 +21,8 @@ const POPULARITY: Array<[RegExp, number]> = [
   [/afc asian cup|asian cup/i, 90],
   [/europa league/i, 89],
   [/ligue 1/i, 86],
-  [/caf champions league/i, 84],
   [/copa libertadores/i, 88],
+  [/caf champions league/i, 84],
   [/world cup qualification/i, 86],
   [/conference league/i, 82],
   [/fa cup|copa del rey|coppa italia|dfb pokal/i, 78],
@@ -34,8 +35,9 @@ function popularity(name: string): number {
 }
 
 function isInternational(league: any): boolean {
-  return INTERNATIONAL.test(`${league.name || ""} ${league.country || ""}`) ||
-    /^(world|africa|europe|asia|south america|north and central america)$/i.test(league.country || "");
+  const name = String(league.name || "");
+  const country = String(league.country || "");
+  return INTERNATIONAL.test(name) || REGIONAL_COUNTRIES.test(country);
 }
 
 export async function GET() {
@@ -47,8 +49,8 @@ export async function GET() {
   try {
     const headers = { "x-apisports-key": key };
     const urls = [
-      `${API}/fixtures?next=100&timezone=Africa%2FLagos`,
-      `${API}/fixtures?live=all&timezone=Africa%2FLagos`,
+      API + "/fixtures?next=100&timezone=Africa%2FLagos",
+      API + "/fixtures?live=all&timezone=Africa%2FLagos",
     ];
     const responses = await Promise.all(
       urls.map((url) => fetch(url, { headers, next: { revalidate: 900 } }))
@@ -70,8 +72,8 @@ export async function GET() {
       const league = fixture.league;
       if (!fixtureId || !league?.id) continue;
 
-      const teams = `${fixture.teams?.home?.name || ""} ${fixture.teams?.away?.name || ""}`;
-      if (EXCLUDED.test(`${league.name || ""} ${teams}`)) continue;
+      const teams = String(fixture.teams?.home?.name || "") + " " + String(fixture.teams?.away?.name || "");
+      if (EXCLUDED.test(String(league.name || "") + " " + teams)) continue;
 
       const status = String(fixture.fixture?.status?.short || "").toUpperCase();
       const kickoff = new Date(fixture.fixture?.date || "").getTime();
