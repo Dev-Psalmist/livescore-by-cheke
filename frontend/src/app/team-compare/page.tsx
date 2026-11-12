@@ -15,7 +15,7 @@ type TeamSummary = {
 };
 type SearchPayload = { success: boolean; teams?: Team[]; error?: string };
 type HeadToHeadMatch = {
-  id: number; date: string; home: string; away: string;
+  id: number; date: string; homeId: number; awayId: number; home: string; away: string;
   homeLogo: string; awayLogo: string; homeGoals: number | null;
   awayGoals: number | null; competition: string;
 };
@@ -93,6 +93,24 @@ export default function TeamComparePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const headToHeadSummary = comparison && first && second
+    ? comparison.headToHead.reduce(
+        (summary, match) => {
+          if (match.homeGoals === null || match.awayGoals === null) return summary;
+          summary.firstGoals += match.homeId === first.id ? match.homeGoals : match.awayId === first.id ? match.awayGoals : 0;
+          summary.secondGoals += match.homeId === second.id ? match.homeGoals : match.awayId === second.id ? match.awayGoals : 0;
+          if (match.homeGoals === match.awayGoals) summary.draws += 1;
+          else if (
+            (match.homeGoals > match.awayGoals && match.homeId === first.id) ||
+            (match.awayGoals > match.homeGoals && match.awayId === first.id)
+          ) summary.firstWins += 1;
+          else summary.secondWins += 1;
+          return summary;
+        },
+        { firstWins: 0, draws: 0, secondWins: 0, firstGoals: 0, secondGoals: 0 }
+      )
+    : null;
+
   async function compare() {
     if (!first || !second) { setError("Select two teams first."); return; }
     if (first.id === second.id) { setError("Choose two different teams."); return; }
@@ -138,6 +156,26 @@ export default function TeamComparePage() {
                 <h2 className="mt-1 text-xl font-black">Previous meetings</h2>
                 <p className="mt-1 text-xs text-slate-500">The five most recent completed meetings between these teams.</p>
               </div>
+              {headToHeadSummary && comparison.headToHead.length > 0 && (
+                <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-4">
+                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-center sm:p-4">
+                    <p className="text-2xl font-black text-emerald-300">{headToHeadSummary.firstWins}</p>
+                    <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:text-xs">{comparison.home.team.name} wins</p>
+                  </div>
+                  <div className="rounded-xl border border-slate-700 bg-slate-950 p-3 text-center sm:p-4">
+                    <p className="text-2xl font-black text-white">{headToHeadSummary.draws}</p>
+                    <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:text-xs">Draws</p>
+                  </div>
+                  <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-3 text-center sm:p-4">
+                    <p className="text-2xl font-black text-sky-300">{headToHeadSummary.secondWins}</p>
+                    <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:text-xs">{comparison.away.team.name} wins</p>
+                  </div>
+                  <div className="col-span-3 rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-center">
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Goals across these meetings</p>
+                    <p className="mt-1 text-lg font-black tabular-nums">{headToHeadSummary.firstGoals} <span className="px-2 text-slate-600">—</span> {headToHeadSummary.secondGoals}</p>
+                  </div>
+                </div>
+              )}
               {comparison.headToHead.length ? (
                 <div className="space-y-3">
                   {comparison.headToHead.map((match) => {
