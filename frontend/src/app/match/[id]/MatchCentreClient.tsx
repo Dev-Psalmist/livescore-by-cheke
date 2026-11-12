@@ -1379,20 +1379,33 @@ export default function MatchCentreClient({
         {activeTab === "lineups" && (
           <section>
             <SectionHeading
-              eyebrow="The starting eleven"
+              eyebrow="Official team selections"
               title="Team Lineups"
-              description="Explore formations, starting players and substitutes."
+              description="Confirmed starting XIs, formations, substitutes and coaches. Predicted lineups are shown only when a verified source is available."
             />
 
             {lineups.length === 0 ? (
               <div className="rounded-2xl border border-white/[0.07] bg-[#101d2d] p-8 text-center">
                 <p className="text-3xl">⚽</p>
                 <h3 className="mt-4 font-bold text-white">
-                  Lineups Unavailable
+                  {diagnostics?.lineups && !diagnostics.lineups.success
+                    ? "Lineup data unavailable"
+                    : isScheduled && remaining > 0
+                      ? "Awaiting official lineups"
+                      : "Official lineups not provided"}
                 </h3>
-                <p className="mt-2 text-sm text-slate-400">
-                  Official team lineups have not been provided for this match.
+                <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-400">
+                  {diagnostics?.lineups && !diagnostics.lineups.success
+                    ? "Unable to load data right now. Please try again later."
+                    : isScheduled && remaining > 0
+                      ? "The teams have not released their official starting XIs yet. Lineups are commonly published closer to kickoff."
+                      : "The football data provider has not returned official starting XIs for this match. No predicted players will be presented as confirmed."}
                 </p>
+                {isScheduled && remaining > 0 && (
+                  <p className="mt-4 text-xs font-semibold text-emerald-400">
+                    Check again closer to kickoff for confirmed team selections.
+                  </p>
+                )}
               </div>
             ) : (
               <div className="grid gap-5 xl:grid-cols-2">
@@ -1419,13 +1432,15 @@ export default function MatchCentreClient({
                               {lineup.team.name}
                             </h3>
                             <p className="mt-1 text-xs text-slate-500">
-                              Starting XI · {startingPlayers.length} players
+                              {startingPlayers.length === 11
+                                ? "Official starting XI · 11 players"
+                                : `Official lineup data · ${startingPlayers.length} starting players`}
                             </p>
                           </div>
                         </div>
 
                         <span className="shrink-0 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-400">
-                          {lineup.formation || "N/A"}
+                          {lineup.formation || "Formation N/A"}
                         </span>
                       </div>
 
