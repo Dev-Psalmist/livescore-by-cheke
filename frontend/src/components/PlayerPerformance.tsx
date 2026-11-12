@@ -198,6 +198,11 @@ function PlayerCard({ player }: { player: MatchPlayer }) {
       highlight: false,
     },
     {
+      label: "Duels contested",
+      value: stats?.duels?.total,
+      highlight: false,
+    },
+    {
       label: "Successful dribbles",
       value: stats?.dribbles?.success,
       highlight: false,
@@ -205,6 +210,11 @@ function PlayerCard({ player }: { player: MatchPlayer }) {
     {
       label: "Dribbles attempted",
       value: stats?.dribbles?.attempts,
+      highlight: false,
+    },
+    {
+      label: "Opponents beaten",
+      value: stats?.dribbles?.past,
       highlight: false,
     },
     {
@@ -349,7 +359,9 @@ function PlayerCard({ player }: { player: MatchPlayer }) {
                 Passing accuracy
               </span>
               <span className="text-sm font-bold text-emerald-300">
-                {stats.passes.accuracy}%
+                {String(stats.passes.accuracy).includes("%")
+                  ? stats.passes.accuracy
+                  : `${stats.passes.accuracy}%`}
               </span>
             </div>
           )}
@@ -360,8 +372,10 @@ function PlayerCard({ player }: { player: MatchPlayer }) {
 
 function TeamPlayers({ team }: { team: PlayerTeam }) {
   const sortedPlayers = [...team.players].sort((first, second) => {
-    const firstRating = Number(first.statistics?.[0]?.games?.rating);
-    const secondRating = Number(second.statistics?.[0]?.games?.rating);
+    const firstRawRating = first.statistics?.[0]?.games?.rating;
+    const secondRawRating = second.statistics?.[0]?.games?.rating;
+    const firstRating = firstRawRating == null || firstRawRating === "" ? Number.NaN : Number(firstRawRating);
+    const secondRating = secondRawRating == null || secondRawRating === "" ? Number.NaN : Number(secondRawRating);
     const firstHasRating = Number.isFinite(firstRating);
     const secondHasRating = Number.isFinite(secondRating);
 
