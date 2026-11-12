@@ -11,6 +11,7 @@ import NewsFeed from "@/components/NewsFeed";
 import YouTubeHighlights from "@/components/YouTubeHighlights";
 import DateFixtureBrowser from "@/components/DateFixtureBrowser";
 import PopularCompetitions from "@/components/PopularCompetitions";
+import { useFavourites } from "@/hooks/useFavourites";
 
 import type { Match } from "@/types/football";
 
@@ -92,6 +93,20 @@ export default function HomePage() {
 
   const [liveError, setLiveError] = useState("");
   const [fixturesError, setFixturesError] = useState("");
+
+  const { favourites, loaded: favouritesLoaded } = useFavourites();
+  const favouriteNames = new Set(
+    favourites.map((item) => item.team.name.toLowerCase())
+  );
+  const isFavouriteMatch = (match: Match) =>
+    favouriteNames.has(match.homeTeam.name.toLowerCase()) ||
+    favouriteNames.has(match.awayTeam.name.toLowerCase());
+  const prioritisedLiveMatches = [...liveMatches].sort(
+    (a, b) => Number(isFavouriteMatch(b)) - Number(isFavouriteMatch(a))
+  );
+  const prioritisedUpcomingMatches = [...upcomingMatches].sort(
+    (a, b) => Number(isFavouriteMatch(b)) - Number(isFavouriteMatch(a))
+  );
 
   const loadLiveMatches = useCallback(async () => {
     try {
@@ -285,6 +300,28 @@ export default function HomePage() {
 
             <DateFixtureBrowser />
 
+            {favouritesLoaded && favourites.length > 0 && (
+              <section className="overflow-hidden rounded-xl border border-emerald-500/20 bg-gradient-to-r from-[#102a22] to-[#141e29] p-4 sm:p-5">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-400">Personalised for you</p>
+                    <h2 className="mt-1 text-lg font-black text-white">Your Favourite Teams</h2>
+                    <p className="mt-1 text-xs text-slate-400">Matches featuring these teams appear first in the live and upcoming lists.</p>
+                  </div>
+                  <Link href="/favourites" className="rounded-lg border border-emerald-400/20 px-3 py-2 text-[10px] font-bold text-emerald-300 transition hover:bg-emerald-400/10">Manage teams →</Link>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {favourites.slice(0, 10).map((item) => (
+                    <Link key={item.team.id} href="/favourites" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-emerald-400/40">
+                      {item.team.logo && <img src={item.team.logo} alt="" className="h-5 w-5 object-contain" />}
+                      {item.team.name}
+                    </Link>
+                  ))}
+                  {favourites.length > 10 && <span className="self-center text-[10px] text-slate-500">+{favourites.length - 10} more</span>}
+                </div>
+              </section>
+            )}
+
             {/* LIVE MATCHES */}
             <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.07] p-4 sm:p-5">
@@ -358,7 +395,7 @@ export default function HomePage() {
 
                 {!liveLoading && !liveError && liveMatches.length > 0 && (
                   <div className="grid gap-3 md:grid-cols-2">
-                    {liveMatches.slice(0, 6).map((match) => (
+                    {prioritisedLiveMatches.slice(0, 6).map((match) => (
                       <LiveMatchCard key={match.id} match={match} />
                     ))}
                   </div>
@@ -439,7 +476,7 @@ export default function HomePage() {
                 !fixturesError &&
                 upcomingMatches.length > 0 && (
                   <div>
-                    {upcomingMatches.slice(0, 8).map((match) => (
+                    {prioritisedUpcomingMatches.slice(0, 8).map((match) => (
                       <FixtureCard key={match.id} match={match} />
                     ))}
                   </div>
