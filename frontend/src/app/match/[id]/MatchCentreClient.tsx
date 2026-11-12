@@ -259,24 +259,8 @@ const TABS = [
   { id: "highlights", label: "Highlights", icon: "▶" },
 ];
 
-function getErrorMessage(error: unknown): string {
-  if (typeof error === "string") return error;
-
-  if (error instanceof Error) return error.message;
-
-  if (error && typeof error === "object") {
-    const message = (error as { message?: unknown }).message;
-
-    if (typeof message === "string") return message;
-
-    try {
-      return JSON.stringify(error);
-    } catch {
-      return "Unable to load match information.";
-    }
-  }
-
-  return "Unable to load match information.";
+function getErrorMessage(_error: unknown): string {
+  return "Unable to load data right now. Please try again later.";
 }
 
 function getNumericValue(
@@ -1508,7 +1492,7 @@ export default function MatchCentreClient({
                     {item.endpoint}:
                   </span>
                   <span className="ml-2 text-slate-400">
-                    {item.message}
+                    Unable to load data right now. Please try again later.
                   </span>
                 </div>
               ))}
