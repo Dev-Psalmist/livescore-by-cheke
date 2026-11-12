@@ -511,6 +511,7 @@ export default function MatchCentreClient({
   const [headToHead, setHeadToHead] = useState<Array<{id:number;date:string;home:string;away:string;homeLogo?:string;awayLogo?:string;homeGoals:number|null;awayGoals:number|null;competition:string}>>([]);
   const [headToHeadLoading, setHeadToHeadLoading] = useState(false);
   const [now, setNow] = useState(0);
+  const [shareFeedback, setShareFeedback] = useState("");
 
   useEffect(() => {
     setNow(Date.now());
@@ -519,6 +520,42 @@ export default function MatchCentreClient({
   }, []);
 
   const statusRefreshInFlight = useRef(false);
+  const handleShareMatch = useCallback(async () => {
+    const shareUrl = window.location.href;
+    const shareTitle = `${match?.teams.home.name ?? "Home"} vs ${match?.teams.away.name ?? "Away"}`;
+    const shareText = `Follow the match on LiveScore by Cheke: ${shareTitle}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+        setShareFeedback("Match shared");
+        window.setTimeout(() => setShareFeedback(""), 2500);
+        return;
+      }
+
+      await navigator.clipboard.writeText(shareUrl);
+      setShareFeedback("Match link copied");
+      window.setTimeout(() => setShareFeedback(""), 2500);
+    } catch (shareError) {
+      if (shareError instanceof Error && shareError.name === "AbortError") {
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareFeedback("Match link copied");
+      } catch {
+        setShareFeedback("Unable to share this match");
+      }
+
+      window.setTimeout(() => setShareFeedback(""), 3000);
+    }
+  }, [match?.teams.home.name, match?.teams.away.name]);
+
   const loadedMatchData = useRef(new Set<string>());
 
   const loadMatch = useCallback(
@@ -1231,18 +1268,33 @@ export default function MatchCentreClient({
               </h2>
             </div>
 
-            <button
-              type="button"
-              onClick={() => void loadMatch(true)}
-              disabled={refreshing}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void handleShareMatch()}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-bold text-slate-300 transition hover:border-emerald-500/30 hover:bg-emerald-500/5 hover:text-emerald-300"
+              >
+                <span aria-hidden="true">↗</span>
+                Share match
+              </button>
+              <button
+                type="button"
+                onClick={() => void loadMatch(true)}
+                disabled={refreshing}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-bold text-emerald-400 transition hover:border-emerald-500/30 hover:bg-emerald-500/5 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span className={refreshing ? "animate-spin" : ""}>
                 ↻
               </span>
               {refreshing ? "Refreshing..." : "Refresh match"}
-            </button>
+              </button>
+            </div>
           </div>
+          {shareFeedback && (
+            <p className="mt-2 text-right text-xs font-medium text-emerald-400" role="status" aria-live="polite">
+              {shareFeedback}
+            </p>
+          )}
 
           <div className="flex gap-2 overflow-x-auto rounded-2xl border border-white/[0.06] bg-[#101d2d] p-2">
             {TABS.map((tab) => (
