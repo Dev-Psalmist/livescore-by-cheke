@@ -11,6 +11,7 @@ import MatchInsights from "@/components/MatchInsights";
 import PlayerPerformance from "@/components/PlayerPerformance";
 import MatchNotifications from "@/components/MatchNotifications";
 import YouTubeHighlights from "@/components/YouTubeHighlights";
+import MatchOdds from "@/components/MatchOdds";
 
 interface MatchEvent {
   time: {
@@ -18,8 +19,8 @@ interface MatchEvent {
     extra: number | null;
   };
   team: { name: string };
-  player: { name: string | null };
-  assist: { name: string | null } | null;
+  player: { id?: number | null; name: string | null };
+  assist: { id?: number | null; name: string | null } | null;
   type: string;
   detail: string;
   comments: string | null;
@@ -44,6 +45,11 @@ interface MatchLineup {
     name: string;
     logo: string;
   };
+  coach?: {
+    id: number | null;
+    name: string;
+    photo?: string | null;
+  } | null;
   formation: string;
   startXI: LineupPlayer[];
   substitutes: LineupPlayer[];
@@ -122,6 +128,16 @@ interface PlayerTeam {
   players: MatchPlayer[];
 }
 
+interface MatchInjury {
+  team: { id: number; name: string; logo?: string | null };
+  player: {
+    id: number;
+    name: string;
+    type?: string | null;
+    reason?: string | null;
+  };
+}
+
 interface MatchDetails {
   fixture: {
     id: number;
@@ -136,8 +152,11 @@ interface MatchDetails {
       name: string | null;
       city: string | null;
     };
+    referee?: string | null;
   };
   league: {
+    id: number;
+    season: number;
     name: string;
     country: string;
     logo: string;
@@ -145,11 +164,13 @@ interface MatchDetails {
   };
   teams: {
     home: {
+      id: number;
       name: string;
       logo: string;
       winner: boolean | null;
     };
     away: {
+      id: number;
       name: string;
       logo: string;
       winner: boolean | null;
@@ -176,6 +197,7 @@ interface MatchDetails {
     statistics: MatchStatistic[];
   }>;
   players?: PlayerTeam[];
+  injuries?: MatchInjury[];
 }
 
 interface EndpointDiagnostic {
@@ -194,6 +216,7 @@ interface MatchResponse {
     lineups?: EndpointDiagnostic;
     statistics?: EndpointDiagnostic;
     players?: EndpointDiagnostic;
+    injuries?: EndpointDiagnostic;
   };
 }
 
@@ -201,6 +224,7 @@ interface MatchStatusResponse {
   success?: boolean;
   status?: MatchDetails["fixture"]["status"];
   goals?: MatchDetails["goals"];
+  events?: MatchEvent[];
   error?: unknown;
 }
 
@@ -228,31 +252,18 @@ const LIVE_STATUSES = [
 ];
 
 const TABS = [
-  { id: "events", label: "Events", icon: "⚡" },
-  { id: "statistics", label: "Statistics", icon: "📊" },
-  { id: "players", label: "Players", icon: "👤" },
+  { id: "overview", label: "Overview", icon: "⌂" },
   { id: "lineups", label: "Lineups", icon: "⚽" },
+  { id: "table", label: "Table", icon: "🏆" },
+  { id: "statistics", label: "Stats", icon: "📊" },
+  { id: "news", label: "News", icon: "📰" },
+  { id: "betting", label: "Betting", icon: "📈" },
+  { id: "players", label: "Players", icon: "👤" },
   { id: "highlights", label: "Highlights", icon: "▶" },
 ];
 
-function getErrorMessage(error: unknown): string {
-  if (typeof error === "string") return error;
-
-  if (error instanceof Error) return error.message;
-
-  if (error && typeof error === "object") {
-    const message = (error as { message?: unknown }).message;
-
-    if (typeof message === "string") return message;
-
-    try {
-      return JSON.stringify(error);
-    } catch {
-      return "Unable to load match information.";
-    }
-  }
-
-  return "Unable to load match information.";
+function getErrorMessage(_error: unknown): string {
+  return "Unable to load data right now. Please try again later.";
 }
 
 function getNumericValue(
@@ -481,9 +492,72 @@ export default function MatchCentreClient({
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [statusRefreshError, setStatusRefreshError] = useState("");
-  const [activeTab, setActiveTab] = useState("events");
+  const [activeTab, setActiveTab] = useState("overview");
+  const [standings, setStandings] = useState<Array<{
+    rank: number;
+    team: { id: number; name: string; logo: string };
+    points: number;
+    goalsDiff: number;
+    form?: string | null;
+    description?: string | null;
+    group?: string | null;
+    all: { played: number; win: number; draw: number; lose: number; goals?: { for: number; against: number } };
+  }>>([]);
+  const [tableError, setTableError] = useState("");
+  const [matchNews, setMatchNews] = useState<Array<{id:string;title:string;link:string;source:string;publishedAt:string;summary?:string}>>([]);
+  const [newsLoading, setNewsLoading] = useState(false);
+
+  const [teamForm, setTeamForm] = useState<{ home: Array<{id:number;date:string;opponent:string;goalsFor:number|null;goalsAgainst:number|null;result:"W"|"D"|"L"}>; away: Array<{id:number;date:string;opponent:string;goalsFor:number|null;goalsAgainst:number|null;result:"W"|"D"|"L"}> } | null>(null);
+  const [teamFormLoading, setTeamFormLoading] = useState(false);
+  const [headToHead, setHeadToHead] = useState<Array<{id:number;date:string;home:string;away:string;homeId:number;awayId:number;homeLogo?:string;awayLogo?:string;homeGoals:number|null;awayGoals:number|null;competition:string}>>([]);
+  const [headToHeadLoading, setHeadToHeadLoading] = useState(false);
+  const [now, setNow] = useState(0);
+  const [shareFeedback, setShareFeedback] = useState("");
+
+  useEffect(() => {
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const statusRefreshInFlight = useRef(false);
+  const handleShareMatch = useCallback(async () => {
+    const shareUrl = window.location.href;
+    const shareTitle = `${match?.teams.home.name ?? "Home"} vs ${match?.teams.away.name ?? "Away"}`;
+    const shareText = `Follow the match on LiveScore by Cheke: ${shareTitle}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+        setShareFeedback("Match shared");
+        window.setTimeout(() => setShareFeedback(""), 2500);
+        return;
+      }
+
+      await navigator.clipboard.writeText(shareUrl);
+      setShareFeedback("Match link copied");
+      window.setTimeout(() => setShareFeedback(""), 2500);
+    } catch (shareError) {
+      if (shareError instanceof Error && shareError.name === "AbortError") {
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareFeedback("Match link copied");
+      } catch {
+        setShareFeedback("Unable to share this match");
+      }
+
+      window.setTimeout(() => setShareFeedback(""), 3000);
+    }
+  }, [match?.teams.home.name, match?.teams.away.name]);
+
+  const loadedMatchData = useRef(new Set<string>());
 
   const loadMatch = useCallback(
     async (isRefresh = false) => {
@@ -528,17 +602,20 @@ export default function MatchCentreClient({
     void loadMatch();
   }, [loadMatch]);
 
-  // Live score polling: 5 seconds during play and 15 seconds at half-time.
+  // Refresh the score and event timeline together, with a conservative
+  // polling interval to avoid unnecessary provider requests.
   useEffect(() => {
     if (!match) return;
 
     const currentStatus =
       match.fixture.status.short.toUpperCase();
 
-    if (!LIVE_STATUSES.includes(currentStatus)) return;
+    const isScheduledStatus = ["NS", "TBD"].includes(currentStatus);
+    if (!LIVE_STATUSES.includes(currentStatus) && !isScheduledStatus) return;
 
-    const intervalMs =
-      currentStatus === "HT" ? 15000 : 5000;
+    // Check upcoming fixtures periodically so the countdown switches to
+    // the official live status as soon as the provider reports kickoff.
+    const intervalMs = 60000;
 
     let cancelled = false;
 
@@ -579,6 +656,9 @@ export default function MatchCentreClient({
               status: data.status!,
             },
             goals: data.goals!,
+            events: Array.isArray(data.events)
+              ? data.events
+              : currentMatch.events,
           };
         });
 
@@ -605,11 +685,181 @@ export default function MatchCentreClient({
     };
   }, [id, match?.fixture.status.short]);
 
+  useEffect(() => {
+    if (!match || activeTab !== "overview") return;
+
+    const homeId = match.teams.home.id;
+    const awayId = match.teams.away.id;
+    const requestKey = `team-form:${homeId}:${awayId}`;
+    if (loadedMatchData.current.has(requestKey)) return;
+
+    let cancelled = false;
+    setTeamFormLoading(true);
+
+    fetch(`/api/football/team-form?home=${homeId}&away=${awayId}`, {
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error("Recent form unavailable.");
+        }
+        if (!cancelled) {
+          loadedMatchData.current.add(requestKey);
+          setTeamForm({ home: data.home || [], away: data.away || [] });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setTeamForm(null);
+      })
+      .finally(() => {
+        if (!cancelled) setTeamFormLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, match?.teams.home.id, match?.teams.away.id]);
+
+  useEffect(() => {
+    if (!match || activeTab !== "statistics") return;
+
+    const homeId = match.teams.home.id;
+    const awayId = match.teams.away.id;
+    const requestKey = `head-to-head:${homeId}:${awayId}`;
+    if (loadedMatchData.current.has(requestKey)) return;
+
+    let cancelled = false;
+    setHeadToHeadLoading(true);
+
+    fetch(`/api/football/head-to-head?home=${homeId}&away=${awayId}`, {
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error("Head-to-head unavailable.");
+        }
+        if (!cancelled) {
+          loadedMatchData.current.add(requestKey);
+          setHeadToHead(data.matches || []);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setHeadToHead([]);
+      })
+      .finally(() => {
+        if (!cancelled) setHeadToHeadLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, match?.teams.home.id, match?.teams.away.id]);
+
+  useEffect(() => {
+    if (
+      !match ||
+      activeTab !== "table" ||
+      !match.league.id ||
+      !match.league.season
+    ) {
+      return;
+    }
+
+    const leagueId = match.league.id;
+    const season = match.league.season;
+    const requestKey = `standings:${leagueId}:${season}`;
+    if (loadedMatchData.current.has(requestKey)) return;
+
+    let cancelled = false;
+    setTableError("");
+
+    fetch(`/api/football/standings?league=${leagueId}&season=${season}`, {
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error("Competition table is unavailable.");
+        }
+        const rows = data.standings?.[0] || [];
+        if (!cancelled) {
+          loadedMatchData.current.add(requestKey);
+          setStandings(rows);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTableError("Unable to load data right now. Please try again later.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, match?.league.id, match?.league.season]);
+
+  useEffect(() => {
+    if (!match || activeTab !== "news") return;
+
+    const homeName = match.teams.home.name;
+    const awayName = match.teams.away.name;
+    const leagueName = match.league.name;
+    const requestKey = `news:${homeName}:${awayName}:${leagueName}`.toLowerCase();
+    if (loadedMatchData.current.has(requestKey)) return;
+
+    let cancelled = false;
+    setNewsLoading(true);
+
+    fetch("/api/football/news", { cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error("Football news is unavailable.");
+        }
+
+        const terms = [homeName, awayName, leagueName].map((term) =>
+          term.toLowerCase()
+        );
+        const relevant = (data.articles || [])
+          .filter((article: { title?: string; summary?: string }) => {
+            const articleText = `${article.title || ""} ${article.summary || ""}`.toLowerCase();
+            return terms.some(
+              (term) => term.length > 2 && articleText.includes(term)
+            );
+          })
+          .slice(0, 10);
+
+        if (!cancelled) {
+          loadedMatchData.current.add(requestKey);
+          setMatchNews(relevant);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMatchNews([]);
+      })
+      .finally(() => {
+        if (!cancelled) setNewsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, match?.teams.home.name, match?.teams.away.name, match?.league.name]);
+
   const isLive = match
-    ? LIVE_STATUSES.includes(
-        match.fixture.status.short.toUpperCase()
-      )
+    ? LIVE_STATUSES.includes(match.fixture.status.short.toUpperCase())
     : false;
+  const isScheduled = match && ["NS", "TBD"].includes(match.fixture.status.short.toUpperCase());
+  const kickoffTime = match ? new Date(match.fixture.date).getTime() : 0;
+  const remaining = Math.max(0, kickoffTime - now);
+  const countdown = {
+    days: Math.floor(remaining / 86400000),
+    hours: Math.floor((remaining % 86400000) / 3600000),
+    minutes: Math.floor((remaining % 3600000) / 60000),
+    seconds: Math.floor((remaining % 60000) / 1000),
+  };
 
   const formatDate = (date: string) =>
     new Date(date).toLocaleString("en-NG", {
@@ -708,9 +958,11 @@ export default function MatchCentreClient({
     diagnostics ?? {}
   ).filter((item) => item && !item.success);
 
-  const isFinished = ["FT", "AET", "PEN"].includes(
-    match.fixture.status.short.toUpperCase()
-  );
+  const statusCode = match.fixture.status.short.toUpperCase();
+  const isFinished = ["FT", "AET", "PEN", "AWD", "WO"].includes(statusCode);
+  const isPostponed = statusCode === "PST";
+  const isCancelled = ["CANC", "ABD"].includes(statusCode);
+  const isDisrupted = ["SUSP", "INT", "INTERRUPTED"].includes(statusCode);
 
   return (
     <main className="min-h-screen bg-[#070f1b] text-white">
@@ -773,9 +1025,13 @@ export default function MatchCentreClient({
                   />
                 </div>
 
-                <h2 className="break-words text-sm font-black text-white sm:text-xl lg:text-2xl">
+                <Link
+                  href={`/team/${match.teams.home.id}`}
+                  title={`View ${homeTeam} team profile`}
+                  className="break-words text-sm font-black text-white transition hover:text-emerald-400 sm:text-xl lg:text-2xl"
+                >
                   {homeTeam}
-                </h2>
+                </Link>
 
                 {match.teams.home.winner && (
                   <span className="mt-2 inline-block rounded-full bg-emerald-500/10 px-3 py-1 text-[9px] font-black tracking-wider text-emerald-400">
@@ -796,16 +1052,24 @@ export default function MatchCentreClient({
 
                 <div className="mt-4 flex justify-center">
                   {isLive ? (
-                    <span className="inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-black text-red-400">
-                      <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                    <span className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black ${
+                      isDisrupted
+                        ? "border border-amber-500/20 bg-amber-500/10 text-amber-300"
+                        : "border border-red-500/20 bg-red-500/10 text-red-400"
+                    }`}>
+                      <span className={`h-2 w-2 animate-pulse rounded-full ${isDisrupted ? "bg-amber-400" : "bg-red-500"}`} />
                       {getMatchTime()}
                     </span>
                   ) : (
                     <span
                       className={`rounded-full px-4 py-2 text-xs font-bold ${
-                        isFinished
-                          ? "border border-slate-700 bg-slate-800 text-slate-300"
-                          : "border border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                        isCancelled
+                          ? "border border-red-500/20 bg-red-500/10 text-red-300"
+                          : isPostponed
+                            ? "border border-amber-500/20 bg-amber-500/10 text-amber-300"
+                            : isFinished
+                              ? "border border-slate-700 bg-slate-800 text-slate-300"
+                              : "border border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
                       }`}
                     >
                       {getMatchTime()}
@@ -816,6 +1080,29 @@ export default function MatchCentreClient({
                 <p className="mt-4 text-[10px] leading-relaxed text-slate-500 sm:text-xs">
                   {formatDate(match.fixture.date)}
                 </p>
+
+                {isScheduled && remaining > 0 && (
+                  <div className="mx-auto mt-4 grid max-w-[260px] grid-cols-4 gap-2">
+                    {[
+                      { label: "Days", value: countdown.days },
+                      { label: "Hours", value: countdown.hours },
+                      { label: "Minutes", value: countdown.minutes },
+                      { label: "Seconds", value: countdown.seconds },
+                    ].map((unit) => (
+                      <div
+                        key={unit.label}
+                        className="rounded-lg border border-emerald-500/15 bg-emerald-500/[0.06] px-2 py-2"
+                      >
+                        <p className="text-lg font-black tabular-nums text-emerald-300">
+                          {String(unit.value).padStart(2, "0")}
+                        </p>
+                        <p className="mt-0.5 text-[8px] font-bold uppercase tracking-wider text-slate-500">
+                          {unit.label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="min-w-0 text-center">
@@ -827,9 +1114,13 @@ export default function MatchCentreClient({
                   />
                 </div>
 
-                <h2 className="break-words text-sm font-black text-white sm:text-xl lg:text-2xl">
+                <Link
+                  href={`/team/${match.teams.away.id}`}
+                  title={`View ${awayTeam} team profile`}
+                  className="break-words text-sm font-black text-white transition hover:text-blue-400 sm:text-xl lg:text-2xl"
+                >
                   {awayTeam}
-                </h2>
+                </Link>
 
                 {match.teams.away.winner && (
                   <span className="mt-2 inline-block rounded-full bg-emerald-500/10 px-3 py-1 text-[9px] font-black tracking-wider text-emerald-400">
@@ -843,7 +1134,7 @@ export default function MatchCentreClient({
             </div>
 
             {/* Match information */}
-            <div className="mt-8 grid gap-3 border-t border-white/[0.07] pt-6 sm:grid-cols-3">
+            <div className="mt-8 grid gap-3 border-t border-white/[0.07] pt-6 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-xl bg-black/10 px-4 py-3 text-center">
                 <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-slate-500">
                   Venue
@@ -879,25 +1170,84 @@ export default function MatchCentreClient({
                   {match.score.fulltime.away ?? "-"}
                 </p>
               </div>
+              <div className="rounded-xl bg-black/10 px-4 py-3 text-center">
+                <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-slate-500">
+                  Referee
+                </p>
+                <p className="text-xs font-semibold text-slate-300">
+                  {match.fixture.referee || "Not provided"}
+                </p>
+              </div>
             </div>
           </div>
         </section>
 
+{activeTab === "overview" && (
+        <>
+        {/* RECENT FORM */}
+        <section className="mb-7 rounded-2xl border border-white/[0.07] bg-[#101d2d] p-5 sm:p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">Team performance</p>
+              <h2 className="mt-1 text-lg font-black">Last five matches</h2>
+            </div>
+            {isScheduled && remaining > 0 && (
+              <div className="flex gap-2 text-center">
+                {Object.entries(countdown).map(([unit, value]) => (
+                  <div key={unit} className="min-w-12 rounded-lg bg-[#0b1624] px-2 py-2">
+                    <div className="text-lg font-black text-emerald-400">{String(value).padStart(2,"0")}</div>
+                    <div className="text-[8px] font-bold uppercase text-slate-500">{unit}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {([{name:homeTeam, form:teamForm?.home}, {name:awayTeam, form:teamForm?.away}] as const).map((team) => (
+              <div key={team.name} className="rounded-xl bg-[#0b1624] p-4">
+                <p className="mb-3 text-sm font-bold text-white">{team.name}</p>
+                <div className="flex min-h-8 flex-wrap items-center gap-2">
+                  {teamFormLoading ? (
+                    <span className="text-xs text-slate-500">Loading recent results...</span>
+                  ) : team.form?.length ? (
+                    team.form.map((game) => (
+                      <Link
+                        key={game.id}
+                        href={`/match/${game.id}`}
+                        title={`${game.result} vs ${game.opponent} · ${game.goalsFor ?? "—"}-${game.goalsAgainst ?? "—"} · View match`}
+                        aria-label={`View match: ${team.name} ${game.goalsFor ?? "—"}-${game.goalsAgainst ?? "—"} ${game.opponent}, result ${game.result}`}
+                        className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white transition hover:scale-110 hover:ring-2 hover:ring-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${game.result === "W" ? "bg-emerald-600" : game.result === "L" ? "bg-red-600" : "bg-amber-500"}`}
+                      >
+                        {game.result}
+                      </Link>
+                    ))
+                  ) : (
+                    <span className="text-xs text-slate-500">Recent results unavailable</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        </>
+      )}
+
         {/* REFRESH FEEDBACK */}
         {error && match && (
           <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300">
-            Refresh failed: {error}. Previously retrieved match
-            information is still displayed.
+            Unable to load data right now. Please try again later. Previously retrieved match information is still displayed.
           </div>
         )}
 
         {statusRefreshError && (
           <div className="mb-5 rounded-xl border border-yellow-500/20 bg-yellow-500/10 p-4 text-sm text-yellow-300">
-            Automatic score refresh failed: {statusRefreshError}.
-            The last successfully retrieved score remains displayed.
+            Unable to load data right now. Please try again later. The last successfully retrieved score remains displayed.
           </div>
         )}
 
+{activeTab === "overview" && (
+        <>
         {/* MATCH INSIGHTS */}
         <section className="mb-7">
           <MatchInsights
@@ -922,6 +1272,9 @@ export default function MatchCentreClient({
           />
         </section>
 
+        </>
+      )}
+
         {/* CONTENT NAVIGATION */}
         <section className="mb-6">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
@@ -934,18 +1287,33 @@ export default function MatchCentreClient({
               </h2>
             </div>
 
-            <button
-              type="button"
-              onClick={() => void loadMatch(true)}
-              disabled={refreshing}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void handleShareMatch()}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-bold text-slate-300 transition hover:border-emerald-500/30 hover:bg-emerald-500/5 hover:text-emerald-300"
+              >
+                <span aria-hidden="true">↗</span>
+                Share match
+              </button>
+              <button
+                type="button"
+                onClick={() => void loadMatch(true)}
+                disabled={refreshing}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-xs font-bold text-emerald-400 transition hover:border-emerald-500/30 hover:bg-emerald-500/5 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span className={refreshing ? "animate-spin" : ""}>
                 ↻
               </span>
               {refreshing ? "Refreshing..." : "Refresh match"}
-            </button>
+              </button>
+            </div>
           </div>
+          {shareFeedback && (
+            <p className="mt-2 text-right text-xs font-medium text-emerald-400" role="status" aria-live="polite">
+              {shareFeedback}
+            </p>
+          )}
 
           <div className="flex gap-2 overflow-x-auto rounded-2xl border border-white/[0.06] bg-[#101d2d] p-2">
             {TABS.map((tab) => (
@@ -967,10 +1335,10 @@ export default function MatchCentreClient({
         </section>
 
         {/* MATCH EVENTS */}
-        {activeTab === "events" && (
+        {activeTab === "overview" && (
           <section className="rounded-2xl border border-white/[0.07] bg-[#101d2d] p-4 sm:p-6">
             <SectionHeading
-              eyebrow="The action"
+              eyebrow="Match overview"
               title="Match Events"
               description="Follow goals, cards, substitutions and important moments."
             />
@@ -991,6 +1359,48 @@ export default function MatchCentreClient({
               title="Match Statistics"
               description="Compare the official statistics recorded for both teams."
             />
+
+            <div className="mb-7 rounded-xl border border-white/[0.06] bg-[#0c1725] p-4 sm:p-5">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Recent meetings</p>
+                  <h3 className="mt-1 text-base font-black text-white">Head-to-Head</h3>
+                </div>
+                <span className="text-[10px] text-slate-500">Last 5 completed meetings</span>
+              </div>
+              {headToHeadLoading ? (
+                <p className="py-5 text-center text-sm text-slate-400">Loading previous meetings...</p>
+              ) : headToHead.length === 0 ? (
+                <p className="py-5 text-center text-sm text-slate-400">No previous completed meetings were returned for these teams.</p>
+              ) : (
+                <div className="space-y-2">
+                  {headToHead.map((game) => (
+                    <div
+                      key={game.id}
+                      className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-3"
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        {game.homeLogo && <img src={game.homeLogo} alt="" className="h-5 w-5 shrink-0 object-contain" />}
+                        <Link href={`/team/${game.homeId}`} className="truncate text-xs font-semibold text-slate-200 hover:text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">{game.home}</Link>
+                      </div>
+                      <Link
+                        href={`/match/${game.id}`}
+                        title={`View match: ${game.home} ${game.homeGoals ?? "—"}–${game.awayGoals ?? "—"} ${game.away}`}
+                        aria-label={`Open match centre for ${game.home} versus ${game.away}`}
+                        className="text-center rounded-md px-1 py-1 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                      >
+                        <p className="text-sm font-black tabular-nums text-white">{game.homeGoals ?? "—"} : {game.awayGoals ?? "—"}</p>
+                        <p className="mt-1 text-[9px] text-slate-500">{new Date(game.date).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric", timeZone: "Africa/Lagos" })}</p>
+                      </Link>
+                      <div className="flex min-w-0 items-center justify-end gap-2">
+                        <Link href={`/team/${game.awayId}`} className="truncate text-right text-xs font-semibold text-slate-200 hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">{game.away}</Link>
+                        {game.awayLogo && <img src={game.awayLogo} alt="" className="h-5 w-5 shrink-0 object-contain" />}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {statisticRows.length === 0 ? (
               <div className="rounded-xl border border-white/[0.06] bg-[#0c1725] py-12 text-center">
@@ -1059,20 +1469,33 @@ export default function MatchCentreClient({
         {activeTab === "lineups" && (
           <section>
             <SectionHeading
-              eyebrow="The starting eleven"
+              eyebrow="Official team selections"
               title="Team Lineups"
-              description="Explore formations, starting players and substitutes."
+              description="Confirmed starting XIs, formations, substitutes and coaches. Predicted lineups are shown only when a verified source is available."
             />
 
             {lineups.length === 0 ? (
               <div className="rounded-2xl border border-white/[0.07] bg-[#101d2d] p-8 text-center">
                 <p className="text-3xl">⚽</p>
                 <h3 className="mt-4 font-bold text-white">
-                  Lineups Unavailable
+                  {diagnostics?.lineups && !diagnostics.lineups.success
+                    ? "Lineup data unavailable"
+                    : isScheduled && remaining > 0
+                      ? "Awaiting official lineups"
+                      : "Official lineups not provided"}
                 </h3>
-                <p className="mt-2 text-sm text-slate-400">
-                  Official team lineups have not been provided for this match.
+                <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-400">
+                  {diagnostics?.lineups && !diagnostics.lineups.success
+                    ? "Unable to load data right now. Please try again later."
+                    : isScheduled && remaining > 0
+                      ? "The teams have not released their official starting XIs yet. Lineups are commonly published closer to kickoff."
+                      : "The football data provider has not returned official starting XIs for this match. No predicted players will be presented as confirmed."}
                 </p>
+                {isScheduled && remaining > 0 && (
+                  <p className="mt-4 text-xs font-semibold text-emerald-400">
+                    Check again closer to kickoff for confirmed team selections.
+                  </p>
+                )}
               </div>
             ) : (
               <div className="grid gap-5 xl:grid-cols-2">
@@ -1099,15 +1522,42 @@ export default function MatchCentreClient({
                               {lineup.team.name}
                             </h3>
                             <p className="mt-1 text-xs text-slate-500">
-                              Starting XI · {startingPlayers.length} players
+                              {startingPlayers.length === 11
+                                ? "Official starting XI · 11 players"
+                                : `Official lineup data · ${startingPlayers.length} starting players`}
                             </p>
                           </div>
                         </div>
 
                         <span className="shrink-0 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-black text-emerald-400">
-                          {lineup.formation || "N/A"}
+                          {lineup.formation || "Formation N/A"}
                         </span>
                       </div>
+
+                      {lineup.coach?.name && (
+                        <div className="mb-5 flex items-center gap-3 rounded-xl border border-white/[0.06] bg-[#0c1725] px-3 py-2.5">
+                          {lineup.coach.photo ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={lineup.coach.photo}
+                              alt=""
+                              className="h-9 w-9 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.06] text-xs font-black text-emerald-300">
+                              CO
+                            </span>
+                          )}
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                              Head coach
+                            </p>
+                            <p className="mt-0.5 text-sm font-semibold text-white">
+                              {lineup.coach.name}
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="mb-7">
                         <LineupPitch
@@ -1141,9 +1591,13 @@ export default function MatchCentreClient({
                                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-xs font-bold text-slate-400">
                                     {item.player.number}
                                   </span>
-                                  <span className="truncate font-medium text-slate-200">
+                                  <Link
+                                    href={`/player/${item.player.id}`}
+                                    title={`View ${item.player.name}'s player profile`}
+                                    className="truncate font-medium text-slate-200 transition hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+                                  >
                                     {item.player.name}
-                                  </span>
+                                  </Link>
                                 </div>
                                 <span className="shrink-0 text-[10px] font-bold text-slate-500">
                                   {item.player.pos}
@@ -1158,6 +1612,48 @@ export default function MatchCentreClient({
                 })}
               </div>
             )}
+
+            <div className="mt-6 rounded-2xl border border-white/[0.07] bg-[#101d2d] p-4 sm:p-6">
+              <SectionHeading
+                eyebrow="Team availability"
+                title="Injuries & Suspensions"
+                description="Absence reports returned by the football data provider."
+              />
+              {(match.injuries ?? []).length === 0 ? (
+                <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">
+                  No injury or suspension records were returned for this fixture. This does not necessarily mean both squads are fully available.
+                </p>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {(match.injuries ?? []).map((absence, index) => {
+                    const reason = absence.player.reason || "Reason not provided";
+                    const category = absence.player.type || "Unavailable";
+                    const isSuspension = /suspend/i.test(`${category} ${reason}`);
+                    return (
+                      <div
+                        key={`${absence.player.id}-${index}`}
+                        className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-[#0c1725] p-3"
+                      >
+                        {absence.team.logo ? (
+                          <img src={absence.team.logo} alt="" className="h-9 w-9 object-contain" />
+                        ) : (
+                          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.05] text-xs font-bold text-slate-400">
+                            {absence.team.name.slice(0, 2).toUpperCase()}
+                          </span>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-bold text-white">{absence.player.name}</p>
+                          <p className="truncate text-xs text-slate-400">{absence.team.name} · {reason}</p>
+                        </div>
+                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-wider ${isSuspension ? "bg-amber-500/10 text-amber-300" : "bg-red-500/10 text-red-300"}`}>
+                          {isSuspension ? "Suspended" : category}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </section>
         )}
 
@@ -1178,6 +1674,57 @@ export default function MatchCentreClient({
               limit={6}
             />
           </section>
+        )}
+
+        {activeTab === "table" && (
+          <section className="rounded-2xl border border-white/[0.07] bg-[#101d2d] p-4 sm:p-6">
+            <SectionHeading eyebrow={match.league.name} title="Competition Table" description="Official standings returned by the football data provider." />
+            {tableError ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">{tableError}</p> : standings.length === 0 ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">Standings are not available for this competition or season.</p> : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[820px] text-left text-xs">
+                  <thead className="bg-[#0c1725] text-[10px] uppercase tracking-wider text-slate-500">
+                    <tr><th className="p-3">Pos</th><th className="p-3">Club</th><th className="p-3">P</th><th className="p-3">W</th><th className="p-3">D</th><th className="p-3">L</th><th className="p-3">GF</th><th className="p-3">GA</th><th className="p-3">GD</th><th className="p-3">Form</th><th className="p-3">Pts</th></tr>
+                  </thead>
+                  <tbody>
+                    {standings.map((row) => {
+                      const isMatchTeam = row.team.id === match.teams.home.id || row.team.id === match.teams.away.id;
+                      return (
+                        <tr key={row.team.id} className={isMatchTeam ? "border-t border-white/[0.06] bg-emerald-500/[0.07]" : "border-t border-white/[0.06] hover:bg-white/[0.02]"}>
+                          <td className="p-3 font-bold text-slate-400">{row.rank}</td>
+                          <td className="p-3 font-semibold text-white">
+                            <div className="flex items-center gap-2">{row.team.logo && <img src={row.team.logo} alt="" className="h-5 w-5 object-contain" />}<Link href={`/team/${row.team.id}`} className="transition hover:text-emerald-300 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-sm" aria-label={`View ${row.team.name} team profile`}>{row.team.name}</Link></div>
+                            {row.description && <p className="mt-1 max-w-[220px] text-[9px] font-medium text-emerald-300/80">{row.description}</p>}
+                          </td>
+                          <td className="p-3">{row.all.played}</td><td className="p-3">{row.all.win}</td><td className="p-3">{row.all.draw}</td><td className="p-3">{row.all.lose}</td>
+                          <td className="p-3">{row.all.goals?.for ?? "—"}</td><td className="p-3">{row.all.goals?.against ?? "—"}</td>
+                          <td className="p-3 font-semibold">{row.goalsDiff > 0 ? "+" + row.goalsDiff : row.goalsDiff}</td>
+                          <td className="p-3">
+                            {row.form ? <div className="flex items-center gap-1">{row.form.slice(-5).split("").map((result, index) => <span key={index} title={result} className={result === "W" ? "flex h-5 w-5 items-center justify-center rounded bg-emerald-500/15 text-[9px] font-black text-emerald-300" : result === "D" ? "flex h-5 w-5 items-center justify-center rounded bg-amber-500/15 text-[9px] font-black text-amber-300" : "flex h-5 w-5 items-center justify-center rounded bg-red-500/15 text-[9px] font-black text-red-300"}>{result}</span>)}</div> : <span className="text-slate-600">—</span>}
+                          </td>
+                          <td className="p-3 font-black text-emerald-400">{row.points}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                </div>
+                <p className="mt-3 text-[10px] text-slate-500">GF: goals for · GA: goals against · GD: goal difference. Form and qualification notes are supplied by the competition data provider.</p>
+              </>
+            )}
+          </section>
+        )}
+
+        {activeTab === "news" && (
+          <section className="rounded-2xl border border-white/[0.07] bg-[#101d2d] p-4 sm:p-6">
+            <SectionHeading eyebrow="Team coverage" title="Related Football News" description={`Headlines mentioning ${homeTeam}, ${awayTeam} or ${match.league.name}.`} />
+            {newsLoading ? <p className="p-8 text-center text-sm text-slate-400">Loading related news...</p> : matchNews.length === 0 ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">No related headlines are currently available. Unrelated football stories are hidden.</p> : <div className="grid gap-3 md:grid-cols-2">{matchNews.map((article) => <a key={article.id} href={article.link} target="_blank" rel="noreferrer" className="rounded-xl border border-white/[0.06] bg-[#0c1725] p-4 transition hover:border-emerald-500/30"><p className="text-sm font-bold text-white">{article.title}</p>{article.summary && <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-400">{article.summary}</p>}<p className="mt-3 text-[10px] font-bold uppercase tracking-wider text-emerald-400">{article.source} · {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString("en-NG") : "Latest"}</p></a>)}</div>}
+            <div className="mt-6 border-t border-white/[0.06] pt-5"><h3 className="mb-3 text-sm font-bold text-white">Video highlights</h3><YouTubeHighlights kind="all" homeTeam={homeTeam} awayTeam={awayTeam} league={match.league.name} limit={4} /></div>
+          </section>
+        )}
+
+        {activeTab === "betting" && (
+          <MatchOdds matchId={id} />
         )}
 
         {/* API DATA DIAGNOSTICS */}
@@ -1207,7 +1754,7 @@ export default function MatchCentreClient({
                     {item.endpoint}:
                   </span>
                   <span className="ml-2 text-slate-400">
-                    {item.message}
+                    Unable to load data right now. Please try again later.
                   </span>
                 </div>
               ))}

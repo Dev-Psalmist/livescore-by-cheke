@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 interface LineupPlayer {
   player: {
     id: number;
@@ -173,9 +175,13 @@ function PlayerMarker({ item }: { item: LineupPlayer }) {
         {player.number ?? "—"}
       </div>
 
-      <span className="mt-1.5 block w-full max-w-[100px] break-words rounded-md border border-white/10 bg-slate-950/90 px-1.5 py-1 text-[9px] font-semibold leading-tight text-white shadow-md sm:text-[10px]">
+      <Link
+        href={`/player/${player.id}`}
+        title={`View ${player.name}'s player profile`}
+        className="mt-1.5 block w-full max-w-[100px] break-words rounded-md border border-white/10 bg-slate-950/90 px-1.5 py-1 text-[9px] font-semibold leading-tight text-white shadow-md transition hover:border-emerald-300 hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400 sm:text-[10px]"
+      >
         {player.name}
-      </span>
+      </Link>
 
       <span className="mt-0.5 text-[8px] font-medium uppercase tracking-wider text-emerald-100/70">
         {player.pos || "N/A"}

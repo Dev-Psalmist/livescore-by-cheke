@@ -2,7 +2,7 @@ import { connection, NextRequest, NextResponse } from "next/server";
 
 const API_BASE = "https://v3.football.api-sports.io";
 
-type SearchType = "all" | "teams" | "leagues" | "matches";
+type SearchType = "all" | "teams" | "players" | "leagues" | "matches";
 
 async function fetchFootballData(
   endpoint: string,
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!["all", "teams", "leagues", "matches"].includes(type)) {
+    if (!["all", "teams", "players", "leagues", "matches"].includes(type)) {
       return NextResponse.json(
         {
           success: false,
@@ -111,8 +111,37 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    if (type === "players") {
+      if (query.length < 4) {
+        return NextResponse.json({
+          success: true,
+          type,
+          players: [],
+        });
+      }
+      const players = await fetchFootballData(
+        `/players/profiles?search=${encodedQuery}`,
+        apiKey
+      );
+
+      return NextResponse.json({
+        success: true,
+        type,
+        players,
+      });
+    }
+
     if (type === "matches") {
-      // First, find the team so we can use its API-Football ID.
+      // A numeric query is treated as an exact fixture ID.
+      if (/^\d+$/.test(query)) {
+        const matches = await fetchFootballData(
+          `/fixtures?id=${encodeURIComponent(query)}`,
+          apiKey
+        );
+        return NextResponse.json({ success: true, type, matches });
+      }
+
+      // Otherwise, find the team and retrieve its latest fixtures.
       const teams = await fetchFootballData(
         `/teams?search=${encodedQuery}`,
         apiKey
@@ -155,22 +184,20 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // "All" searches teams and leagues together.
-    const [teams, leagues] = await Promise.all([
-      fetchFootballData(
-        `/teams?search=${encodedQuery}`,
-        apiKey
-      ),
-      fetchFootballData(
-        `/leagues?search=${encodedQuery}`,
-        apiKey
-      ),
+    // Player profile search requires at least four characters.
+    const [teams, players, leagues] = await Promise.all([
+      fetchFootballData(`/teams?search=${encodedQuery}`, apiKey),
+      query.length >= 4
+        ? fetchFootballData(`/players/profiles?search=${encodedQuery}`, apiKey)
+        : Promise.resolve([]),
+      fetchFootballData(`/leagues?search=${encodedQuery}`, apiKey),
     ]);
 
     return NextResponse.json({
       success: true,
       type,
       teams,
+      players,
       leagues,
     });
   } catch (error) {

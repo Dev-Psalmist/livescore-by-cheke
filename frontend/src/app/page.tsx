@@ -9,6 +9,10 @@ import LiveMatchCard from "@/components/LiveMatchCard";
 import FixtureCard from "@/components/FixtureCard";
 import NewsFeed from "@/components/NewsFeed";
 import YouTubeHighlights from "@/components/YouTubeHighlights";
+import DateFixtureBrowser from "@/components/DateFixtureBrowser";
+import PopularCompetitions from "@/components/PopularCompetitions";
+import { useFavourites } from "@/hooks/useFavourites";
+import { useFavouriteLeagues } from "@/hooks/useFavouriteLeagues";
 
 import type { Match } from "@/types/football";
 
@@ -25,11 +29,13 @@ interface ApiLiveFixture {
   };
   teams: {
     home: {
+      id: number;
       name: string;
       code: string | null;
       logo?: string;
     };
     away: {
+      id: number;
       name: string;
       code: string | null;
       logo?: string;
@@ -51,11 +57,13 @@ interface ApiUpcomingFixture {
   };
   teams: {
     home: {
+      id: number;
       name: string;
       code: string | null;
       logo: string;
     };
     away: {
+      id: number;
       name: string;
       code: string | null;
       logo: string;
@@ -69,10 +77,8 @@ interface ApiResponse<T> {
   error?: unknown;
 }
 
-function getErrorMessage(error: unknown): string {
-  if (typeof error === "string") return error;
-  if (error) return JSON.stringify(error);
-  return "Unable to retrieve football data.";
+function getErrorMessage(_error: unknown): string {
+  return "Unable to load data right now. Please try again later.";
 }
 
 function formatKickoff(date: string): string {
@@ -83,25 +89,6 @@ function formatKickoff(date: string): string {
   }).format(new Date(date));
 }
 
-const competitions = [
-  "Premier League",
-  "La Liga",
-  "Bundesliga",
-  "Serie A",
-  "Ligue 1",
-  "Champions League",
-  "Europa League",
-];
-
-const quickLinks = [
-  { label: "Live Scores", href: "/live", icon: "🔴" },
-  { label: "Fixtures", href: "/fixtures", icon: "📅" },
-  { label: "Competitions", href: "/leagues", icon: "🏆" },
-  { label: "Teams", href: "/teams", icon: "⚽" },
-  { label: "Search", href: "/search", icon: "🔎" },
-  { label: "Favourites", href: "/favourites", icon: "♥" },
-];
-
 export default function HomePage() {
   const [liveMatches, setLiveMatches] = useState<Match[]>([]);
   const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
@@ -111,6 +98,21 @@ export default function HomePage() {
 
   const [liveError, setLiveError] = useState("");
   const [fixturesError, setFixturesError] = useState("");
+
+  const { favourites, loaded: favouritesLoaded } = useFavourites();
+  const { favourites: followedLeagues, loaded: followedLeaguesLoaded } = useFavouriteLeagues();
+  const favouriteNames = new Set(
+    favourites.map((item) => item.team.name.toLowerCase())
+  );
+  const isFavouriteMatch = (match: Match) =>
+    favouriteNames.has(match.homeTeam.name.toLowerCase()) ||
+    favouriteNames.has(match.awayTeam.name.toLowerCase());
+  const prioritisedLiveMatches = [...liveMatches].sort(
+    (a, b) => Number(isFavouriteMatch(b)) - Number(isFavouriteMatch(a))
+  );
+  const prioritisedUpcomingMatches = [...upcomingMatches].sort(
+    (a, b) => Number(isFavouriteMatch(b)) - Number(isFavouriteMatch(a))
+  );
 
   const loadLiveMatches = useCallback(async () => {
     try {
@@ -136,6 +138,7 @@ export default function HomePage() {
             ? `${item.fixture.status.elapsed}'`
             : item.fixture.status.short,
         homeTeam: {
+          id: item.teams.home.id,
           name: item.teams.home.name,
           shortName:
             item.teams.home.code ||
@@ -143,6 +146,7 @@ export default function HomePage() {
           logo: item.teams.home.logo,
         },
         awayTeam: {
+          id: item.teams.away.id,
           name: item.teams.away.name,
           shortName:
             item.teams.away.code ||
@@ -155,11 +159,7 @@ export default function HomePage() {
 
       setLiveMatches(formattedMatches);
     } catch (error) {
-      setLiveError(
-        error instanceof Error
-          ? error.message
-          : "Unable to load live matches."
-      );
+      setLiveError("Unable to load data right now. Please try again later.");
     } finally {
       setLiveLoading(false);
     }
@@ -205,11 +205,7 @@ export default function HomePage() {
 
       setUpcomingMatches(formattedMatches);
     } catch (error) {
-      setFixturesError(
-        error instanceof Error
-          ? error.message
-          : "Unable to load upcoming fixtures."
-      );
+      setFixturesError("Unable to load data right now. Please try again later.");
     } finally {
       setFixturesLoading(false);
     }
@@ -225,73 +221,11 @@ export default function HomePage() {
       <Header />
 
       <div className="mx-auto max-w-[1600px] px-3 py-5 sm:px-5 lg:px-6">
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_310px]">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
 
-          {/* LEFT SIDEBAR */}
-          <aside className="hidden space-y-5 lg:block">
-            <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
-              <div className="border-b border-white/[0.07] px-4 py-4">
-                <h2 className="text-xs font-black uppercase tracking-[0.16em] text-slate-300">
-                  Navigation
-                </h2>
-              </div>
-
-              <nav className="space-y-1 p-2">
-                {quickLinks.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-slate-300 transition hover:bg-emerald-500/10 hover:text-emerald-400"
-                  >
-                    <span>{item.icon}</span>
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-            </section>
-
-            <section className="rounded-xl border border-white/[0.07] bg-[#141e29] p-3">
-              <div className="px-2 py-3">
-                <h2 className="text-xs font-black uppercase tracking-[0.16em] text-slate-300">
-                  Popular Competitions
-                </h2>
-              </div>
-
-              <div className="space-y-1">
-                {competitions.map((competition, index) => (
-                  <Link
-                    key={competition}
-                    href="/leagues"
-                    className="flex items-center gap-3 rounded-lg px-2 py-3 text-xs font-medium text-slate-400 transition hover:bg-white/[0.04] hover:text-emerald-400"
-                  >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#202d3b] text-[10px] font-black text-emerald-400">
-                      {index + 1}
-                    </span>
-                    {competition}
-                  </Link>
-                ))}
-              </div>
-
-              <Link
-                href="/leagues"
-                className="mt-3 block border-t border-white/[0.07] px-2 pt-4 text-xs font-bold text-emerald-400 hover:text-emerald-300"
-              >
-                All competitions →
-              </Link>
-            </section>
-
-            <section className="rounded-xl border border-emerald-500/15 bg-gradient-to-br from-emerald-950/70 to-[#141e29] p-5">
-              <p className="text-2xl">⚽</p>
-              <h2 className="mt-4 text-sm font-black">
-                Football Never Stops.
-              </h2>
-              <p className="mt-2 text-xs leading-6 text-slate-400">
-                Follow the teams, competitions and matches that matter to you.
-              </p>
-              <p className="mt-4 text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400">
-                Every sport. Every moment.
-              </p>
-            </section>
+          {/* DYNAMIC COMPETITIONS */}
+          <aside className="hidden lg:block">
+            <PopularCompetitions />
           </aside>
 
           {/* CENTRE CONTENT */}
@@ -305,7 +239,7 @@ export default function HomePage() {
               <div className="relative z-10">
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.17em] text-emerald-400">
                   <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                  Global Sports Coverage
+                  Football Coverage
                 </div>
 
                 <h1 className="max-w-2xl text-3xl font-black leading-tight tracking-tight sm:text-4xl lg:text-5xl">
@@ -371,6 +305,51 @@ export default function HomePage() {
                 </p>
               </div>
             </section>
+
+            <DateFixtureBrowser />
+
+            {favouritesLoaded && favourites.length > 0 && (
+              <section className="overflow-hidden rounded-xl border border-emerald-500/20 bg-gradient-to-r from-[#102a22] to-[#141e29] p-4 sm:p-5">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-400">Personalised for you</p>
+                    <h2 className="mt-1 text-lg font-black text-white">Your Favourite Teams</h2>
+                    <p className="mt-1 text-xs text-slate-400">Matches featuring these teams appear first in the live and upcoming lists.</p>
+                  </div>
+                  <Link href="/favourites" className="rounded-lg border border-emerald-400/20 px-3 py-2 text-[10px] font-bold text-emerald-300 transition hover:bg-emerald-400/10">Manage teams →</Link>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {favourites.slice(0, 10).map((item) => (
+                    <Link key={item.team.id} href="/favourites" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-emerald-400/40">
+                      {item.team.logo && <img src={item.team.logo} alt="" className="h-5 w-5 object-contain" />}
+                      {item.team.name}
+                    </Link>
+                  ))}
+                  {favourites.length > 10 && <span className="self-center text-[10px] text-slate-500">+{favourites.length - 10} more</span>}
+                </div>
+              </section>
+            )}
+
+            {followedLeaguesLoaded && followedLeagues.length > 0 && (
+              <section className="rounded-xl border border-emerald-500/20 bg-[#141e29] p-4 sm:p-5">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-400">Your competitions</p>
+                    <h2 className="mt-1 text-base font-black text-white">Followed Leagues & Cups</h2>
+                  </div>
+                  <Link href="/search" className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300">Find more →</Link>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {followedLeagues.slice(0, 10).map((item) => (
+                    <Link key={item.league.id} href={`/leagues?league=${item.league.id}`} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-emerald-400/40">
+                      {item.league.logo && <img src={item.league.logo} alt="" className="h-5 w-5 object-contain" />}
+                      {item.league.name}
+                    </Link>
+                  ))}
+                  {followedLeagues.length > 10 && <span className="self-center text-[10px] text-slate-500">+{followedLeagues.length - 10} more</span>}
+                </div>
+              </section>
+            )}
 
             {/* LIVE MATCHES */}
             <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
@@ -445,7 +424,7 @@ export default function HomePage() {
 
                 {!liveLoading && !liveError && liveMatches.length > 0 && (
                   <div className="grid gap-3 md:grid-cols-2">
-                    {liveMatches.slice(0, 6).map((match) => (
+                    {prioritisedLiveMatches.slice(0, 6).map((match) => (
                       <LiveMatchCard key={match.id} match={match} />
                     ))}
                   </div>
@@ -526,7 +505,7 @@ export default function HomePage() {
                 !fixturesError &&
                 upcomingMatches.length > 0 && (
                   <div>
-                    {upcomingMatches.slice(0, 8).map((match) => (
+                    {prioritisedUpcomingMatches.slice(0, 8).map((match) => (
                       <FixtureCard key={match.id} match={match} />
                     ))}
                   </div>
@@ -559,56 +538,15 @@ export default function HomePage() {
             </section>
           </div>
 
-          {/* RIGHT INFORMATION PANEL */}
-          <aside className="min-w-0 space-y-5">
-            <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
-              <div className="border-b border-white/[0.07] p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-400">
-                  Around the Game
-                </p>
-                <h2 className="mt-1 text-lg font-black">Football News</h2>
-              </div>
-              <div className="p-3">
-                <NewsFeed limit={4} />
-              </div>
-            </section>
-
-            <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
-              <div className="border-b border-white/[0.07] p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-400">
-                  Watch the Action
-                </p>
-                <h2 className="mt-1 text-lg font-black">Match Highlights</h2>
-              </div>
-              <div className="p-3">
-                <YouTubeHighlights kind="all" limit={3} compact />
-              </div>
-            </section>
-
-            <section className="rounded-xl border border-emerald-500/15 bg-gradient-to-br from-[#15372b] to-[#141e29] p-5">
-              <p className="text-[10px] font-black uppercase tracking-[0.17em] text-emerald-400">
-                LiveScore by Cheke
-              </p>
-              <h2 className="mt-3 text-xl font-black leading-snug">
-                Your Game.
-                <br />
-                Your Moments.
-              </h2>
-              <p className="mt-3 text-xs leading-6 text-slate-400">
-                Stay connected to the football world with scores, fixtures,
-                news and match coverage.
-              </p>
-              <Link
-                href="/highlights"
-                className="mt-5 inline-block text-xs font-black text-emerald-400 hover:text-emerald-300"
-              >
-                Explore Highlights →
-              </Link>
-            </section>
-          </aside>
         </div>
       </div>
 
+      <section className="mx-auto max-w-[1600px] px-3 pb-10 sm:px-5 lg:px-6">
+        <NewsFeed />
+        <div className="mt-8">
+          <YouTubeHighlights kind="all" limit={6} />
+        </div>
+      </section>
       <Footer />
     </main>
   );

@@ -41,11 +41,13 @@ interface ApiFixture {
   };
   teams: {
     home: {
+      id: number;
       name: string;
       code: string | null;
       logo: string;
     };
     away: {
+      id: number;
       name: string;
       code: string | null;
       logo: string;
@@ -210,6 +212,7 @@ export default function LeaguesPage() {
             ),
 
             homeTeam: {
+              id: fixture.teams.home.id,
               name: fixture.teams.home.name,
               shortName:
                 fixture.teams.home.code ||
@@ -218,6 +221,7 @@ export default function LeaguesPage() {
             },
 
             awayTeam: {
+              id: fixture.teams.away.id,
               name: fixture.teams.away.name,
               shortName:
                 fixture.teams.away.code ||

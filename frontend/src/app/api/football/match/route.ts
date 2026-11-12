@@ -182,6 +182,7 @@ export async function GET(request: NextRequest) {
       lineupsResult,
       statisticsResult,
       playersResult,
+      injuriesResult,
     ] = await Promise.all([
       fetchOptionalMatchData(
         "fixtures/events",
@@ -206,6 +207,12 @@ export async function GET(request: NextRequest) {
         matchId,
         apiKey
       ),
+
+      fetchOptionalMatchData(
+        "injuries",
+        matchId,
+        apiKey
+      ),
     ]);
 
     // 3. Return match data and diagnostics.
@@ -218,6 +225,7 @@ export async function GET(request: NextRequest) {
         lineups: lineupsResult.data,
         statistics: statisticsResult.data,
         players: playersResult.data,
+        injuries: injuriesResult.data,
       },
 
       diagnostics: {
@@ -225,6 +233,7 @@ export async function GET(request: NextRequest) {
         lineups: lineupsResult.diagnostic,
         statistics: statisticsResult.diagnostic,
         players: playersResult.diagnostic,
+        injuries: injuriesResult.diagnostic,
       },
     });
   } catch (error) {

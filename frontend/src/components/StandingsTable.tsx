@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 interface StandingTeam {
   id: number;
   name: string;
@@ -91,9 +93,13 @@ export default function StandingsTable({
                           className="h-7 w-7 object-contain"
                         />
 
-                        <span className="whitespace-nowrap font-semibold">
+                        <Link
+                          href={`/team/${team.team.id}`}
+                          aria-label={`View ${team.team.name} team profile`}
+                          className="whitespace-nowrap font-semibold transition hover:text-emerald-400 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-sm"
+                        >
                           {team.team.name}
-                        </span>
+                        </Link>
                       </div>
                     </td>
 

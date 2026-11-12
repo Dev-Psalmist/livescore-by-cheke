@@ -150,7 +150,7 @@ export default function NewsFeed({
       : filteredArticles;
 
   return (
-    <section className="mx-auto max-w-7xl px-6 py-16">
+    <section className="w-full px-0 py-12">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="mb-2 text-xs font-bold uppercase tracking-widest text-green-400">
@@ -257,7 +257,7 @@ export default function NewsFeed({
         )}
 
       {!loading && !error && visibleArticles.length > 0 && (
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {visibleArticles.map((article) => (
             <article
               key={article.id}

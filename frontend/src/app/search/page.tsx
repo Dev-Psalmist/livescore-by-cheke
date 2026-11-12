@@ -5,8 +5,9 @@ import Link from "next/link";
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { useFavouriteLeagues } from "@/hooks/useFavouriteLeagues";
 
-type SearchType = "all" | "teams" | "leagues" | "matches";
+type SearchType = "all" | "teams" | "players" | "leagues" | "matches";
 
 interface TeamResult {
   team: {
@@ -38,6 +39,23 @@ interface LeagueResult {
     year: number;
     current: boolean;
   }[];
+}
+
+interface PlayerResult {
+  player: {
+    id: number;
+    name: string;
+    age: number | null;
+    nationality: string | null;
+    photo: string | null;
+    height?: string | null;
+    weight?: string | null;
+  };
+  statistics?: Array<{
+    team?: { name?: string; logo?: string };
+    league?: { name?: string; season?: number };
+    games?: { position?: string | null; number?: number | null };
+  }>;
 }
 
 interface MatchResult {
@@ -77,6 +95,7 @@ interface SearchResponse {
   error?: string;
   teams?: TeamResult[];
   leagues?: LeagueResult[];
+  players?: PlayerResult[];
   matches?: MatchResult[];
   matchedTeam?: TeamResult | null;
 }
@@ -87,6 +106,7 @@ const categories: {
 }[] = [
   { id: "all", label: "All Results" },
   { id: "teams", label: "Teams" },
+  { id: "players", label: "Players" },
   { id: "leagues", label: "Leagues" },
   { id: "matches", label: "Matches" },
 ];
@@ -117,9 +137,11 @@ function isLiveStatus(status: string) {
 export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<SearchType>("all");
+  const { addFavourite, removeFavourite, isFavourite } = useFavouriteLeagues();
 
   const [teams, setTeams] = useState<TeamResult[]>([]);
   const [leagues, setLeagues] = useState<LeagueResult[]>([]);
+  const [players, setPlayers] = useState<PlayerResult[]>([]);
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [matchedTeam, setMatchedTeam] =
     useState<TeamResult | null>(null);
@@ -133,8 +155,12 @@ export default function SearchPage() {
 
     const searchTerm = query.trim();
 
-    if (searchTerm.length < 3) {
-      setError("Enter at least three characters to search.");
+    if (searchTerm.length < (category === "players" ? 4 : 3)) {
+      setError(
+        category === "players"
+          ? "Enter at least four characters to search for a player."
+          : "Enter at least three characters to search."
+      );
       setSearched(false);
       return;
     }
@@ -146,6 +172,7 @@ export default function SearchPage() {
 
       setTeams([]);
       setLeagues([]);
+      setPlayers([]);
       setMatches([]);
       setMatchedTeam(null);
 
@@ -164,6 +191,7 @@ export default function SearchPage() {
 
       setTeams(data.teams || []);
       setLeagues(data.leagues || []);
+      setPlayers(data.players || []);
       setMatches(data.matches || []);
       setMatchedTeam(data.matchedTeam || null);
 
@@ -213,6 +241,9 @@ export default function SearchPage() {
               </span>
 
               <span className="rounded-lg border border-slate-700 bg-slate-900/80 px-4 py-2 text-sm text-slate-300">
+                Players
+              </span>
+              <span className="rounded-lg border border-slate-700 bg-slate-900/80 px-4 py-2 text-sm text-slate-300">
                 Competitions
               </span>
 
@@ -238,6 +269,13 @@ export default function SearchPage() {
             <p className="mt-2 text-sm text-slate-400">
               Search across the global football database.
             </p>
+
+            <Link
+              href="/compare"
+              className="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-300 transition hover:border-emerald-400 hover:bg-emerald-500/20"
+            >
+              ⚖ Compare two players <span aria-hidden="true">→</span>
+            </Link>
           </div>
 
           <form onSubmit={handleSearch}>
@@ -252,7 +290,7 @@ export default function SearchPage() {
                   type="search"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search Arsenal, Premier League..."
+                  placeholder="Search Arsenal, Haaland, Premier League..."
                   className="w-full rounded-xl border border-slate-700 bg-slate-950 py-4 pl-12 pr-4 text-white outline-none transition placeholder:text-slate-500 focus:border-green-500 focus:ring-2 focus:ring-green-500/10"
                 />
               </div>
@@ -290,9 +328,7 @@ export default function SearchPage() {
             </div>
 
             <p className="mt-5 text-xs leading-5 text-slate-500">
-              Enter at least three characters. Match searches find
-              the latest 10 fixtures for the matching team in the
-              current season.
+              Enter at least three characters for teams and competitions. Player searches require four; match search also accepts a fixture ID.
             </p>
           </form>
         </div>
@@ -459,9 +495,51 @@ export default function SearchPage() {
                           <p className="mt-2 text-xs font-semibold text-green-400">
                             {item.league.type}
                           </p>
+                          <button
+                            type="button"
+                            onClick={() => isFavourite(item.league.id)
+                              ? removeFavourite(item.league.id)
+                              : addFavourite({ league: item.league, country: item.country })}
+                            className={`mt-3 rounded-lg border px-3 py-2 text-[10px] font-black transition ${isFavourite(item.league.id)
+                              ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+                              : "border-slate-700 text-slate-300 hover:border-green-500 hover:text-green-400"}`}
+                          >
+                            {isFavourite(item.league.id) ? "✓ Following" : "+ Follow competition"}
+                          </button>
                         </div>
                       </article>
                     ))}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {(category === "all" || category === "players") && (
+              <section>
+                <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-slate-800 pb-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-green-400">Player Directory</p>
+                    <h2 className="mt-2 text-2xl font-black">Players</h2>
+                  </div>
+                  <span className="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-400">{players.length} found</span>
+                </div>
+                {players.length === 0 ? (
+                  <p className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 text-sm text-slate-400">No matching players found.</p>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {players.map((item) => {
+                      return (
+                        <Link href={`/player/${item.player.id}`} key={item.player.id} className="group flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 transition hover:-translate-y-1 hover:border-green-500/60">
+                          {item.player.photo ? <img src={item.player.photo} alt="" className="h-16 w-16 shrink-0 rounded-full bg-slate-800 object-cover" /> : <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-slate-800 font-black text-green-400">{item.player.name.slice(0,2).toUpperCase()}</div>}
+                          <div className="min-w-0">
+                            <h3 className="truncate font-bold text-white transition group-hover:text-green-400">{item.player.name}</h3>
+                            <p className="mt-1 text-xs text-slate-400">{item.player.nationality || "Nationality unavailable"}{item.player.age ? " · " + item.player.age + " years" : ""}</p>
+                            <p className="mt-2 text-[10px] text-slate-500">{item.player.height || "Height unavailable"}{item.player.weight ? " · " + item.player.weight : ""}</p>
+                            <p className="mt-3 text-[10px] font-bold uppercase tracking-wider text-green-400">View player profile →</p>
+                          </div>
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
               </section>

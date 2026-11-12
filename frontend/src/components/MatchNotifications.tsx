@@ -21,12 +21,6 @@ interface MatchEvent {
   comments: string | null;
 }
 
-interface EventsResponse {
-  success?: boolean;
-  events?: MatchEvent[];
-  error?: unknown;
-}
-
 interface MatchNotificationsProps {
   matchId: string;
   events: MatchEvent[];
@@ -35,7 +29,7 @@ interface MatchNotificationsProps {
   awayTeam: string;
 }
 
-const LIVE_EVENT_STATUSES = ["1H", "2H", "ET", "BT", "P", "LIVE"];
+const LIVE_EVENT_STATUSES = ["1H", "HT", "2H", "ET", "BT", "P", "LIVE"];
 
 const FINISHED_STATUSES = ["FT", "AET", "PEN"];
 
@@ -81,27 +75,66 @@ export default function MatchNotifications({
   const eventsInitialised = useRef(false);
   const previousStatus = useRef(status.toUpperCase());
 
-  // Remember events already present when the Match Centre opens.
+  // Seed existing events without notifying for moments that happened
+  // before the user opened the Match Centre. Later updates are live events.
   useEffect(() => {
-    if (eventsInitialised.current) return;
-
-    for (const event of events) {
-      seenEvents.current.add(getEventKey(event));
+    if (!eventsInitialised.current) {
+      for (const event of events) {
+        seenEvents.current.add(getEventKey(event));
+      }
+      eventsInitialised.current = true;
+      return;
     }
 
-    eventsInitialised.current = true;
-  }, [events]);
+    for (const event of events) {
+      const eventKey = getEventKey(event);
+      if (seenEvents.current.has(eventKey)) continue;
 
-  // Read existing browser notification permission.
+      seenEvents.current.add(eventKey);
+      if (!enabled) continue;
+
+      const type = event.type.toLowerCase();
+      const detail = event.detail.toLowerCase();
+      const minute = `${event.time.elapsed}'${event.time.extra ? `+${event.time.extra}` : ""}`;
+
+      if (type === "goal") {
+        sendNotification(
+          "GOAL!",
+          `${event.team.name}: ${event.player?.name || "Unknown scorer"} (${minute})`,
+          `${matchId}-${eventKey}`
+        );
+      }
+
+      if (
+        type === "card" &&
+        (detail.includes("red") || detail.includes("second yellow"))
+      ) {
+        sendNotification(
+          "Red card",
+          `${event.team.name}: ${event.player?.name || "Unknown player"} (${minute})`,
+          `${matchId}-${eventKey}`
+        );
+      }
+    }
+  }, [events, enabled, homeTeam, awayTeam, matchId]);
+
+  // Restore this match's alert preference when the page is reopened.
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     if ("Notification" in window) {
       setPermission(Notification.permission);
+      const savedPreference = window.localStorage.getItem(
+        `livescore:match-alerts:${matchId}`
+      );
+      setEnabled(
+        savedPreference === "true" &&
+        Notification.permission === "granted"
+      );
     } else {
       setMessage("This browser does not support notifications.");
     }
-  }, []);
+  }, [matchId]);
 
   async function enableNotifications() {
     if (!("Notification" in window)) {
@@ -119,6 +152,10 @@ export default function MatchNotifications({
 
     if (result === "granted") {
       setEnabled(true);
+      window.localStorage.setItem(
+        `livescore:match-alerts:${matchId}`,
+        "true"
+      );
       setMessage("Notifications are enabled for this match.");
     } else if (result === "denied") {
       setEnabled(false);
@@ -133,6 +170,7 @@ export default function MatchNotifications({
 
   function disableNotifications() {
     setEnabled(false);
+    window.localStorage.removeItem(`livescore:match-alerts:${matchId}`);
     setMessage("Notifications are paused.");
   }
 
@@ -142,6 +180,17 @@ export default function MatchNotifications({
     const oldStatus = previousStatus.current;
 
     if (currentStatus !== oldStatus && enabled) {
+      if (
+        ["NS", "TBD"].includes(oldStatus) &&
+        LIVE_EVENT_STATUSES.includes(currentStatus)
+      ) {
+        sendNotification(
+          "Kick-off",
+          `${homeTeam} vs ${awayTeam} has started.`,
+          `${matchId}-kickoff`
+        );
+      }
+
       if (currentStatus === "HT") {
         sendNotification(
           "Half-time",
@@ -161,104 +210,6 @@ export default function MatchNotifications({
 
     previousStatus.current = currentStatus;
   }, [status, enabled, homeTeam, awayTeam, matchId]);
-
-  // Check for new goals and red cards every 30 seconds.
-  useEffect(() => {
-    if (
-      !enabled ||
-      !LIVE_EVENT_STATUSES.includes(status.toUpperCase())
-    ) {
-      return;
-    }
-
-    let cancelled = false;
-    let requestInFlight = false;
-
-    async function refreshEvents() {
-      if (requestInFlight || cancelled) return;
-
-      requestInFlight = true;
-
-      try {
-        const response = await fetch(
-          `/api/football/match-events?id=${encodeURIComponent(matchId)}`,
-          { cache: "no-store" }
-        );
-
-        const data: EventsResponse = await response.json();
-
-        if (
-          !response.ok ||
-          !data.success ||
-          !Array.isArray(data.events)
-        ) {
-          throw new Error("Unable to retrieve the latest match events.");
-        }
-
-        if (cancelled) return;
-
-        for (const event of data.events) {
-          const eventKey = getEventKey(event);
-
-          if (seenEvents.current.has(eventKey)) {
-            continue;
-          }
-
-          // Record the event before processing it to prevent duplicates.
-          seenEvents.current.add(eventKey);
-
-          const type = event.type.toLowerCase();
-          const detail = event.detail.toLowerCase();
-
-          const minute = `${event.time.elapsed}'${
-            event.time.extra ? `+${event.time.extra}` : ""
-          }`;
-
-          if (type === "goal") {
-            const scorer = event.player?.name || "Unknown scorer";
-
-            sendNotification(
-              "GOAL!",
-              `${event.team.name}: ${scorer} (${minute})`,
-              `${matchId}-${eventKey}`
-            );
-          }
-
-          if (
-            type === "card" &&
-            (detail.includes("red") ||
-              detail.includes("second yellow"))
-          ) {
-            const player = event.player?.name || "Unknown player";
-
-            sendNotification(
-              "Red card",
-              `${event.team.name}: ${player} (${minute})`,
-              `${matchId}-${eventKey}`
-            );
-          }
-        }
-      } catch (error) {
-        if (!cancelled) {
-          console.error(
-            "Match notification event check failed:",
-            error
-          );
-        }
-      } finally {
-        requestInFlight = false;
-      }
-    }
-
-    void refreshEvents();
-
-    const interval = window.setInterval(refreshEvents, 30000);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
-  }, [enabled, matchId, status]);
 
   const isLive = LIVE_EVENT_STATUSES.includes(status.toUpperCase());
 
@@ -309,8 +260,8 @@ export default function MatchNotifications({
             </div>
 
             <p className="mt-1 text-xs leading-relaxed text-slate-400">
-              Get instant browser alerts for goals, red cards,
-              half-time and full-time.
+              Get browser alerts for kick-off, goals, red cards,
+              half-time and full-time while this match page is open.
             </p>
 
             <p className="mt-2 text-[10px] font-medium text-slate-500">
@@ -368,7 +319,7 @@ export default function MatchNotifications({
 
           <span className="text-[10px] text-slate-500">
             {isLive
-              ? "Live event checks every 30 seconds"
+              ? "Live match events refresh automatically"
               : "Alerts activate when the match is live"}
           </span>
         </div>
@@ -384,7 +335,7 @@ export default function MatchNotifications({
 
         {enabled && (
           <p className="mt-2 text-[10px] font-medium text-emerald-400">
-            Browser notifications are enabled for this match.
+            Alerts are saved for this match. Keep this page open to receive live updates.
           </p>
         )}
       </div>
