@@ -35,11 +35,7 @@ export default function PopularCompetitions() {
         const response = await fetch("/api/football/active-competitions", { cache: "no-store" });
         const data: CompetitionResponse = await response.json();
         if (!response.ok || !data.success) {
-          const message = typeof data.error === "string" ? data.error : data.error ? JSON.stringify(data.error) : "";
-          if (/request limit|daily limit|quota exceeded/i.test(message)) {
-            throw new Error("The football data provider's daily request limit has been reached. Competitions will refresh when the quota resets.");
-          }
-          throw new Error(message || "Competition data is temporarily unavailable.");
+          throw new Error("Unable to load data right now. Please try again later.");
         }
         if (!cancelled) {
           setItems(data.competitions || []);
@@ -49,7 +45,7 @@ export default function PopularCompetitions() {
       } catch (err) {
         if (!cancelled) {
           setItems([]);
-          setError(err instanceof Error ? err.message : "Competition data is temporarily unavailable.");
+          setError("Unable to load data right now. Please try again later.");
         }
       } finally {
         if (!cancelled) setLoading(false);
