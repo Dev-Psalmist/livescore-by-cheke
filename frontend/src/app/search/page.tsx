@@ -269,6 +269,13 @@ export default function SearchPage() {
             <p className="mt-2 text-sm text-slate-400">
               Search across the global football database.
             </p>
+
+            <Link
+              href="/compare"
+              className="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-300 transition hover:border-emerald-400 hover:bg-emerald-500/20"
+            >
+              ⚖ Compare two players <span aria-hidden="true">→</span>
+            </Link>
           </div>
 
           <form onSubmit={handleSearch}>
