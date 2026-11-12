@@ -506,15 +506,13 @@ export default function SearchPage() {
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {players.map((item) => {
-                      const latest = item.statistics?.[0];
                       return (
                         <article key={item.player.id} className="flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5">
                           {item.player.photo ? <img src={item.player.photo} alt="" className="h-16 w-16 shrink-0 rounded-full bg-slate-800 object-cover" /> : <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-slate-800 font-black text-green-400">{item.player.name.slice(0,2).toUpperCase()}</div>}
                           <div className="min-w-0">
                             <h3 className="truncate font-bold text-white">{item.player.name}</h3>
                             <p className="mt-1 text-xs text-slate-400">{item.player.nationality || "Nationality unavailable"}{item.player.age ? " · " + item.player.age + " years" : ""}</p>
-                            <p className="mt-2 truncate text-xs font-semibold text-green-400">{latest?.team?.name || "Club unavailable"}</p>
-                            <p className="mt-1 text-[10px] text-slate-500">{latest?.games?.position || "Position unavailable"}{latest?.league?.name ? " · " + latest.league.name : ""}</p>
+                            <p className="mt-2 text-[10px] text-slate-500">{item.player.height || "Height unavailable"}{item.player.weight ? " · " + item.player.weight : ""}</p>
                           </div>
                         </article>
                       );
