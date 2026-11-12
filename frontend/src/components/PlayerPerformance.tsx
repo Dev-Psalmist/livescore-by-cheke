@@ -77,6 +77,32 @@ function getRating(rating: string | number | null | undefined) {
     : String(rating);
 }
 
+function getRatingStyle(rating: string | null) {
+  if (rating === null) {
+    return "border-white/10 bg-slate-800 text-slate-400";
+  }
+
+  const numericRating = Number(rating);
+
+  if (!Number.isFinite(numericRating)) {
+    return "border-white/10 bg-slate-800 text-white";
+  }
+
+  if (numericRating >= 8) {
+    return "border-emerald-400/20 bg-emerald-400/15 text-emerald-300";
+  }
+
+  if (numericRating >= 7) {
+    return "border-lime-400/20 bg-lime-400/10 text-lime-300";
+  }
+
+  if (numericRating >= 6) {
+    return "border-amber-400/20 bg-amber-400/10 text-amber-300";
+  }
+
+  return "border-rose-400/20 bg-rose-400/10 text-rose-300";
+}
+
 function getInitials(name: string) {
   return name
     .split(" ")
@@ -93,143 +119,191 @@ function PlayerCard({ player }: { player: MatchPlayer }) {
 
   const metrics = [
     {
-      label: "Minutes",
+      label: "Minutes played",
       value:
         stats?.games?.minutes !== null &&
         stats?.games?.minutes !== undefined
           ? `${stats.games.minutes}'`
           : null,
+      highlight: false,
     },
     {
       label: "Goals",
       value: stats?.goals?.total,
+      highlight: true,
     },
     {
       label: "Assists",
       value: stats?.goals?.assists,
+      highlight: true,
     },
     {
       label: "Shots",
       value: stats?.shots?.total,
+      highlight: false,
     },
     {
       label: "On target",
       value: stats?.shots?.on,
+      highlight: false,
     },
     {
       label: "Passes",
       value: stats?.passes?.total,
+      highlight: false,
     },
     {
       label: "Key passes",
       value: stats?.passes?.key,
+      highlight: false,
     },
     {
       label: "Tackles",
       value: stats?.tackles?.total,
+      highlight: false,
     },
     {
       label: "Yellow cards",
       value: stats?.cards?.yellow,
+      highlight: false,
     },
     {
       label: "Red cards",
       value: stats?.cards?.red,
+      highlight: false,
     },
-  ].filter((metric) => metric.value !== null && metric.value !== undefined);
+  ].filter(
+    (metric) => metric.value !== null && metric.value !== undefined
+  );
 
   return (
-    <article className="rounded-xl border border-white/10 bg-slate-900/70 p-4">
-      <div className="flex items-center gap-3">
+    <article className="group overflow-hidden rounded-2xl border border-white/[0.08] bg-slate-900/70 transition duration-200 hover:border-emerald-400/30 hover:bg-slate-900">
+      <div className="flex items-center gap-3 p-4">
         {player.player.photo ? (
           <img
             src={player.player.photo}
             alt={player.player.name}
-            className="h-12 w-12 rounded-full border border-white/10 object-cover"
+            className="h-14 w-14 shrink-0 rounded-full border border-white/10 bg-slate-800 object-cover"
           />
         ) : (
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-700 text-sm font-bold text-white">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-white/10 bg-slate-800 text-sm font-bold text-emerald-300">
             {getInitials(player.player.name)}
           </div>
         )}
 
         <div className="min-w-0 flex-1">
-          <h4 className="truncate font-semibold text-white">
+          <h4 className="truncate text-sm font-bold text-white sm:text-base">
             {player.player.name}
           </h4>
 
-          <p className="text-xs text-slate-400">
+          <p className="mt-1 text-xs text-slate-400">
             {stats?.games?.position || "Position unavailable"}
             {stats?.games?.number != null
-              ? ` · Shirt ${stats.games.number}`
+              ? ` · #${stats.games.number}`
               : ""}
-            {stats?.games?.captain ? " · Captain" : ""}
-            {stats?.games?.substitute ? " · Substitute" : ""}
           </p>
+
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {stats?.games?.captain && (
+              <span className="rounded-md border border-amber-400/20 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300">
+                Captain
+              </span>
+            )}
+
+            {stats?.games?.substitute && (
+              <span className="rounded-md border border-sky-400/20 bg-sky-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-300">
+                Substitute
+              </span>
+            )}
+          </div>
         </div>
 
         {rating !== null && (
-          <div className="rounded-lg bg-emerald-500/15 px-3 py-2 text-center">
-            <p className="text-[10px] uppercase tracking-wide text-emerald-300">
+          <div
+            className={`shrink-0 rounded-xl border px-3 py-2 text-center ${getRatingStyle(rating)}`}
+          >
+            <p className="text-[9px] font-bold uppercase tracking-wider opacity-75">
               Rating
             </p>
-            <p className="text-lg font-bold text-emerald-400">{rating}</p>
+            <p className="mt-0.5 text-xl font-black">{rating}</p>
           </div>
         )}
       </div>
 
-      {metrics.length > 0 ? (
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {metrics.map((metric) => (
-            <div
-              key={metric.label}
-              className="rounded-lg bg-slate-800/80 px-3 py-2"
-            >
-              <p className="text-xs text-slate-400">{metric.label}</p>
-              <p className="mt-1 font-semibold text-white">
-                {displayValue(metric.value)}
-              </p>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="mt-4 rounded-lg bg-slate-800/70 p-3 text-sm text-slate-400">
-          Individual statistics are not available for this player.
-        </p>
-      )}
+      <div className="border-t border-white/[0.06] px-4 py-3">
+        {metrics.length > 0 ? (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {metrics.map((metric) => (
+              <div
+                key={metric.label}
+                className={`rounded-xl border px-3 py-2.5 ${
+                  metric.highlight
+                    ? "border-emerald-400/10 bg-emerald-400/[0.06]"
+                    : "border-white/[0.04] bg-slate-800/60"
+                }`}
+              >
+                <p className="text-[10px] font-medium text-slate-500">
+                  {metric.label}
+                </p>
 
-      {stats?.passes?.accuracy !== null &&
-        stats?.passes?.accuracy !== undefined && (
-          <p className="mt-3 text-xs text-slate-400">
-            Passing accuracy:{" "}
-            <span className="font-semibold text-white">
-              {stats.passes.accuracy}%
-            </span>
+                <p
+                  className={`mt-1 text-lg font-bold ${
+                    metric.highlight ? "text-emerald-300" : "text-white"
+                  }`}
+                >
+                  {displayValue(metric.value)}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-xl border border-white/[0.05] bg-slate-800/50 p-3 text-xs leading-5 text-slate-400">
+            Individual statistics are not available for this player.
           </p>
         )}
+
+        {stats?.passes?.accuracy !== null &&
+          stats?.passes?.accuracy !== undefined && (
+            <div className="mt-3 flex items-center justify-between rounded-lg bg-slate-800/50 px-3 py-2">
+              <span className="text-xs text-slate-400">
+                Passing accuracy
+              </span>
+              <span className="text-sm font-bold text-emerald-300">
+                {stats.passes.accuracy}%
+              </span>
+            </div>
+          )}
+      </div>
     </article>
   );
 }
 
-function TeamPlayers({
-  team,
-}: {
-  team: PlayerTeam;
-}) {
+function TeamPlayers({ team }: { team: PlayerTeam }) {
   return (
     <section className="space-y-4">
-      <div className="flex items-center gap-3 border-b border-white/10 pb-3">
-        {team.team.logo && (
+      <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-slate-900/60 p-4">
+        {team.team.logo ? (
           <img
             src={team.team.logo}
             alt=""
-            className="h-8 w-8 object-contain"
+            className="h-10 w-10 shrink-0 object-contain"
           />
+        ) : (
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-xs font-bold text-slate-400">
+            FC
+          </div>
         )}
 
-        <h3 className="font-bold text-white">{team.team.name}</h3>
+        <div className="min-w-0">
+          <h3 className="truncate font-bold text-white">
+            {team.team.name}
+          </h3>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Individual match performance
+          </p>
+        </div>
 
-        <span className="ml-auto text-xs text-slate-400">
+        <span className="ml-auto shrink-0 rounded-full border border-white/10 bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300">
           {team.players.length} players
         </span>
       </div>
@@ -241,9 +315,9 @@ function TeamPlayers({
           ))}
         </div>
       ) : (
-        <p className="text-sm text-slate-400">
+        <div className="rounded-xl border border-white/[0.06] bg-slate-900/50 p-5 text-center text-sm text-slate-400">
           No player statistics are available for this team.
-        </p>
+        </div>
       )}
     </section>
   );
@@ -256,11 +330,16 @@ export default function PlayerPerformance({
 }: PlayerPerformanceProps) {
   if (!players || players.length === 0) {
     return (
-      <div className="rounded-xl border border-white/10 bg-slate-900/60 p-6 text-center">
-        <h3 className="font-semibold text-white">
+      <div className="rounded-2xl border border-white/[0.08] bg-slate-900/60 p-8 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-400/10 bg-emerald-400/[0.06] text-2xl">
+          ⚽
+        </div>
+
+        <h3 className="mt-4 font-bold text-white">
           Player statistics unavailable
         </h3>
-        <p className="mt-2 text-sm text-slate-400">
+
+        <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-400">
           API-Football has not provided individual player statistics for this
           match. These statistics may become available during or after the
           match.
@@ -280,24 +359,50 @@ export default function PlayerPerformance({
   const displayedTeams = [...homePlayers, ...awayPlayers];
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-xl font-bold text-white">
-          Player Performance
-        </h2>
-        <p className="mt-1 text-sm text-slate-400">
-          Individual match statistics supplied by API-Football.
-        </p>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2 border-b border-white/[0.08] pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
+              Match analysis
+            </span>
+          </div>
+
+          <h2 className="mt-2 text-xl font-black tracking-tight text-white sm:text-2xl">
+            Player Performance
+          </h2>
+
+          <p className="mt-1 text-sm text-slate-400">
+            Individual match statistics supplied by API-Football.
+          </p>
+        </div>
+
+        <span className="w-fit rounded-full border border-white/10 bg-slate-900 px-3 py-1.5 text-xs text-slate-400">
+          {displayedTeams.reduce(
+            (total, team) => total + team.players.length,
+            0
+          )}{" "}
+          players tracked
+        </span>
       </div>
 
       {displayedTeams.length > 0 ? (
-        displayedTeams.map((team) => (
-          <TeamPlayers key={team.team.id} team={team} />
-        ))
+        <div className="space-y-8">
+          {displayedTeams.map((team) => (
+            <TeamPlayers key={team.team.id} team={team} />
+          ))}
+        </div>
       ) : (
-        <div className="rounded-xl border border-white/10 bg-slate-900/60 p-5 text-sm text-slate-400">
-          Player data was returned, but the teams could not be matched to this
-          fixture.
+        <div className="rounded-2xl border border-white/[0.08] bg-slate-900/60 p-6 text-center">
+          <h3 className="font-semibold text-white">
+            Player data could not be matched
+          </h3>
+
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            Player data was returned, but the teams could not be matched to
+            this fixture.
+          </p>
         </div>
       )}
     </div>

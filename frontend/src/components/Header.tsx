@@ -1,93 +1,130 @@
-import Image from "next/image";
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const navigation = [
   { label: "Home", href: "/" },
-  { label: "Search", href: "/search" },
-  { label: "Live Scores", href: "/live" },
+  { label: "Live", href: "/live" },
   { label: "Fixtures", href: "/fixtures" },
   { label: "Leagues", href: "/leagues" },
   { label: "Teams", href: "/teams" },
   { label: "News", href: "/news" },
   { label: "Highlights", href: "/highlights" },
-  { label: "Favourites", href: "/favourites" },
 ];
 
 export default function Header() {
-  return (
-    <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/95 shadow-lg backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-3 py-3 sm:px-5 sm:py-4 lg:px-6">
-        <Link
-          href="/"
-          aria-label="LiveScore by Cheke home"
-          className="flex min-w-0 shrink-0 items-center"
-        >
-          <Image
-            src="/brand/livescore-logo.svg"
-            alt="LiveScore by Cheke"
-            width={230}
-            height={67}
-            priority
-            className="hidden h-auto w-[190px] sm:w-[210px] lg:block"
-          />
+  const pathname = usePathname();
 
-          <span className="flex items-center gap-2 lg:hidden">
-            <Image
-              src="/brand/livescore-icon.svg"
-              alt=""
-              width={44}
-              height={44}
-              priority
-              className="h-10 w-10 sm:h-11 sm:w-11"
-            />
-            <span className="flex flex-col leading-none">
-              <span className="text-base font-black tracking-tight text-white sm:text-lg">
-                LIVESCORE
-              </span>
-              <span className="mt-1 text-[9px] font-bold tracking-[0.25em] text-emerald-400 sm:text-[10px]">
-                BY CHEKE
-              </span>
-            </span>
+  const isActive = (href: string) =>
+    pathname === href ||
+    (href !== "/" && pathname.startsWith(`${href}/`));
+
+  return (
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#101820]/95 backdrop-blur-xl">
+      <div className="border-b border-white/5 bg-[#0b1118]">
+        <div className="mx-auto flex max-w-[1600px] items-center justify-between px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 sm:px-6">
+          <span>Global Sports Coverage</span>
+
+          <span className="flex items-center gap-2 text-emerald-400">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+            Every sport. Every moment.
           </span>
+        </div>
+      </div>
+
+      <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-5 px-4 py-4 sm:px-6">
+        <Link href="/" className="group shrink-0" aria-label="LiveScore by Cheke home">
+          <div className="text-xl font-black tracking-tighter text-white sm:text-2xl">
+            LIVE<span className="text-emerald-400">SCORE</span>
+          </div>
+
+          <div className="mt-1 text-[9px] font-bold tracking-[0.35em] text-slate-400">
+            BY CHEKE
+          </div>
         </Link>
 
         <nav
           aria-label="Main navigation"
-          className="hidden items-center gap-4 text-sm font-semibold text-slate-200 xl:flex 2xl:gap-5"
+          className="hidden items-center gap-1 lg:flex"
         >
-          {navigation.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="whitespace-nowrap transition-colors hover:text-emerald-400"
-            >
-              {item.label}
-            </Link>
-          ))}
+          {navigation.map((item) => {
+            const active = isActive(item.href);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={`rounded-lg px-3 py-3 text-sm font-semibold transition ${
+                  active
+                    ? "bg-emerald-500/10 text-emerald-400"
+                    : "text-slate-300 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
-        <button
-          type="button"
-          className="shrink-0 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-bold text-slate-950 shadow-sm transition-colors hover:bg-emerald-400 sm:px-5 sm:text-sm"
-        >
-          Sign In
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            href="/search"
+            className={`hidden rounded-lg border px-4 py-2 text-sm font-semibold transition sm:block ${
+              isActive("/search")
+                ? "border-emerald-500 text-emerald-400"
+                : "border-white/10 text-slate-300 hover:border-emerald-500 hover:text-emerald-400"
+            }`}
+          >
+            Search
+          </Link>
+
+          <Link
+            href="/favourites"
+            aria-current={isActive("/favourites") ? "page" : undefined}
+            className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-black text-[#101820] transition hover:bg-emerald-400 sm:px-4 sm:text-sm"
+          >
+            ♥ Favourites
+          </Link>
+        </div>
       </div>
 
       <nav
         aria-label="Mobile navigation"
-        className="border-t border-slate-800 xl:hidden"
+        className="border-t border-white/5 lg:hidden"
       >
-        <div className="mobile-nav-scroll mx-auto flex max-w-7xl items-center gap-5 overflow-x-auto px-4 py-3 text-xs font-semibold text-slate-200 sm:justify-center sm:gap-7 sm:px-5 sm:text-sm">
-          {navigation.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="shrink-0 whitespace-nowrap py-1 transition-colors hover:text-emerald-400"
-            >
-              {item.label}
-            </Link>
-          ))}
+        <div className="mobile-nav-scroll flex items-center gap-2 overflow-x-auto px-4 py-3">
+          {navigation.map((item) => {
+            const active = isActive(item.href);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition ${
+                  active
+                    ? "bg-emerald-500 text-[#101820]"
+                    : "bg-white/5 text-slate-300 hover:bg-white/10"
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+
+          <Link
+            href="/search"
+            aria-current={isActive("/search") ? "page" : undefined}
+            className={`shrink-0 rounded-full px-4 py-2 text-xs font-bold transition ${
+              isActive("/search")
+                ? "bg-emerald-500 text-[#101820]"
+                : "bg-white/5 text-slate-300 hover:bg-white/10"
+            }`}
+          >
+            Search
+          </Link>
         </div>
       </nav>
     </header>

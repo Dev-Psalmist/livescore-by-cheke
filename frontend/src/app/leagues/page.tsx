@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import Header from "@/components/Header";
 import FixtureCard from "@/components/FixtureCard";
@@ -23,13 +23,11 @@ interface League {
     type: string;
     logo: string;
   };
-
   country: {
     name: string;
     code: string | null;
     flag: string | null;
   };
-
   seasons: LeagueSeason[];
 }
 
@@ -38,18 +36,15 @@ interface ApiFixture {
     id: number;
     date: string;
   };
-
   league: {
     name: string;
   };
-
   teams: {
     home: {
       name: string;
       code: string | null;
       logo: string;
     };
-
     away: {
       name: string;
       code: string | null;
@@ -140,7 +135,6 @@ export default function LeaguesPage() {
       }
 
       setLeagues(data.leagues || []);
-
     } catch (err) {
       setError(
         err instanceof Error
@@ -153,7 +147,7 @@ export default function LeaguesPage() {
   }, []);
 
   useEffect(() => {
-    fetchLeagues();
+    void fetchLeagues();
   }, [fetchLeagues]);
 
   async function selectLeague(league: League) {
@@ -182,7 +176,6 @@ export default function LeaguesPage() {
     const leagueId = league.league.id;
     const season = currentSeason.year;
 
-    // Load fixtures and standings independently.
     setFixturesLoading(true);
     setStandingsLoading(true);
 
@@ -201,39 +194,41 @@ export default function LeaguesPage() {
           );
         }
 
-        const formattedMatches: Match[] = data.matches.map((fixture) => ({
-          id: fixture.fixture.id,
-          league: fixture.league.name,
-          status: "UPCOMING",
+        const formattedMatches: Match[] = (data.matches ?? []).map(
+          (fixture) => ({
+            id: fixture.fixture.id,
+            league: fixture.league.name,
+            status: "UPCOMING",
 
-          kickoff: new Date(fixture.fixture.date).toLocaleString(
-            "en-NG",
-            {
-              dateStyle: "medium",
-              timeStyle: "short",
-              timeZone: "Africa/Lagos",
-            }
-          ),
+            kickoff: new Date(fixture.fixture.date).toLocaleString(
+              "en-NG",
+              {
+                dateStyle: "medium",
+                timeStyle: "short",
+                timeZone: "Africa/Lagos",
+              }
+            ),
 
-          homeTeam: {
-            name: fixture.teams.home.name,
-            shortName:
-              fixture.teams.home.code ||
-              fixture.teams.home.name.substring(0, 3).toUpperCase(),
-            logo: fixture.teams.home.logo,
-          },
+            homeTeam: {
+              name: fixture.teams.home.name,
+              shortName:
+                fixture.teams.home.code ||
+                fixture.teams.home.name.substring(0, 3).toUpperCase(),
+              logo: fixture.teams.home.logo,
+            },
 
-          awayTeam: {
-            name: fixture.teams.away.name,
-            shortName:
-              fixture.teams.away.code ||
-              fixture.teams.away.name.substring(0, 3).toUpperCase(),
-            logo: fixture.teams.away.logo,
-          },
+            awayTeam: {
+              name: fixture.teams.away.name,
+              shortName:
+                fixture.teams.away.code ||
+                fixture.teams.away.name.substring(0, 3).toUpperCase(),
+              logo: fixture.teams.away.logo,
+            },
 
-          homeScore: null,
-          awayScore: null,
-        }));
+            homeScore: null,
+            awayScore: null,
+          })
+        );
 
         setFixtures(formattedMatches);
       })
@@ -279,247 +274,482 @@ export default function LeaguesPage() {
     await Promise.all([fixturesRequest, standingsRequest]);
   }
 
-  const filteredLeagues = leagues.filter((league) => {
-    const searchText = search.toLowerCase();
+  const filteredLeagues = useMemo(() => {
+    const searchText = search.toLowerCase().trim();
 
-    return (
-      league.league.name.toLowerCase().includes(searchText) ||
-      league.country.name.toLowerCase().includes(searchText)
-    );
-  });
+    return leagues.filter((league) => {
+      return (
+        league.league.name.toLowerCase().includes(searchText) ||
+        league.country.name.toLowerCase().includes(searchText)
+      );
+    });
+  }, [leagues, search]);
+
+  const currentSeason = selectedLeague?.seasons.find(
+    (season) => season.current
+  );
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-screen bg-[#0b1118] text-white">
       <Header />
 
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+      <div className="mx-auto max-w-[1500px] px-3 py-6 sm:px-5 sm:py-9 lg:px-6">
 
-        <div className="mb-10">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-green-400">
-            Explore World Football
-          </p>
+        {/* HERO SECTION */}
+        <section className="relative overflow-hidden rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-[#12372e] via-[#172b2b] to-[#141e29] p-6 sm:p-9">
 
-          <h1 className="text-2xl font-bold sm:text-3xl sm:text-4xl md:text-5xl">
-            Football Leagues
-          </h1>
+          <div className="pointer-events-none absolute -right-12 -top-20 h-64 w-64 rounded-full border-[35px] border-emerald-300/[0.05]" />
 
-          <p className="mt-4 max-w-2xl text-slate-400">
-            Discover football competitions around the world.
-            Select a league to explore its standings and upcoming matches.
-          </p>
-        </div>
+          <div className="pointer-events-none absolute -bottom-24 right-1/4 h-64 w-64 rounded-full bg-emerald-400/[0.05] blur-3xl" />
 
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold">
-              Available Competitions
-            </h2>
+          <div className="relative z-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-center">
 
-            <p className="mt-1 text-sm text-slate-400">
-              {filteredLeagues.length} competitions found
-            </p>
-          </div>
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.17em] text-emerald-300">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                Global Football Coverage
+              </div>
 
-          <button
-            onClick={fetchLeagues}
-            disabled={loading}
-            className="w-full rounded-lg bg-green-500 px-5 py-3 font-semibold sm:w-auto text-slate-950 transition hover:bg-green-400 disabled:opacity-50"
-          >
-            {loading ? "Loading..." : "Refresh Leagues"}
-          </button>
-        </div>
+              <h1 className="text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
+                Explore Competitions
+              </h1>
 
-        <div className="mb-8">
-          <input
-            type="text"
-            placeholder="Search by league or country..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            className="w-full rounded-xl border border-slate-700 bg-slate-900 px-5 py-4 text-white outline-none transition placeholder:text-slate-500 focus:border-green-500"
-          />
-        </div>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300">
+                From the biggest European leagues to competitions across
+                the world, discover teams, league tables and upcoming
+                fixtures in one place.
+              </p>
 
-        {loading && (
-          <div className="py-16 text-center text-slate-400">
-            Loading football competitions...
-          </div>
-        )}
-
-        {!loading && error && (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-center">
-            <p className="mb-4 text-red-400">{error}</p>
-
-            <button
-              onClick={fetchLeagues}
-              className="rounded-lg bg-red-500 px-5 py-2 font-semibold"
-            >
-              Try Again
-            </button>
-          </div>
-        )}
-
-        {!loading && !error && filteredLeagues.length === 0 && (
-          <div className="rounded-xl border border-slate-800 p-10 text-center">
-            <p className="text-slate-400">
-              No competitions match your search.
-            </p>
-          </div>
-        )}
-
-        {!loading && !error && filteredLeagues.length > 0 && (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredLeagues.map((league) => {
-              const isSelected =
-                selectedLeague?.league.id === league.league.id;
-
-              return (
-                <button
-                  key={league.league.id}
-                  onClick={() => selectLeague(league)}
-                  className={`rounded-xl border p-4 text-left sm:p-5 transition hover:-translate-y-1 hover:border-green-500 ${
-                    isSelected
-                      ? "border-green-500 bg-green-500/10"
-                      : "border-slate-800 bg-slate-900"
-                  }`}
+              <div className="mt-7 flex flex-wrap gap-3">
+                <a
+                  href="#competitions"
+                  className="rounded-lg bg-emerald-400 px-5 py-3 text-xs font-black text-[#07130e] transition hover:bg-emerald-300"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-14 w-14 shrink-0 sm:h-16 sm:w-16 items-center justify-center rounded-lg bg-slate-800 p-2">
-                      <img
-                        src={league.league.logo}
-                        alt={`${league.league.name} logo`}
-                        className="max-h-full max-w-full object-contain"
-                      />
-                    </div>
+                  Explore Leagues ↓
+                </a>
 
-                    <div className="min-w-0">
-                      <h3 className="font-bold">
-                        {league.league.name}
-                      </h3>
+                <a
+                  href="#selected-league"
+                  className="rounded-lg border border-white/15 bg-white/[0.04] px-5 py-3 text-xs font-bold text-white transition hover:border-emerald-400/50"
+                >
+                  View League Details
+                </a>
+              </div>
+            </div>
 
-                      <p className="mt-1 text-sm text-slate-400">
-                        {league.country.name}
-                      </p>
+            <div className="rounded-xl border border-white/10 bg-black/20 p-5">
+              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-300">
+                Competitions Available
+              </p>
 
-                      <p className="mt-1 text-xs uppercase tracking-wider text-green-400">
-                        {league.league.type}
-                      </p>
-                    </div>
-                  </div>
+              <p className="mt-3 text-5xl font-black">
+                {loading ? "..." : error ? "—" : leagues.length}
+              </p>
 
-                  <div className="mt-5 flex items-center justify-between border-t border-slate-800 pt-4">
-                    <span className="text-sm text-slate-400">
-                      {league.seasons.find((season) => season.current)?.year ||
-                        "Season information"}
-                    </span>
+              <p className="mt-2 text-xs text-slate-400">
+                Football competitions
+              </p>
 
-                    <span className="text-sm font-semibold text-green-400">
-                      {isSelected ? "Selected" : "View League →"}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {selectedLeague && (
-          <section className="mt-16 border-t border-slate-800 pt-10">
-
-            <div className="mb-8 flex flex-wrap items-center gap-4">
-              <img
-                src={selectedLeague.league.logo}
-                alt={`${selectedLeague.league.name} logo`}
-                className="h-16 w-16 object-contain"
-              />
-
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-widest text-green-400">
-                  Selected Competition
+              <div className="mt-5 border-t border-white/10 pt-4">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                  Search Results
                 </p>
 
-                <h2 className="text-2xl font-bold sm:text-3xl">
-                  {selectedLeague.league.name}
-                </h2>
-
-                <p className="text-slate-400">
-                  {selectedLeague.country.name}
+                <p className="mt-1 text-xl font-black text-emerald-400">
+                  {filteredLeagues.length}
                 </p>
               </div>
             </div>
 
-            <div className="mb-8 flex flex-wrap gap-3">
-              <button
-                onClick={() => setActiveView("standings")}
-                className={`w-full rounded-lg px-4 py-3 text-sm font-semibold sm:w-auto sm:px-6 transition ${
-                  activeView === "standings"
-                    ? "bg-green-500 text-slate-950"
-                    : "border border-slate-700 text-slate-300 hover:border-green-500"
-                }`}
-              >
-                League Standings
-              </button>
+          </div>
+        </section>
 
-              <button
-                onClick={() => setActiveView("fixtures")}
-                className={`w-full rounded-lg px-4 py-3 text-sm font-semibold sm:w-auto sm:px-6 transition ${
-                  activeView === "fixtures"
-                    ? "bg-green-500 text-slate-950"
-                    : "border border-slate-700 text-slate-300 hover:border-green-500"
-                }`}
-              >
-                Upcoming Fixtures
-              </button>
+        {/* COMPETITION DISCOVERY */}
+        <section id="competitions" className="mt-8">
+
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-400">
+                  Discover Football
+                </p>
+              </div>
+
+              <h2 className="mt-2 text-2xl font-black sm:text-3xl">
+                Available Competitions
+              </h2>
+
+              <p className="mt-2 text-xs text-slate-500">
+                Find a competition and explore its football data.
+              </p>
             </div>
 
-            {activeView === "standings" && (
-              <section>
-                <h3 className="mb-6 text-2xl font-bold">
-                  League Table
+            <button
+              type="button"
+              onClick={() => void fetchLeagues()}
+              disabled={loading}
+              className="w-full rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-xs font-black text-emerald-400 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            >
+              {loading ? "Loading..." : "↻ Refresh Leagues"}
+            </button>
+          </div>
+
+          {/* SEARCH */}
+          <div className="mt-6 rounded-xl border border-white/[0.07] bg-[#141e29] p-3 sm:p-4">
+            <label
+              htmlFor="league-search"
+              className="mb-3 block text-[10px] font-black uppercase tracking-widest text-slate-400"
+            >
+              Search competitions
+            </label>
+
+            <div className="flex items-center gap-3 rounded-lg border border-white/10 bg-[#0e1721] px-4">
+              <span className="text-lg text-emerald-400">⌕</span>
+
+              <input
+                id="league-search"
+                type="search"
+                placeholder="Search by league or country..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent py-4 text-sm text-white outline-none placeholder:text-slate-500"
+              />
+
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="text-xs font-bold text-slate-400 transition hover:text-emerald-400"
+                >
+                  CLEAR
+                </button>
+              )}
+            </div>
+
+            <p className="mt-3 px-1 text-[10px] text-slate-500">
+              Showing {filteredLeagues.length} of {leagues.length} competitions
+            </p>
+          </div>
+
+          {/* LOADING */}
+          {loading && (
+            <div className="mt-6 rounded-xl border border-white/[0.07] bg-[#141e29] p-12 text-center">
+              <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-emerald-400/20 border-t-emerald-400" />
+
+              <p className="text-sm text-slate-400">
+                Loading football competitions...
+              </p>
+            </div>
+          )}
+
+          {/* ERROR */}
+          {!loading && error && (
+            <div className="mt-6 rounded-xl border border-red-500/20 bg-red-500/5 p-6">
+              <h3 className="font-bold text-red-400">
+                Unable to load competitions
+              </h3>
+
+              <p className="mt-2 break-words text-sm text-slate-300">
+                {error}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => void fetchLeagues()}
+                className="mt-4 rounded-lg bg-red-500 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-red-400"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
+
+          {/* EMPTY SEARCH */}
+          {!loading && !error && filteredLeagues.length === 0 && (
+            <div className="mt-6 rounded-xl border border-white/[0.07] bg-[#141e29] p-10 text-center">
+              <p className="text-4xl">🔎</p>
+
+              <h3 className="mt-4 text-lg font-black">
+                No Competitions Found
+              </h3>
+
+              <p className="mt-2 text-sm text-slate-500">
+                Try another league name or country.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="mt-5 text-xs font-bold text-emerald-400 hover:text-emerald-300"
+              >
+                Clear Search
+              </button>
+            </div>
+          )}
+
+          {/* LEAGUE CARDS */}
+          {!loading && !error && filteredLeagues.length > 0 && (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
+              {filteredLeagues.map((league) => {
+                const isSelected =
+                  selectedLeague?.league.id === league.league.id;
+
+                const season =
+                  league.seasons.find((item) => item.current) ||
+                  [...league.seasons].sort(
+                    (a, b) => b.year - a.year
+                  )[0];
+
+                return (
+                  <button
+                    key={league.league.id}
+                    type="button"
+                    onClick={() => void selectLeague(league)}
+                    className={`group rounded-xl border p-4 text-left transition duration-200 hover:-translate-y-1 ${
+                      isSelected
+                        ? "border-emerald-400/60 bg-emerald-500/[0.08] shadow-lg shadow-emerald-950/20"
+                        : "border-white/[0.07] bg-[#141e29] hover:border-emerald-500/40 hover:bg-[#192634]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="rounded-md border border-white/[0.07] bg-[#0e1721] px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-slate-400">
+                        {league.league.type}
+                      </span>
+
+                      {isSelected && (
+                        <span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[9px] font-black uppercase text-emerald-400">
+                          Selected
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-5 flex h-20 items-center justify-center rounded-lg bg-[#0e1721] p-3">
+                      {league.league.logo ? (
+                        <img
+                          src={league.league.logo}
+                          alt={`${league.league.name} logo`}
+                          className="h-full max-w-full object-contain"
+                        />
+                      ) : (
+                        <span className="text-3xl">⚽</span>
+                      )}
+                    </div>
+
+                    <h3 className="mt-5 min-h-10 text-sm font-black leading-5 text-white transition group-hover:text-emerald-300">
+                      {league.league.name}
+                    </h3>
+
+                    <div className="mt-3 flex items-center gap-2">
+                      {league.country.flag ? (
+                        <img
+                          src={league.country.flag}
+                          alt=""
+                          className="h-4 w-5 rounded-sm object-cover"
+                        />
+                      ) : (
+                        <span className="h-4 w-5 rounded-sm bg-slate-700" />
+                      )}
+
+                      <span className="text-xs text-slate-400">
+                        {league.country.name}
+                      </span>
+                    </div>
+
+                    <div className="mt-5 flex items-center justify-between border-t border-white/[0.07] pt-4">
+                      <span className="text-[10px] font-bold text-slate-500">
+                        SEASON {season?.year ?? "N/A"}
+                      </span>
+
+                      <span className="text-xs font-black text-emerald-400">
+                        {isSelected ? "Viewing" : "Explore →"}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+
+            </div>
+          )}
+
+        </section>
+
+        {/* SELECTED LEAGUE */}
+        {selectedLeague && (
+          <section
+            id="selected-league"
+            className="mt-12 scroll-mt-24 overflow-hidden rounded-2xl border border-emerald-500/20 bg-[#141e29]"
+          >
+
+            {/* SELECTED LEAGUE HEADER */}
+            <div className="relative overflow-hidden border-b border-white/[0.07] bg-gradient-to-r from-[#12372e] to-[#172b2b] p-5 sm:p-7">
+
+              <div className="pointer-events-none absolute -right-10 -top-20 h-52 w-52 rounded-full border-[25px] border-emerald-300/[0.05]" />
+
+              <div className="relative z-10 flex flex-wrap items-center gap-5">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/20 p-3">
+                  {selectedLeague.league.logo && (
+                    <img
+                      src={selectedLeague.league.logo}
+                      alt={`${selectedLeague.league.name} logo`}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-300">
+                    Selected Competition
+                  </p>
+
+                  <h2 className="mt-2 text-2xl font-black sm:text-3xl">
+                    {selectedLeague.league.name}
+                  </h2>
+
+                  <p className="mt-2 text-xs text-slate-300">
+                    {selectedLeague.country.name}
+                    {currentSeason && ` · ${currentSeason.year} Season`}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedLeague(null)}
+                  className="rounded-lg border border-white/15 bg-white/[0.05] px-4 py-2.5 text-xs font-bold text-slate-300 transition hover:border-red-400/40 hover:text-red-400"
+                >
+                  Close ×
+                </button>
+              </div>
+            </div>
+
+            {/* LEAGUE NAVIGATION */}
+            <div className="flex flex-col gap-3 border-b border-white/[0.07] p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <div>
+                <h3 className="text-sm font-black">
+                  Competition Centre
                 </h3>
 
+                <p className="mt-1 text-xs text-slate-500">
+                  Explore league standings and upcoming matches.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveView("standings")}
+                  className={`rounded-lg px-4 py-3 text-xs font-black transition ${
+                    activeView === "standings"
+                      ? "bg-emerald-400 text-[#07130e]"
+                      : "border border-white/10 bg-[#0e1721] text-slate-300 hover:border-emerald-400/40"
+                  }`}
+                >
+                  League Table
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveView("fixtures")}
+                  className={`rounded-lg px-4 py-3 text-xs font-black transition ${
+                    activeView === "fixtures"
+                      ? "bg-emerald-400 text-[#07130e]"
+                      : "border border-white/10 bg-[#0e1721] text-slate-300 hover:border-emerald-400/40"
+                  }`}
+                >
+                  Fixtures
+                </button>
+              </div>
+            </div>
+
+            {/* STANDINGS */}
+            {activeView === "standings" && (
+              <div className="p-4 sm:p-6">
+
+                <div className="mb-6">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
+                    Competition Rankings
+                  </p>
+
+                  <h3 className="mt-2 text-xl font-black">
+                    League Standings
+                  </h3>
+                </div>
+
                 {standingsLoading && (
-                  <div className="py-12 text-center text-slate-400">
-                    Loading league standings...
+                  <div className="rounded-xl bg-[#0e1721] p-10 text-center">
+                    <p className="text-sm text-slate-400">
+                      Loading league standings...
+                    </p>
                   </div>
                 )}
 
                 {!standingsLoading && standingsError && (
-                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-red-400">
-                    {standingsError}
+                  <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5">
+                    <p className="text-sm text-red-400">
+                      {standingsError}
+                    </p>
                   </div>
                 )}
 
-                {!standingsLoading && !standingsError && (
-                  <StandingsTable groups={standings} />
-                )}
-              </section>
+                {!standingsLoading &&
+                  !standingsError &&
+                  standings.length === 0 && (
+                    <div className="rounded-xl bg-[#0e1721] p-8 text-center">
+                      <p className="text-sm text-slate-400">
+                        No standings information is currently available.
+                      </p>
+                    </div>
+                  )}
+
+                {!standingsLoading &&
+                  !standingsError &&
+                  standings.length > 0 && (
+                    <StandingsTable groups={standings} />
+                  )}
+
+              </div>
             )}
 
+            {/* FIXTURES */}
             {activeView === "fixtures" && (
-              <section>
-                <h3 className="mb-6 text-2xl font-bold">
-                  Upcoming Matches
-                </h3>
+              <div className="p-4 sm:p-6">
+
+                <div className="mb-6">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
+                    Match Schedule
+                  </p>
+
+                  <h3 className="mt-2 text-xl font-black">
+                    Upcoming Fixtures
+                  </h3>
+                </div>
 
                 {fixturesLoading && (
-                  <div className="py-12 text-center text-slate-400">
-                    Loading upcoming matches...
+                  <div className="rounded-xl bg-[#0e1721] p-10 text-center">
+                    <p className="text-sm text-slate-400">
+                      Loading upcoming matches...
+                    </p>
                   </div>
                 )}
 
                 {!fixturesLoading && fixturesError && (
-                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-red-400">
-                    {fixturesError}
+                  <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5">
+                    <p className="text-sm text-red-400">
+                      {fixturesError}
+                    </p>
                   </div>
                 )}
 
                 {!fixturesLoading &&
                   !fixturesError &&
                   fixtures.length === 0 && (
-                    <div className="rounded-xl border border-slate-800 p-8 text-center">
-                      <p className="text-slate-400">
+                    <div className="rounded-xl bg-[#0e1721] p-8 text-center">
+                      <p className="text-3xl">⚽</p>
+
+                      <p className="mt-3 text-sm text-slate-400">
                         No upcoming matches are currently available for
-                        this competition in the next 14 days.
+                        this competition.
                       </p>
                     </div>
                   )}
@@ -527,7 +757,7 @@ export default function LeaguesPage() {
                 {!fixturesLoading &&
                   !fixturesError &&
                   fixtures.length > 0 && (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {fixtures.map((match) => (
                         <FixtureCard
                           key={match.id}
@@ -536,13 +766,28 @@ export default function LeaguesPage() {
                       ))}
                     </div>
                   )}
-              </section>
+
+              </div>
             )}
 
           </section>
         )}
 
-      </section>
+        {/* FOOTER NAVIGATION */}
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-slate-500">
+            LiveScore by Cheke · Every sport. Every moment.
+          </p>
+
+          <a
+            href="#competitions"
+            className="text-xs font-bold text-emerald-400 transition hover:text-emerald-300"
+          >
+            ↑ Back to Competitions
+          </a>
+        </div>
+
+      </div>
 
       <Footer />
     </main>

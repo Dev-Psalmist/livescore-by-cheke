@@ -40,8 +40,7 @@ function getEventIcon(event: MatchEvent): string {
   const detail = event.detail.toLowerCase();
 
   if (type === "goal") {
-    if (detail.includes("own goal")) return "🥅";
-    return "⚽";
+    return detail.includes("own goal") ? "🥅" : "⚽";
   }
 
   if (type === "card") {
@@ -50,7 +49,7 @@ function getEventIcon(event: MatchEvent): string {
     return "🃏";
   }
 
-  if (type === "subst") return "🔄";
+  if (type === "subst" || type === "substitution") return "🔄";
   if (type === "var") return "📺";
 
   return "📌";
@@ -61,22 +60,26 @@ function getEventStyle(event: MatchEvent): string {
   const detail = event.detail.toLowerCase();
 
   if (type === "goal") {
-    return "border-green-500/30 bg-green-500/10";
+    return "border-emerald-400/20 bg-emerald-400/[0.07]";
   }
 
   if (type === "card" && detail.includes("red")) {
-    return "border-red-500/30 bg-red-500/10";
+    return "border-rose-400/20 bg-rose-400/[0.07]";
   }
 
   if (type === "card") {
-    return "border-yellow-500/30 bg-yellow-500/10";
+    return "border-amber-400/20 bg-amber-400/[0.07]";
   }
 
-  if (type === "subst") {
-    return "border-blue-500/30 bg-blue-500/10";
+  if (type === "subst" || type === "substitution") {
+    return "border-sky-400/20 bg-sky-400/[0.07]";
   }
 
-  return "border-white/10 bg-[#172638]";
+  if (type === "var") {
+    return "border-violet-400/20 bg-violet-400/[0.07]";
+  }
+
+  return "border-white/[0.08] bg-slate-800/70";
 }
 
 function getEventTitle(event: MatchEvent): string {
@@ -84,7 +87,7 @@ function getEventTitle(event: MatchEvent): string {
 
   if (type === "goal") return "GOAL";
   if (type === "card") return event.detail.toUpperCase();
-  if (type === "subst") return "SUBSTITUTION";
+  if (type === "subst" || type === "substitution") return "SUBSTITUTION";
   if (type === "var") return "VAR";
 
   return event.type.toUpperCase();
@@ -99,29 +102,78 @@ function getGoalDescription(event: MatchEvent): string {
   return "Goal";
 }
 
-function GoalScorer({
-  event,
-}: {
-  event: MatchEvent;
-}) {
+function GoalScorer({ event }: { event: MatchEvent }) {
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-white/5 py-3 last:border-0">
-      <div className="min-w-0">
-        <p className="break-words text-sm font-bold text-white">
-          ⚽ {event.player?.name || "Unknown scorer"}
-        </p>
+    <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] py-3 last:border-0">
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="mt-0.5 text-base">⚽</span>
 
-        <p className="mt-1 text-xs text-gray-400">
-          {getGoalDescription(event)}
-          {event.assist?.name
-            ? ` · Assist: ${event.assist.name}`
-            : ""}
-        </p>
+        <div className="min-w-0">
+          <p className="break-words text-sm font-bold text-white">
+            {event.player?.name || "Unknown scorer"}
+          </p>
+
+          <p className="mt-1 text-xs text-slate-400">
+            {getGoalDescription(event)}
+            {event.assist?.name ? ` · Assist: ${event.assist.name}` : ""}
+          </p>
+        </div>
       </div>
 
-      <span className="shrink-0 rounded-md bg-green-500/10 px-2 py-1 text-xs font-bold text-green-400">
+      <span className="shrink-0 rounded-lg border border-emerald-400/15 bg-emerald-400/10 px-2.5 py-1.5 text-xs font-black text-emerald-300">
         {getMinuteLabel(event)}
       </span>
+    </div>
+  );
+}
+
+function EventCard({ event }: { event: MatchEvent }) {
+  const type = event.type.toLowerCase();
+
+  return (
+    <div
+      className={`w-full rounded-xl border p-3 transition-colors ${getEventStyle(event)}`}
+    >
+      <div className="mb-2 flex items-center gap-2">
+        <span className="text-base">{getEventIcon(event)}</span>
+
+        <span className="text-[10px] font-black tracking-wider text-slate-300">
+          {getEventTitle(event)}
+        </span>
+      </div>
+
+      <p className="break-words text-sm font-bold text-white">
+        {event.player?.name || event.detail || "Match event"}
+      </p>
+
+      {(type === "subst" || type === "substitution") &&
+        event.assist?.name && (
+          <p className="mt-1 text-xs text-slate-400">
+            Replaced: {event.assist.name}
+          </p>
+        )}
+
+      {type === "goal" && event.assist?.name && (
+        <p className="mt-1 text-xs text-slate-400">
+          Assist: {event.assist.name}
+        </p>
+      )}
+
+      {event.comments && (
+        <p className="mt-2 break-words text-xs leading-5 text-slate-400">
+          {event.comments}
+        </p>
+      )}
+
+      {event.detail &&
+        type !== "card" &&
+        type !== "goal" &&
+        type !== "subst" &&
+        type !== "substitution" && (
+          <p className="mt-1 text-[10px] text-slate-500">
+            {event.detail}
+          </p>
+        )}
     </div>
   );
 }
@@ -131,7 +183,6 @@ export default function EventTimeline({
   homeTeam,
   awayTeam,
 }: EventTimelineProps) {
-  // NEW: Track the currently selected event filter.
   const [activeFilter, setActiveFilter] =
     useState<EventFilter>("all");
 
@@ -159,7 +210,6 @@ export default function EventTimeline({
       event.team.name.toLowerCase() === awayTeam.toLowerCase()
   );
 
-  // NEW: Filter events without changing the original event collection.
   const filteredEvents = sortedEvents.filter((event) => {
     const type = event.type.toLowerCase();
 
@@ -182,7 +232,6 @@ export default function EventTimeline({
     }
   });
 
-  // NEW: Filter button definitions.
   const filters: {
     label: string;
     value: EventFilter;
@@ -201,34 +250,48 @@ export default function EventTimeline({
 
   return (
     <section className="space-y-6">
-      {/* GOAL SCORERS SUMMARY */}
+      {/* GOAL SCORERS */}
 
-      <div className="rounded-xl border border-white/10 bg-[#111c2b] p-5 md:p-7">
-        <div className="mb-5">
-          <h3 className="text-lg font-bold">
+      <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-slate-900/70">
+        <div className="border-b border-white/[0.06] p-5 sm:p-6">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
+              Match summary
+            </span>
+          </div>
+
+          <h3 className="mt-2 text-lg font-black text-white">
             Goal Scorers
           </h3>
 
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="mt-1 text-xs text-slate-400">
             Scoring information recorded by the match data provider.
           </p>
         </div>
 
         {goalEvents.length === 0 ? (
-          <p className="py-5 text-center text-sm text-gray-400">
-            No goal events have been returned for this match.
-          </p>
+          <div className="p-7 text-center">
+            <span className="text-2xl">⚽</span>
+            <p className="mt-3 text-sm text-slate-400">
+              No goal events have been returned for this match.
+            </p>
+          </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* HOME TEAM SCORERS */}
+          <div className="grid divide-y divide-white/[0.06] md:grid-cols-2 md:divide-x md:divide-y-0">
+            <div className="p-5">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <h4 className="truncate text-sm font-bold text-emerald-300">
+                  {homeTeam}
+                </h4>
 
-            <div>
-              <h4 className="mb-2 border-b border-white/10 pb-3 text-sm font-bold text-green-400">
-                {homeTeam}
-              </h4>
+                <span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-xs font-bold text-emerald-300">
+                  {homeGoals.length} goals
+                </span>
+              </div>
 
               {homeGoals.length === 0 ? (
-                <p className="py-3 text-sm text-gray-500">
+                <p className="py-4 text-xs text-slate-500">
                   No goal events recorded.
                 </p>
               ) : (
@@ -241,15 +304,19 @@ export default function EventTimeline({
               )}
             </div>
 
-            {/* AWAY TEAM SCORERS */}
+            <div className="p-5">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <h4 className="truncate text-sm font-bold text-sky-300">
+                  {awayTeam}
+                </h4>
 
-            <div>
-              <h4 className="mb-2 border-b border-white/10 pb-3 text-sm font-bold text-blue-400">
-                {awayTeam}
-              </h4>
+                <span className="rounded-full bg-sky-400/10 px-2.5 py-1 text-xs font-bold text-sky-300">
+                  {awayGoals.length} goals
+                </span>
+              </div>
 
               {awayGoals.length === 0 ? (
-                <p className="py-3 text-sm text-gray-500">
+                <p className="py-4 text-xs text-slate-500">
                   No goal events recorded.
                 </p>
               ) : (
@@ -267,25 +334,40 @@ export default function EventTimeline({
 
       {/* MATCH TIMELINE */}
 
-      <div className="rounded-xl border border-white/10 bg-[#111c2b] p-5 md:p-7">
-        <div className="mb-8">
-          <h3 className="text-lg font-bold">
-            Match Timeline
-          </h3>
+      <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-slate-900/70">
+        <div className="border-b border-white/[0.06] p-5 sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
+                  Live match data
+                </span>
+              </div>
 
-          <p className="mt-1 text-xs text-gray-400">
-            Official events recorded during the match.
-          </p>
+              <h3 className="mt-2 text-lg font-black text-white">
+                Match Timeline
+              </h3>
+
+              <p className="mt-1 text-xs text-slate-400">
+                Events recorded throughout the match.
+              </p>
+            </div>
+
+            <span className="w-fit rounded-full border border-white/10 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-400">
+              {sortedEvents.length} events
+            </span>
+          </div>
         </div>
 
-        {/* NEW: INTERACTIVE EVENT FILTERS */}
+        {/* EVENT FILTERS */}
 
-        <div className="mb-7">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
-            Filter events
+        <div className="border-b border-white/[0.06] px-5 py-4 sm:px-6">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            Filter match events
           </p>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-1">
             {filters.map((filter) => {
               const isActive = activeFilter === filter.value;
 
@@ -295,13 +377,13 @@ export default function EventTimeline({
                   type="button"
                   onClick={() => setActiveFilter(filter.value)}
                   aria-pressed={isActive}
-                  className={`rounded-lg border px-3 py-2 text-xs font-bold transition-all duration-200 ${
+                  className={`flex shrink-0 items-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-bold transition ${
                     isActive
-                      ? "border-green-500 bg-green-500/15 text-green-400"
-                      : "border-white/10 bg-[#172638] text-gray-400 hover:border-white/30 hover:text-white"
+                      ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+                      : "border-white/[0.08] bg-slate-800/70 text-slate-400 hover:border-white/20 hover:text-white"
                   }`}
                 >
-                  <span className="mr-1.5">{filter.icon}</span>
+                  <span>{filter.icon}</span>
                   {filter.label}
                 </button>
               );
@@ -309,175 +391,134 @@ export default function EventTimeline({
           </div>
         </div>
 
-        {sortedEvents.length === 0 ? (
-          <div className="py-8 text-center">
-            <div className="mb-3 text-3xl">⚽</div>
+        <div className="p-5 sm:p-6">
+          {sortedEvents.length === 0 ? (
+            <div className="py-10 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.08] bg-slate-800 text-2xl">
+                ⚽
+              </div>
 
-            <h4 className="font-bold">
-              No Match Events Yet
-            </h4>
+              <h4 className="mt-4 font-bold text-white">
+                No Match Events Yet
+              </h4>
 
-            <p className="mt-2 text-sm text-gray-400">
-              Official match events are not currently available.
-            </p>
-          </div>
-        ) : filteredEvents.length === 0 ? (
-          // NEW: Empty state for a filter with no matching events.
-          <div className="rounded-lg border border-white/10 bg-[#172638] py-8 text-center">
-            <div className="mb-3 text-3xl">🔎</div>
-
-            <h4 className="font-bold text-white">
-              No {filters.find((filter) => filter.value === activeFilter)?.label} Found
-            </h4>
-
-            <p className="mt-2 text-sm text-gray-400">
-              There are no recorded events in this category.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => setActiveFilter("all")}
-              className="mt-4 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-2 text-xs font-bold text-green-400 transition hover:bg-green-500/20"
-            >
-              Show All Events
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* TEAM HEADERS */}
-
-            <div className="mb-6 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-xs font-bold">
-              <span className="text-left text-green-400">
-                {homeTeam}
-              </span>
-
-              <span className="text-gray-500">
-                MINUTE
-              </span>
-
-              <span className="text-right text-blue-400">
-                {awayTeam}
-              </span>
+              <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-400">
+                Official match events are not currently available.
+                Check again as the match progresses.
+              </p>
             </div>
+          ) : filteredEvents.length === 0 ? (
+            <div className="rounded-xl border border-white/[0.06] bg-slate-800/50 px-4 py-10 text-center">
+              <div className="text-2xl">🔎</div>
 
-            {/* TIMELINE */}
+              <h4 className="mt-3 font-bold text-white">
+                No{" "}
+                {filters.find(
+                  (filter) => filter.value === activeFilter
+                )?.label}{" "}
+                Found
+              </h4>
 
-            <div className="relative space-y-5">
-              <div className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 bg-white/10" />
+              <p className="mt-2 text-sm text-slate-400">
+                There are no recorded events in this category.
+              </p>
 
-              {filteredEvents.map((event, index) => {
-                const isHome =
-                  event.team.name.toLowerCase() ===
-                  homeTeam.toLowerCase();
-
-                const isAway =
-                  event.team.name.toLowerCase() ===
-                  awayTeam.toLowerCase();
-
-                const icon = getEventIcon(event);
-                const style = getEventStyle(event);
-                const title = getEventTitle(event);
-
-                const eventCard = (
-                  <div
-                    className={`rounded-lg border p-3 ${style}`}
-                  >
-                    <div className="mb-2 flex items-center gap-2">
-                      <span className="text-lg">{icon}</span>
-
-                      <span className="text-[10px] font-black tracking-wide text-gray-300">
-                        {title}
-                      </span>
-                    </div>
-
-                    <p className="break-words text-sm font-bold text-white">
-                      {event.player?.name || event.detail}
-                    </p>
-
-                    {event.type.toLowerCase() === "subst" &&
-                      event.assist?.name && (
-                        <p className="mt-1 text-xs text-gray-400">
-                          Replaced: {event.assist.name}
-                        </p>
-                      )}
-
-                    {event.type.toLowerCase() === "goal" &&
-                      event.assist?.name && (
-                        <p className="mt-1 text-xs text-gray-400">
-                          Assist: {event.assist.name}
-                        </p>
-                      )}
-
-                    {event.comments && (
-                      <p className="mt-2 text-xs text-gray-400">
-                        {event.comments}
-                      </p>
-                    )}
-
-                    {event.detail &&
-                      event.type.toLowerCase() !== "card" && (
-                        <p className="mt-1 text-[10px] text-gray-500">
-                          {event.detail}
-                        </p>
-                      )}
-                  </div>
-                );
-
-                return (
-                  <div
-                    key={`${event.time.elapsed}-${event.type}-${index}`}
-                    className="relative grid grid-cols-[1fr_54px_1fr] items-center gap-2"
-                  >
-                    {/* HOME SIDE */}
-
-                    <div className="flex justify-end">
-                      {isHome && (
-                        <div className="w-full max-w-[260px]">
-                          {eventCard}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* MATCH MINUTE */}
-
-                    <div className="relative z-10 flex justify-center">
-                      <span className="flex min-h-9 min-w-11 items-center justify-center rounded-full border border-white/20 bg-[#26384c] px-2 text-xs font-black text-green-400">
-                        {getMinuteLabel(event)}
-                      </span>
-                    </div>
-
-                    {/* AWAY SIDE */}
-
-                    <div className="flex justify-start">
-                      {isAway && (
-                        <div className="w-full max-w-[260px]">
-                          {eventCard}
-                        </div>
-                      )}
-
-                      {!isHome && !isAway && (
-                        <div className="w-full max-w-[260px] rounded-lg border border-white/10 bg-[#172638] p-3">
-                          <p className="text-xs font-bold text-gray-300">
-                            {event.team.name}
-                          </p>
-
-                          <p className="mt-1 text-sm text-white">
-                            {event.detail}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+              <button
+                type="button"
+                onClick={() => setActiveFilter("all")}
+                className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-2.5 text-xs font-bold text-emerald-300 transition hover:bg-emerald-400/20"
+              >
+                Show All Events
+              </button>
             </div>
-          </>
-        )}
+          ) : (
+            <>
+              {/* TEAM HEADERS */}
+
+              <div className="mb-6 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                <span className="truncate text-left text-xs font-bold text-emerald-300">
+                  {homeTeam}
+                </span>
+
+                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                  Minute
+                </span>
+
+                <span className="truncate text-right text-xs font-bold text-sky-300">
+                  {awayTeam}
+                </span>
+              </div>
+
+              {/* TIMELINE EVENTS */}
+
+              <div className="relative space-y-5">
+                <div className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 bg-gradient-to-b from-emerald-400/30 via-white/10 to-sky-400/30" />
+
+                {filteredEvents.map((event, index) => {
+                  const isHome =
+                    event.team.name.toLowerCase() ===
+                    homeTeam.toLowerCase();
+
+                  const isAway =
+                    event.team.name.toLowerCase() ===
+                    awayTeam.toLowerCase();
+
+                  return (
+                    <div
+                      key={`${event.time.elapsed}-${event.type}-${index}`}
+                      className="relative grid grid-cols-[minmax(0,1fr)_48px_minmax(0,1fr)] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_58px_minmax(0,1fr)] sm:gap-3"
+                    >
+                      {/* HOME TEAM EVENT */}
+
+                      <div className="flex justify-end">
+                        {isHome && (
+                          <div className="w-full max-w-[280px]">
+                            <EventCard event={event} />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* MATCH MINUTE */}
+
+                      <div className="relative z-10 flex justify-center">
+                        <span className="flex min-h-9 min-w-10 items-center justify-center rounded-full border border-white/10 bg-slate-800 px-1.5 text-[10px] font-black text-emerald-300 shadow-lg sm:min-w-12 sm:text-xs">
+                          {getMinuteLabel(event)}
+                        </span>
+                      </div>
+
+                      {/* AWAY TEAM EVENT */}
+
+                      <div className="flex justify-start">
+                        {isAway && (
+                          <div className="w-full max-w-[280px]">
+                            <EventCard event={event} />
+                          </div>
+                        )}
+
+                        {!isHome && !isAway && (
+                          <div className="w-full max-w-[280px] rounded-xl border border-white/[0.08] bg-slate-800/70 p-3">
+                            <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                              {event.team.name}
+                            </p>
+
+                            <p className="mt-1 break-words text-sm font-semibold text-white">
+                              {event.detail}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
 
         {/* TIMELINE FOOTER */}
 
-        <div className="mt-8 border-t border-white/10 pt-5">
-          <div className="flex flex-wrap justify-center gap-5 text-xs text-gray-400">
+        <div className="border-t border-white/[0.06] bg-slate-950/30 px-5 py-4 sm:px-6">
+          <div className="flex flex-wrap justify-center gap-x-5 gap-y-3 text-[11px] text-slate-400">
             <span>⚽ Goals</span>
             <span>🟨 Yellow cards</span>
             <span>🟥 Red cards</span>
@@ -485,8 +526,8 @@ export default function EventTimeline({
             <span>📺 VAR</span>
           </div>
 
-          <p className="mt-4 text-center text-xs text-gray-500">
-            {filteredEvents.length} of {sortedEvents.length} recorded events shown
+          <p className="mt-4 text-center text-[10px] text-slate-500">
+            Showing {filteredEvents.length} of {sortedEvents.length} recorded events
           </p>
         </div>
       </div>

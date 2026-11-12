@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 
 import Header from "@/components/Header";
 import LiveMatchCard from "@/components/LiveMatchCard";
@@ -60,7 +61,7 @@ export default function LiveScoresPage() {
 
       const data: LiveApiResponse = await response.json();
 
-      if (!response.ok) {
+      if (!response.ok || !data.success) {
         throw new Error(
           typeof data.error === "string"
             ? data.error
@@ -113,91 +114,233 @@ export default function LiveScoresPage() {
     void loadMatches();
   }, [loadMatches]);
 
+  const competitions = [...new Set(matches.map((match) => match.league))];
+
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-screen bg-[#0b1118] text-white">
       <Header />
 
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
-        <div className="mb-10">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-green-400">
-            Follow Every Moment
-          </p>
+      <div className="mx-auto max-w-[1500px] px-3 py-6 sm:px-5 sm:py-9 lg:px-6">
 
-          <h1 className="text-3xl font-bold sm:text-4xl md:text-5xl">
-            Live Football Scores
-          </h1>
+        {/* PAGE BANNER */}
+        <section className="relative overflow-hidden rounded-2xl border border-red-500/15 bg-gradient-to-br from-[#351c25] via-[#20202b] to-[#141e29] p-6 sm:p-9">
+          <div className="pointer-events-none absolute -right-12 -top-20 h-64 w-64 rounded-full border-[35px] border-red-400/[0.04]" />
 
-          <p className="mt-4 max-w-2xl text-slate-400">
-            Follow ongoing football matches and check current
-            scores from competitions around the world.
-          </p>
-        </div>
+          <div className="relative z-10 flex flex-col justify-between gap-7 md:flex-row md:items-center">
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-red-400/20 bg-red-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.17em] text-red-400">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                Live Sports Centre
+              </div>
 
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
-            <h2 className="text-xl font-bold sm:text-2xl">Matches in Progress</h2>
+              <h1 className="text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
+                Live Football Scores
+              </h1>
+
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300">
+                Follow ongoing football matches, track every goal and stay
+                connected to competitions around the world.
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link
+                  href="/fixtures"
+                  className="rounded-lg bg-emerald-400 px-5 py-3 text-xs font-black text-[#07130e] transition hover:bg-emerald-300"
+                >
+                  Upcoming Fixtures →
+                </Link>
+
+                <Link
+                  href="/leagues"
+                  className="rounded-lg border border-white/15 bg-white/[0.04] px-5 py-3 text-xs font-bold text-white transition hover:border-emerald-400/50"
+                >
+                  Explore Competitions
+                </Link>
+              </div>
+            </div>
+
+            <div className="w-full rounded-xl border border-white/10 bg-black/20 p-5 md:w-52">
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-red-400">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                Live Now
+              </div>
+
+              <p className="mt-3 text-5xl font-black">
+                {loading && matches.length === 0 ? "..." : error ? "—" : matches.length}
+              </p>
+
+              <p className="mt-2 text-xs text-slate-400">
+                Matches in progress
+              </p>
+            </div>
           </div>
+        </section>
 
-          <button
-            onClick={() => void loadMatches()}
-            disabled={loading}
-            className="w-full rounded-lg bg-green-500 px-5 py-3 text-sm sm:w-auto sm:py-2 font-semibold text-slate-950 transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loading ? "Loading..." : "Refresh Scores"}
-          </button>
-        </div>
-
-        {lastUpdated && (
-          <p className="mb-6 text-xs text-slate-500">
-            Last updated: {lastUpdated.toLocaleTimeString()}
-          </p>
-        )}
-
-        {loading && matches.length === 0 && (
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 text-center sm:p-10">
-            <p className="text-slate-300">
-              Loading live football scores...
+        {/* MATCH SUMMARY */}
+        <section className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-white/[0.07] bg-[#141e29] p-5">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+              Live Matches
+            </p>
+            <p className="mt-2 text-2xl font-black text-red-400">
+              {loading && matches.length === 0 ? "..." : error ? "—" : matches.length}
             </p>
           </div>
-        )}
 
-        {error && (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-6">
-            <h3 className="font-semibold text-red-400">
-              Unable to load live scores
-            </h3>
+          <div className="rounded-xl border border-white/[0.07] bg-[#141e29] p-5">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+              Competitions
+            </p>
+            <p className="mt-2 text-2xl font-black text-emerald-400">
+              {loading && matches.length === 0 ? "..." : error ? "—" : competitions.length}
+            </p>
+          </div>
 
-            <p className="mt-2 text-sm text-slate-300">{error}</p>
+          <div className="rounded-xl border border-white/[0.07] bg-[#141e29] p-5">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+              Last Updated
+            </p>
+            <p className="mt-2 text-lg font-black text-white">
+              {lastUpdated
+                ? lastUpdated.toLocaleTimeString("en-GB", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "Awaiting data"}
+            </p>
+          </div>
+        </section>
+
+        {/* LIVE MATCH LIST */}
+        <section className="mt-8 overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.07] p-4 sm:p-6">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-400">
+                  Happening Right Now
+                </p>
+              </div>
+
+              <h2 className="mt-2 text-xl font-black sm:text-2xl">
+                Matches in Progress
+              </h2>
+
+              <p className="mt-1 text-xs text-slate-500">
+                Live scores from football competitions worldwide.
+              </p>
+            </div>
 
             <button
+              type="button"
               onClick={() => void loadMatches()}
-              className="mt-4 rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400"
+              disabled={loading}
+              className="w-full rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-xs font-black text-emerald-400 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
             >
-              Try Again
+              {loading ? "Updating Scores..." : "↻ Refresh Scores"}
             </button>
           </div>
-        )}
 
-        {!loading && !error && matches.length === 0 && (
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 text-center sm:p-10">
-            <h3 className="text-xl font-semibold">No Live Matches</h3>
+          <div className="p-4 sm:p-6">
+            {lastUpdated && (
+              <p className="mb-5 text-[10px] text-slate-500">
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </p>
+            )}
 
-            <p className="mt-2 text-slate-400">
-              There are currently no live matches available.
-              Check again later.
-            </p>
+            {loading && matches.length === 0 && (
+              <div className="rounded-xl bg-[#0e1721] p-10 text-center">
+                <p className="text-sm text-slate-400">
+                  Loading live football scores...
+                </p>
+              </div>
+            )}
+
+            {error && (
+              <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-6">
+                <h3 className="font-bold text-red-400">
+                  Unable to load live scores
+                </h3>
+
+                <p className="mt-2 break-words text-sm text-slate-300">
+                  {error}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => void loadMatches()}
+                  className="mt-4 rounded-lg bg-red-500 px-5 py-2.5 text-xs font-bold text-white transition hover:bg-red-400"
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+
+            {!loading && !error && matches.length === 0 && (
+              <div className="rounded-xl bg-[#0e1721] p-10 text-center">
+                <p className="text-4xl">⚽</p>
+
+                <h3 className="mt-4 text-lg font-black">
+                  No Live Matches Right Now
+                </h3>
+
+                <p className="mt-2 text-sm text-slate-500">
+                  There are currently no live matches available. Check again
+                  when the next games begin.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => void loadMatches()}
+                  className="mt-5 rounded-lg border border-white/10 px-5 py-2.5 text-xs font-bold text-slate-300 transition hover:border-emerald-500/40 hover:text-emerald-400"
+                >
+                  Check Again
+                </button>
+              </div>
+            )}
+
+            {matches.length > 0 && (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {matches.map((match) => (
+                  <LiveMatchCard key={match.id} match={match} />
+                ))}
+              </div>
+            )}
           </div>
+        </section>
+
+        {/* COMPETITIONS */}
+        {competitions.length > 0 && (
+          <section className="mt-6 rounded-xl border border-white/[0.07] bg-[#141e29] p-5 sm:p-6">
+            <h2 className="text-sm font-black">Competitions Currently Active</h2>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {competitions.map((competition) => (
+                <span
+                  key={competition}
+                  className="rounded-lg border border-white/[0.07] bg-[#0e1721] px-3 py-2 text-xs font-semibold text-slate-300"
+                >
+                  {competition}
+                </span>
+              ))}
+            </div>
+          </section>
         )}
 
-        {matches.length > 0 && (
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {matches.map((match) => (
-              <LiveMatchCard key={match.id} match={match} />
-            ))}
-          </div>
-        )}
-      </section>
+        {/* BACK NAVIGATION */}
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-slate-500">
+            LiveScore by Cheke · Every sport. Every moment.
+          </p>
+
+          <Link
+            href="/"
+            className="text-xs font-bold text-emerald-400 transition hover:text-emerald-300"
+          >
+            ← Back to Home
+          </Link>
+        </div>
+      </div>
 
       <Footer />
     </main>

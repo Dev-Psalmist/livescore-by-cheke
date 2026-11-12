@@ -12,7 +12,6 @@ import YouTubeHighlights from "@/components/YouTubeHighlights";
 
 import type { Match } from "@/types/football";
 
-// API-Football live fixture response structure.
 interface ApiLiveFixture {
   fixture: {
     id: number;
@@ -21,49 +20,41 @@ interface ApiLiveFixture {
       elapsed: number | null;
     };
   };
-
   league: {
     name: string;
   };
-
   teams: {
     home: {
       name: string;
       code: string | null;
       logo?: string;
     };
-
     away: {
       name: string;
       code: string | null;
       logo?: string;
     };
   };
-
   goals: {
     home: number | null;
     away: number | null;
   };
 }
 
-// API-Football upcoming fixture response structure.
 interface ApiUpcomingFixture {
   fixture: {
     id: number;
     date: string;
   };
-
   league: {
     name: string;
   };
-
   teams: {
     home: {
       name: string;
       code: string | null;
       logo: string;
     };
-
     away: {
       name: string;
       code: string | null;
@@ -79,14 +70,8 @@ interface ApiResponse<T> {
 }
 
 function getErrorMessage(error: unknown): string {
-  if (typeof error === "string") {
-    return error;
-  }
-
-  if (error) {
-    return JSON.stringify(error);
-  }
-
+  if (typeof error === "string") return error;
+  if (error) return JSON.stringify(error);
   return "Unable to retrieve football data.";
 }
 
@@ -98,6 +83,25 @@ function formatKickoff(date: string): string {
   }).format(new Date(date));
 }
 
+const competitions = [
+  "Premier League",
+  "La Liga",
+  "Bundesliga",
+  "Serie A",
+  "Ligue 1",
+  "Champions League",
+  "Europa League",
+];
+
+const quickLinks = [
+  { label: "Live Scores", href: "/live", icon: "🔴" },
+  { label: "Fixtures", href: "/fixtures", icon: "📅" },
+  { label: "Competitions", href: "/leagues", icon: "🏆" },
+  { label: "Teams", href: "/teams", icon: "⚽" },
+  { label: "Search", href: "/search", icon: "🔎" },
+  { label: "Favourites", href: "/favourites", icon: "♥" },
+];
+
 export default function HomePage() {
   const [liveMatches, setLiveMatches] = useState<Match[]>([]);
   const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
@@ -108,7 +112,6 @@ export default function HomePage() {
   const [liveError, setLiveError] = useState("");
   const [fixturesError, setFixturesError] = useState("");
 
-  // Retrieve live football scores.
   const loadLiveMatches = useCallback(async () => {
     try {
       setLiveLoading(true);
@@ -118,27 +121,20 @@ export default function HomePage() {
         cache: "no-store",
       });
 
-      const data: ApiResponse<ApiLiveFixture> =
-        await response.json();
+      const data: ApiResponse<ApiLiveFixture> = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(
-          getErrorMessage(data.error)
-        );
+        throw new Error(getErrorMessage(data.error));
       }
 
-      const formattedMatches: Match[] = (
-        data.matches || []
-      ).map((item) => ({
+      const formattedMatches: Match[] = (data.matches || []).map((item) => ({
         id: item.fixture.id,
         league: item.league.name,
         status: "LIVE",
-
         minute:
           item.fixture.status.elapsed !== null
             ? `${item.fixture.status.elapsed}'`
             : item.fixture.status.short,
-
         homeTeam: {
           name: item.teams.home.name,
           shortName:
@@ -146,7 +142,6 @@ export default function HomePage() {
             item.teams.home.name.slice(0, 3).toUpperCase(),
           logo: item.teams.home.logo,
         },
-
         awayTeam: {
           name: item.teams.away.name,
           shortName:
@@ -154,7 +149,6 @@ export default function HomePage() {
             item.teams.away.name.slice(0, 3).toUpperCase(),
           logo: item.teams.away.logo,
         },
-
         homeScore: item.goals.home,
         awayScore: item.goals.away,
       }));
@@ -171,7 +165,6 @@ export default function HomePage() {
     }
   }, []);
 
-  // Retrieve today's scheduled fixtures.
   const loadUpcomingMatches = useCallback(async () => {
     try {
       setFixturesLoading(true);
@@ -181,24 +174,17 @@ export default function HomePage() {
         cache: "no-store",
       });
 
-      const data: ApiResponse<ApiUpcomingFixture> =
-        await response.json();
+      const data: ApiResponse<ApiUpcomingFixture> = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(
-          getErrorMessage(data.error)
-        );
+        throw new Error(getErrorMessage(data.error));
       }
 
-      const formattedMatches: Match[] = (
-        data.matches || []
-      ).map((item) => ({
+      const formattedMatches: Match[] = (data.matches || []).map((item) => ({
         id: item.fixture.id,
         league: item.league.name,
         status: "UPCOMING",
-
         kickoff: formatKickoff(item.fixture.date),
-
         homeTeam: {
           name: item.teams.home.name,
           shortName:
@@ -206,7 +192,6 @@ export default function HomePage() {
             item.teams.home.name.slice(0, 3).toUpperCase(),
           logo: item.teams.home.logo,
         },
-
         awayTeam: {
           name: item.teams.away.name,
           shortName:
@@ -214,7 +199,6 @@ export default function HomePage() {
             item.teams.away.name.slice(0, 3).toUpperCase(),
           logo: item.teams.away.logo,
         },
-
         homeScore: null,
         awayScore: null,
       }));
@@ -231,418 +215,399 @@ export default function HomePage() {
     }
   }, []);
 
-  // Load both sections when the homepage opens.
   useEffect(() => {
     void loadLiveMatches();
     void loadUpcomingMatches();
   }, [loadLiveMatches, loadUpcomingMatches]);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-screen bg-[#0b1118] text-white">
       <Header />
 
-      {/* HERO SECTION */}
-      <section className="relative overflow-hidden border-b border-slate-800 bg-gradient-to-br from-green-950 via-slate-950 to-slate-950">
-        <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-12 sm:gap-12 sm:px-6 sm:py-16 md:grid-cols-2 md:py-28">
+      <div className="mx-auto max-w-[1600px] px-3 py-5 sm:px-5 lg:px-6">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_310px]">
 
-          <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-green-500/30 bg-green-500/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-green-400">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
-              Your Football World
-            </div>
-
-            <h1 className="text-4xl font-black leading-tight sm:text-5xl md:text-7xl">
-              Every Match.
-              <br />
-              Every Goal.
-              <br />
-              <span className="text-green-400">
-                Every Moment.
-              </span>
-            </h1>
-
-            <p className="mt-5 max-w-xl text-sm leading-7 text-slate-300 sm:mt-7 sm:text-base sm:leading-8 md:text-lg">
-              Stay connected to the beautiful game. Follow live
-              football scores, discover upcoming fixtures, explore
-              competitions and keep track of your favourite teams.
-            </p>
-
-            <div className="mt-7 flex flex-wrap gap-3 sm:mt-9 sm:gap-4">
-              <Link
-                href="/live"
-                className="rounded-xl bg-green-500 px-5 py-3 text-sm font-bold text-slate-950 sm:px-7 sm:py-4 sm:text-base transition hover:bg-green-400"
-              >
-                Explore Live Scores →
-              </Link>
-
-              <Link
-                href="/fixtures"
-                className="rounded-xl border border-slate-600 px-5 py-3 text-sm font-bold text-white sm:px-7 sm:py-4 sm:text-base transition hover:border-green-500 hover:text-green-400"
-              >
-                View Fixtures
-              </Link>
-            </div>
-          </div>
-
-          {/* DASHBOARD SUMMARY */}
-          <div className="grid grid-cols-2 gap-4">
-
-            <div className="rounded-2xl border border-green-500/20 bg-slate-900/80 p-4 sm:p-7">
-              <div className="mb-5 flex items-center gap-2">
-                <span className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
-                <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                  Live Matches
-                </span>
+          {/* LEFT SIDEBAR */}
+          <aside className="hidden space-y-5 lg:block">
+            <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
+              <div className="border-b border-white/[0.07] px-4 py-4">
+                <h2 className="text-xs font-black uppercase tracking-[0.16em] text-slate-300">
+                  Navigation
+                </h2>
               </div>
 
-              <p className="text-4xl font-black text-green-400 sm:text-5xl">
-                {liveLoading ? "..." : liveError ? "—" : liveMatches.length}
-              </p>
+              <nav className="space-y-1 p-2">
+                {quickLinks.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-slate-300 transition hover:bg-emerald-500/10 hover:text-emerald-400"
+                  >
+                    <span>{item.icon}</span>
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            </section>
 
-              <p className="mt-3 text-sm text-slate-400">
-                Matches currently in progress
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-700 bg-slate-900/80 p-4 sm:p-7">
-              <div className="mb-5 text-xs font-bold uppercase tracking-widest text-slate-400">
-                Today's Fixtures
+            <section className="rounded-xl border border-white/[0.07] bg-[#141e29] p-3">
+              <div className="px-2 py-3">
+                <h2 className="text-xs font-black uppercase tracking-[0.16em] text-slate-300">
+                  Popular Competitions
+                </h2>
               </div>
 
-              <p className="text-4xl font-black text-white sm:text-5xl">
-                {fixturesLoading
-                  ? "..."
-                  : fixturesError
-                    ? "—"
-                    : upcomingMatches.length}
-              </p>
-
-              <p className="mt-3 text-sm text-slate-400">
-                Scheduled matches today
-              </p>
-            </div>
-
-            <Link
-              href="/teams"
-              className="rounded-2xl border border-slate-700 bg-slate-900/80 p-6 transition hover:border-green-500"
-            >
-              <p className="text-3xl">⚽</p>
-              <h3 className="mt-4 font-bold">Explore Teams</h3>
-              <p className="mt-2 text-sm text-slate-400">
-                Discover clubs and national teams.
-              </p>
-            </Link>
-
-            <Link
-              href="/leagues"
-              className="rounded-2xl border border-slate-700 bg-slate-900/80 p-6 transition hover:border-green-500"
-            >
-              <p className="text-3xl">🏆</p>
-              <h3 className="mt-4 font-bold">Explore Leagues</h3>
-              <p className="mt-2 text-sm text-slate-400">
-                Follow competitions and standings.
-              </p>
-            </Link>
-
-          </div>
-        </div>
-      </section>
-
-      {/* LIVE MATCHES */}
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
-
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="mb-2 flex items-center gap-3">
-              <span className="h-3 w-3 animate-pulse rounded-full bg-red-500" />
-
-              <p className="text-xs font-bold uppercase tracking-widest text-green-400">
-                Follow the Action
-              </p>
-            </div>
-
-            <h2 className="text-3xl font-black md:text-4xl">
-              Live Matches
-            </h2>
-
-            <p className="mt-2 text-slate-400">
-              Real-time football scores from ongoing matches.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={() => void loadLiveMatches()}
-              disabled={liveLoading}
-              className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold transition hover:border-green-500 disabled:opacity-50"
-            >
-              {liveLoading ? "Refreshing..." : "Refresh"}
-            </button>
-
-            <Link
-              href="/live"
-              className="rounded-lg bg-green-500 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-green-400"
-            >
-              All Live Scores →
-            </Link>
-          </div>
-        </div>
-
-        {liveLoading && (
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-10 text-center">
-            <p className="text-slate-400">
-              Loading live football scores...
-            </p>
-          </div>
-        )}
-
-        {!liveLoading && liveError && (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-6">
-            <h3 className="font-bold text-red-400">
-              Unable to load live matches
-            </h3>
-
-            <p className="mt-2 text-sm text-slate-300">
-              {liveError}
-            </p>
-
-            <button
-              type="button"
-              onClick={() => void loadLiveMatches()}
-              className="mt-4 rounded-lg bg-red-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-400"
-            >
-              Try Again
-            </button>
-          </div>
-        )}
-
-        {!liveLoading && !liveError && liveMatches.length === 0 && (
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-10 text-center">
-            <p className="text-4xl">⚽</p>
-
-            <h3 className="mt-4 text-xl font-bold">
-              No Live Matches Right Now
-            </h3>
-
-            <p className="mt-2 text-sm text-slate-400">
-              There are currently no live matches available.
-              Check back when the next games begin.
-            </p>
-          </div>
-        )}
-
-        {!liveLoading && liveMatches.length > 0 && (
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {liveMatches.slice(0, 6).map((match) => (
-              <LiveMatchCard
-                key={match.id}
-                match={match}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* UPCOMING FIXTURES */}
-      <section className="border-y border-slate-800 bg-slate-900/40">
-        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
-
-          <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-widest text-green-400">
-                Plan Your Football Experience
-              </p>
-
-              <h2 className="text-3xl font-black md:text-4xl">
-                Today's Fixtures
-              </h2>
-
-              <p className="mt-2 text-slate-400">
-                Discover today's scheduled football matches.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() => void loadUpcomingMatches()}
-                disabled={fixturesLoading}
-                className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold transition hover:border-green-500 disabled:opacity-50"
-              >
-                {fixturesLoading ? "Refreshing..." : "Refresh"}
-              </button>
-
-              <Link
-                href="/fixtures"
-                className="rounded-lg bg-green-500 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-green-400"
-              >
-                All Fixtures →
-              </Link>
-            </div>
-          </div>
-
-          {fixturesLoading && (
-            <div className="rounded-xl border border-slate-800 bg-slate-900 p-10 text-center">
-              <p className="text-slate-400">
-                Loading today's fixtures...
-              </p>
-            </div>
-          )}
-
-          {!fixturesLoading && fixturesError && (
-            <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-6">
-              <h3 className="font-bold text-red-400">
-                Unable to load fixtures
-              </h3>
-
-              <p className="mt-2 text-sm text-slate-300">
-                {fixturesError}
-              </p>
-
-              <button
-                type="button"
-                onClick={() => void loadUpcomingMatches()}
-                className="mt-4 rounded-lg bg-red-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-400"
-              >
-                Try Again
-              </button>
-            </div>
-          )}
-
-          {!fixturesLoading &&
-            !fixturesError &&
-            upcomingMatches.length === 0 && (
-              <div className="rounded-xl border border-slate-800 bg-slate-900 p-10 text-center">
-                <p className="text-4xl">📅</p>
-
-                <h3 className="mt-4 text-xl font-bold">
-                  No Upcoming Fixtures
-                </h3>
-
-                <p className="mt-2 text-sm text-slate-400">
-                  No scheduled matches are currently available
-                  for today.
-                </p>
-              </div>
-            )}
-
-          {!fixturesLoading &&
-            !fixturesError &&
-            upcomingMatches.length > 0 && (
-              <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
-                {upcomingMatches.slice(0, 8).map((match) => (
-                  <FixtureCard
-                    key={match.id}
-                    match={match}
-                  />
+              <div className="space-y-1">
+                {competitions.map((competition, index) => (
+                  <Link
+                    key={competition}
+                    href="/leagues"
+                    className="flex items-center gap-3 rounded-lg px-2 py-3 text-xs font-medium text-slate-400 transition hover:bg-white/[0.04] hover:text-emerald-400"
+                  >
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#202d3b] text-[10px] font-black text-emerald-400">
+                      {index + 1}
+                    </span>
+                    {competition}
+                  </Link>
                 ))}
               </div>
-            )}
-        </div>
-      </section>
 
-      {/* FOOTBALL HIGHLIGHTS */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
-        <YouTubeHighlights kind="all" limit={3} compact />
+              <Link
+                href="/leagues"
+                className="mt-3 block border-t border-white/[0.07] px-2 pt-4 text-xs font-bold text-emerald-400 hover:text-emerald-300"
+              >
+                All competitions →
+              </Link>
+            </section>
+
+            <section className="rounded-xl border border-emerald-500/15 bg-gradient-to-br from-emerald-950/70 to-[#141e29] p-5">
+              <p className="text-2xl">⚽</p>
+              <h2 className="mt-4 text-sm font-black">
+                Football Never Stops.
+              </h2>
+              <p className="mt-2 text-xs leading-6 text-slate-400">
+                Follow the teams, competitions and matches that matter to you.
+              </p>
+              <p className="mt-4 text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400">
+                Every sport. Every moment.
+              </p>
+            </section>
+          </aside>
+
+          {/* CENTRE CONTENT */}
+          <div className="min-w-0 space-y-6">
+
+            {/* WELCOME BANNER */}
+            <section className="relative overflow-hidden rounded-2xl border border-emerald-500/15 bg-gradient-to-br from-[#123528] via-[#142b2b] to-[#141e29] p-5 sm:p-7">
+              <div className="pointer-events-none absolute -right-12 -top-16 h-64 w-64 rounded-full border-[35px] border-emerald-400/[0.04]" />
+              <div className="pointer-events-none absolute -bottom-28 right-24 h-64 w-64 rounded-full border-[30px] border-emerald-400/[0.04]" />
+
+              <div className="relative z-10">
+                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.17em] text-emerald-400">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                  Global Sports Coverage
+                </div>
+
+                <h1 className="max-w-2xl text-3xl font-black leading-tight tracking-tight sm:text-4xl lg:text-5xl">
+                  Every Match.
+                  <br />
+                  Every Goal.
+                  <span className="block text-emerald-400">
+                    Every Moment.
+                  </span>
+                </h1>
+
+                <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300">
+                  Your football world, all in one place. Follow live scores,
+                  upcoming fixtures, competitions and the latest football news.
+                </p>
+
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link
+                    href="/live"
+                    className="rounded-lg bg-emerald-400 px-5 py-3 text-xs font-black text-[#07130e] transition hover:bg-emerald-300"
+                  >
+                    Explore Live Scores →
+                  </Link>
+
+                  <Link
+                    href="/fixtures"
+                    className="rounded-lg border border-white/15 bg-white/[0.04] px-5 py-3 text-xs font-bold text-white transition hover:border-emerald-400/50"
+                  >
+                    View Fixtures
+                  </Link>
+                </div>
+              </div>
+            </section>
+
+            {/* DASHBOARD STATISTICS */}
+            <section className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-white/[0.07] bg-[#141e29] p-4 sm:p-5">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                  Live Matches
+                </div>
+                <p className="mt-3 text-3xl font-black text-white">
+                  {liveLoading ? "..." : liveError ? "—" : liveMatches.length}
+                </p>
+                <p className="mt-1 text-[10px] text-slate-500">
+                  Currently in progress
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-white/[0.07] bg-[#141e29] p-4 sm:p-5">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Today's Fixtures
+                </div>
+                <p className="mt-3 text-3xl font-black text-emerald-400">
+                  {fixturesLoading
+                    ? "..."
+                    : fixturesError
+                      ? "—"
+                      : upcomingMatches.length}
+                </p>
+                <p className="mt-1 text-[10px] text-slate-500">
+                  Scheduled matches
+                </p>
+              </div>
+            </section>
+
+            {/* LIVE MATCHES */}
+            <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.07] p-4 sm:p-5">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-400">
+                      Happening Now
+                    </p>
+                  </div>
+                  <h2 className="mt-2 text-xl font-black sm:text-2xl">
+                    Live Matches
+                  </h2>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void loadLiveMatches()}
+                    disabled={liveLoading}
+                    className="rounded-lg border border-white/10 px-3 py-2 text-[10px] font-bold text-slate-300 transition hover:border-emerald-500/40 hover:text-emerald-400 disabled:opacity-50"
+                  >
+                    {liveLoading ? "Loading..." : "↻ Refresh"}
+                  </button>
+
+                  <Link
+                    href="/live"
+                    className="rounded-lg bg-emerald-400 px-3 py-2 text-[10px] font-black text-[#07130e] transition hover:bg-emerald-300"
+                  >
+                    View All →
+                  </Link>
+                </div>
+              </div>
+
+              <div className="space-y-3 p-3 sm:p-4">
+                {liveLoading && (
+                  <div className="rounded-lg bg-[#0e1721] p-8 text-center text-sm text-slate-400">
+                    Loading live football scores...
+                  </div>
+                )}
+
+                {!liveLoading && liveError && (
+                  <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-5">
+                    <p className="text-sm font-bold text-red-400">
+                      Unable to load live matches
+                    </p>
+                    <p className="mt-2 break-words text-xs text-slate-400">
+                      {liveError}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => void loadLiveMatches()}
+                      className="mt-4 rounded-lg bg-red-500 px-4 py-2 text-xs font-bold text-white"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                )}
+
+                {!liveLoading && !liveError && liveMatches.length === 0 && (
+                  <div className="rounded-lg bg-[#0e1721] p-8 text-center">
+                    <p className="text-3xl">⚽</p>
+                    <h3 className="mt-3 text-sm font-bold">
+                      No Live Matches Right Now
+                    </h3>
+                    <p className="mt-2 text-xs text-slate-500">
+                      Check back when the next games begin.
+                    </p>
+                  </div>
+                )}
+
+                {!liveLoading && !liveError && liveMatches.length > 0 && (
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {liveMatches.slice(0, 6).map((match) => (
+                      <LiveMatchCard key={match.id} match={match} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* UPCOMING FIXTURES */}
+            <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.07] p-4 sm:p-5">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-400">
+                    Coming Up
+                  </p>
+                  <h2 className="mt-2 text-xl font-black sm:text-2xl">
+                    Today's Fixtures
+                  </h2>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void loadUpcomingMatches()}
+                    disabled={fixturesLoading}
+                    className="rounded-lg border border-white/10 px-3 py-2 text-[10px] font-bold text-slate-300 transition hover:border-emerald-500/40 hover:text-emerald-400 disabled:opacity-50"
+                  >
+                    {fixturesLoading ? "Loading..." : "↻ Refresh"}
+                  </button>
+
+                  <Link
+                    href="/fixtures"
+                    className="rounded-lg bg-emerald-400 px-3 py-2 text-[10px] font-black text-[#07130e] transition hover:bg-emerald-300"
+                  >
+                    All Fixtures →
+                  </Link>
+                </div>
+              </div>
+
+              {fixturesLoading && (
+                <div className="p-8 text-center text-sm text-slate-400">
+                  Loading today's fixtures...
+                </div>
+              )}
+
+              {!fixturesLoading && fixturesError && (
+                <div className="p-5">
+                  <p className="text-sm font-bold text-red-400">
+                    Unable to load fixtures
+                  </p>
+                  <p className="mt-2 break-words text-xs text-slate-400">
+                    {fixturesError}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void loadUpcomingMatches()}
+                    className="mt-4 rounded-lg bg-red-500 px-4 py-2 text-xs font-bold text-white"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
+
+              {!fixturesLoading &&
+                !fixturesError &&
+                upcomingMatches.length === 0 && (
+                  <div className="p-8 text-center">
+                    <p className="text-3xl">📅</p>
+                    <h3 className="mt-3 text-sm font-bold">
+                      No Upcoming Fixtures
+                    </h3>
+                    <p className="mt-2 text-xs text-slate-500">
+                      No scheduled matches are currently available for today.
+                    </p>
+                  </div>
+                )}
+
+              {!fixturesLoading &&
+                !fixturesError &&
+                upcomingMatches.length > 0 && (
+                  <div>
+                    {upcomingMatches.slice(0, 8).map((match) => (
+                      <FixtureCard key={match.id} match={match} />
+                    ))}
+                  </div>
+                )}
+            </section>
+
+            {/* DISCOVER MORE */}
+            <section className="grid grid-cols-2 gap-3">
+              <Link
+                href="/teams"
+                className="rounded-xl border border-white/[0.07] bg-[#141e29] p-4 transition hover:border-emerald-500/40"
+              >
+                <span className="text-2xl">⚽</span>
+                <h3 className="mt-3 text-sm font-bold">Explore Teams</h3>
+                <p className="mt-1 text-[10px] leading-5 text-slate-500">
+                  Discover clubs and national teams.
+                </p>
+              </Link>
+
+              <Link
+                href="/leagues"
+                className="rounded-xl border border-white/[0.07] bg-[#141e29] p-4 transition hover:border-emerald-500/40"
+              >
+                <span className="text-2xl">🏆</span>
+                <h3 className="mt-3 text-sm font-bold">Explore Leagues</h3>
+                <p className="mt-1 text-[10px] leading-5 text-slate-500">
+                  Follow competitions and standings.
+                </p>
+              </Link>
+            </section>
+          </div>
+
+          {/* RIGHT INFORMATION PANEL */}
+          <aside className="min-w-0 space-y-5">
+            <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
+              <div className="border-b border-white/[0.07] p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-400">
+                  Around the Game
+                </p>
+                <h2 className="mt-1 text-lg font-black">Football News</h2>
+              </div>
+              <div className="p-3">
+                <NewsFeed limit={4} />
+              </div>
+            </section>
+
+            <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
+              <div className="border-b border-white/[0.07] p-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-400">
+                  Watch the Action
+                </p>
+                <h2 className="mt-1 text-lg font-black">Match Highlights</h2>
+              </div>
+              <div className="p-3">
+                <YouTubeHighlights kind="all" limit={3} compact />
+              </div>
+            </section>
+
+            <section className="rounded-xl border border-emerald-500/15 bg-gradient-to-br from-[#15372b] to-[#141e29] p-5">
+              <p className="text-[10px] font-black uppercase tracking-[0.17em] text-emerald-400">
+                LiveScore by Cheke
+              </p>
+              <h2 className="mt-3 text-xl font-black leading-snug">
+                Your Game.
+                <br />
+                Your Moments.
+              </h2>
+              <p className="mt-3 text-xs leading-6 text-slate-400">
+                Stay connected to the football world with scores, fixtures,
+                news and match coverage.
+              </p>
+              <Link
+                href="/highlights"
+                className="mt-5 inline-block text-xs font-black text-emerald-400 hover:text-emerald-300"
+              >
+                Explore Highlights →
+              </Link>
+            </section>
+          </aside>
+        </div>
       </div>
-
-      {/* FOOTBALL NEWS */}
-      <NewsFeed limit={3} />
-
-      {/* DISCOVER MORE */}
-      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
-
-        <div className="mb-8">
-          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-green-400">
-            Explore More
-          </p>
-
-          <h2 className="text-3xl font-black md:text-4xl">
-            Your Football Hub
-          </h2>
-
-          <p className="mt-3 max-w-2xl text-slate-400">
-            Everything you need to stay connected to football,
-            all in one place.
-          </p>
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-
-          <Link
-            href="/search"
-            className="rounded-xl border border-slate-800 bg-slate-900 p-6 transition hover:-translate-y-1 hover:border-green-500"
-          >
-            <p className="text-3xl">🔎</p>
-            <h3 className="mt-5 text-lg font-bold">
-              Global Search
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              Search for football teams, leagues and matches.
-            </p>
-          </Link>
-
-          <Link
-            href="/leagues"
-            className="rounded-xl border border-slate-800 bg-slate-900 p-6 transition hover:-translate-y-1 hover:border-green-500"
-          >
-            <p className="text-3xl">🏆</p>
-            <h3 className="mt-5 text-lg font-bold">
-              Competitions
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              Explore football leagues and their standings.
-            </p>
-          </Link>
-
-          <Link
-            href="/teams"
-            className="rounded-xl border border-slate-800 bg-slate-900 p-6 transition hover:-translate-y-1 hover:border-green-500"
-          >
-            <p className="text-3xl">⚽</p>
-            <h3 className="mt-5 text-lg font-bold">
-              Teams Directory
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              Discover football clubs and national teams.
-            </p>
-          </Link>
-
-          <Link
-            href="/favourites"
-            className="rounded-xl border border-slate-800 bg-slate-900 p-6 transition hover:-translate-y-1 hover:border-green-500"
-          >
-            <p className="text-3xl">♥</p>
-            <h3 className="mt-5 text-lg font-bold">
-              Favourites
-            </h3>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              Keep your favourite teams close.
-            </p>
-          </Link>
-
-        </div>
-      </section>
-
-      {/* BRAND MESSAGE */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 pb-16">
-        <div className="rounded-2xl border border-green-500/20 bg-gradient-to-r from-green-950 to-slate-900 p-8 md:p-12">
-          <h2 className="text-3xl font-black md:text-4xl">
-            Football Is More Than a Game.
-          </h2>
-
-          <p className="mt-4 max-w-2xl leading-8 text-slate-300">
-            From the first whistle to the final score, LiveScore by
-            Cheke brings you closer to the matches, clubs and
-            competitions that make football special.
-          </p>
-
-          <p className="mt-6 text-sm font-black tracking-widest text-green-400">
-            LIVE SCORE BY CHEKE
-          </p>
-        </div>
-      </section>
 
       <Footer />
     </main>

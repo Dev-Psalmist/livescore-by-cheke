@@ -35,14 +35,7 @@ interface MatchNotificationsProps {
   awayTeam: string;
 }
 
-const LIVE_EVENT_STATUSES = [
-  "1H",
-  "2H",
-  "ET",
-  "BT",
-  "P",
-  "LIVE",
-];
+const LIVE_EVENT_STATUSES = ["1H", "2H", "ET", "BT", "P", "LIVE"];
 
 const FINISHED_STATUSES = ["FT", "AET", "PEN"];
 
@@ -69,6 +62,7 @@ function sendNotification(title: string, body: string, tag: string) {
   new Notification(title, {
     body,
     tag,
+    icon: "/favicon.ico",
   });
 }
 
@@ -87,8 +81,7 @@ export default function MatchNotifications({
   const eventsInitialised = useRef(false);
   const previousStatus = useRef(status.toUpperCase());
 
-  // Record the events already present when the Match Centre opens.
-  // This prevents old goals and cards from triggering notifications.
+  // Remember events already present when the Match Centre opens.
   useEffect(() => {
     if (eventsInitialised.current) return;
 
@@ -99,8 +92,10 @@ export default function MatchNotifications({
     eventsInitialised.current = true;
   }, [events]);
 
-  // Read the browser's existing notification permission.
+  // Read existing browser notification permission.
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     if ("Notification" in window) {
       setPermission(Notification.permission);
     } else {
@@ -141,8 +136,7 @@ export default function MatchNotifications({
     setMessage("Notifications are paused.");
   }
 
-  // Detect half-time and full-time transitions using the existing
-  // five-second match-status refresh.
+  // Detect half-time and full-time transitions.
   useEffect(() => {
     const currentStatus = status.toUpperCase();
     const oldStatus = previousStatus.current;
@@ -168,10 +162,12 @@ export default function MatchNotifications({
     previousStatus.current = currentStatus;
   }, [status, enabled, homeTeam, awayTeam, matchId]);
 
-  // Check for newly recorded goals and red cards every 30 seconds.
-  // This runs only when notifications are enabled and the match is live.
+  // Check for new goals and red cards every 30 seconds.
   useEffect(() => {
-    if (!enabled || !LIVE_EVENT_STATUSES.includes(status.toUpperCase())) {
+    if (
+      !enabled ||
+      !LIVE_EVENT_STATUSES.includes(status.toUpperCase())
+    ) {
       return;
     }
 
@@ -191,7 +187,11 @@ export default function MatchNotifications({
 
         const data: EventsResponse = await response.json();
 
-        if (!response.ok || !data.success || !Array.isArray(data.events)) {
+        if (
+          !response.ok ||
+          !data.success ||
+          !Array.isArray(data.events)
+        ) {
           throw new Error("Unable to retrieve the latest match events.");
         }
 
@@ -204,11 +204,12 @@ export default function MatchNotifications({
             continue;
           }
 
-          // Mark every newly seen event so it cannot be processed twice.
+          // Record the event before processing it to prevent duplicates.
           seenEvents.current.add(eventKey);
 
           const type = event.type.toLowerCase();
           const detail = event.detail.toLowerCase();
+
           const minute = `${event.time.elapsed}'${
             event.time.extra ? `+${event.time.extra}` : ""
           }`;
@@ -225,7 +226,8 @@ export default function MatchNotifications({
 
           if (
             type === "card" &&
-            (detail.includes("red") || detail.includes("second yellow"))
+            (detail.includes("red") ||
+              detail.includes("second yellow"))
           ) {
             const player = event.player?.name || "Unknown player";
 
@@ -238,15 +240,16 @@ export default function MatchNotifications({
         }
       } catch (error) {
         if (!cancelled) {
-          console.error("Match notification event check failed:", error);
+          console.error(
+            "Match notification event check failed:",
+            error
+          );
         }
       } finally {
         requestInFlight = false;
       }
     }
 
-    // Check immediately when notifications become active,
-    // then continue checking every 30 seconds.
     void refreshEvents();
 
     const interval = window.setInterval(refreshEvents, 30000);
@@ -257,51 +260,134 @@ export default function MatchNotifications({
     };
   }, [enabled, matchId, status]);
 
-  return (
-    <section className="mb-6 rounded-xl border border-white/10 bg-[#111c2b] p-4">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <div>
-          <h3 className="font-bold text-white">
-            Match Notifications
-          </h3>
+  const isLive = LIVE_EVENT_STATUSES.includes(status.toUpperCase());
 
-          <p className="mt-1 text-xs text-gray-400">
-            Get alerts for goals, red cards, half-time and full-time.
-          </p>
+  return (
+    <section className="mb-6 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 via-[#111c2b] to-slate-950 shadow-lg">
+      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <div className="flex items-start gap-3">
+          <div
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${
+              enabled
+                ? "border-emerald-400/30 bg-emerald-400/10"
+                : "border-white/10 bg-white/5"
+            }`}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              className={`h-5 w-5 ${
+                enabled ? "text-emerald-400" : "text-slate-400"
+              }`}
+              aria-hidden="true"
+            >
+              <path
+                d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-bold text-white">
+                Match Notifications
+              </h3>
+
+              <span
+                className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                  enabled
+                    ? "bg-emerald-400/10 text-emerald-400"
+                    : "bg-slate-700/70 text-slate-400"
+                }`}
+              >
+                {enabled ? "Active" : "Inactive"}
+              </span>
+            </div>
+
+            <p className="mt-1 text-xs leading-relaxed text-slate-400">
+              Get instant browser alerts for goals, red cards,
+              half-time and full-time.
+            </p>
+
+            <p className="mt-2 text-[10px] font-medium text-slate-500">
+              {homeTeam} <span className="text-emerald-400">vs</span>{" "}
+              {awayTeam}
+            </p>
+          </div>
         </div>
 
-        {enabled ? (
-          <button
-            type="button"
-            onClick={disableNotifications}
-            className="rounded-lg border border-red-500/40 px-4 py-2 text-sm font-semibold text-red-400 hover:bg-red-500/10"
-          >
-            Turn Off
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => void enableNotifications()}
-            disabled={permission === "denied"}
-            className="rounded-lg bg-green-500 px-4 py-2 text-sm font-bold text-black hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Enable Notifications
-          </button>
-        )}
+        <div className="shrink-0">
+          {enabled ? (
+            <button
+              type="button"
+              onClick={disableNotifications}
+              className="w-full rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-2.5 text-xs font-bold text-red-400 transition hover:border-red-500/60 hover:bg-red-500/20 sm:w-auto"
+            >
+              Turn Off Alerts
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void enableNotifications()}
+              disabled={permission === "denied"}
+              className="w-full rounded-xl bg-emerald-400 px-5 py-2.5 text-xs font-black text-slate-950 shadow-lg shadow-emerald-500/10 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+            >
+              Enable Notifications
+            </button>
+          )}
+        </div>
       </div>
 
-      {message && (
-        <p className="mt-3 text-xs text-gray-400" role="status">
-          {message}
-        </p>
-      )}
+      <div className="border-t border-white/5 bg-black/10 px-4 py-3 sm:px-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3 text-[10px] text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Goals
+            </span>
 
-      {enabled && (
-        <p className="mt-3 text-xs text-green-400">
-          Notifications are active. New match events are checked every
-          30 seconds while the match is live.
-        </p>
-      )}
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+              Red cards
+            </span>
+
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+              Half-time
+            </span>
+
+            <span className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+              Full-time
+            </span>
+          </div>
+
+          <span className="text-[10px] text-slate-500">
+            {isLive
+              ? "Live event checks every 30 seconds"
+              : "Alerts activate when the match is live"}
+          </span>
+        </div>
+
+        {message && (
+          <p
+            className="mt-3 border-t border-white/5 pt-3 text-xs text-slate-400"
+            role="status"
+          >
+            {message}
+          </p>
+        )}
+
+        {enabled && (
+          <p className="mt-2 text-[10px] font-medium text-emerald-400">
+            Browser notifications are enabled for this match.
+          </p>
+        )}
+      </div>
     </section>
   );
 }

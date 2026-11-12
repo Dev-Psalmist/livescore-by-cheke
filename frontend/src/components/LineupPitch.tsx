@@ -14,10 +14,13 @@ interface LineupPitchProps {
 
 interface PlayerRow {
   label: string;
+  position: string;
   players: LineupPlayer[];
 }
 
-const POSITION_LABELS: Record<string, string> = {
+type PositionGroup = "F" | "M" | "D" | "G" | "OTHER";
+
+const POSITION_LABELS: Record<PositionGroup, string> = {
   F: "Forwards",
   M: "Midfielders",
   D: "Defenders",
@@ -25,30 +28,35 @@ const POSITION_LABELS: Record<string, string> = {
   OTHER: "Other players",
 };
 
-function getPosition(position: string): string {
-  return position?.trim().toUpperCase() || "OTHER";
+function getPosition(position: string): PositionGroup {
+  const normalized = position?.trim().toUpperCase() || "";
+
+  if (["F", "FW", "FWD", "FORWARD", "ATTACKER"].includes(normalized)) {
+    return "F";
+  }
+
+  if (["M", "MF", "MID", "MIDFIELDER"].includes(normalized)) {
+    return "M";
+  }
+
+  if (["D", "DF", "DEF", "DEFENDER"].includes(normalized)) {
+    return "D";
+  }
+
+  if (["G", "GK", "GOALKEEPER"].includes(normalized)) {
+    return "G";
+  }
+
+  return "OTHER";
 }
 
 function groupPlayers(players: LineupPlayer[]) {
   return {
-    F: players.filter(
-      (item) => getPosition(item.player.pos) === "F"
-    ),
-    M: players.filter(
-      (item) => getPosition(item.player.pos) === "M"
-    ),
-    D: players.filter(
-      (item) => getPosition(item.player.pos) === "D"
-    ),
-    G: players.filter(
-      (item) => getPosition(item.player.pos) === "G"
-    ),
-    OTHER: players.filter(
-      (item) =>
-        !["F", "M", "D", "G"].includes(
-          getPosition(item.player.pos)
-        )
-    ),
+    F: players.filter((item) => getPosition(item.player.pos) === "F"),
+    M: players.filter((item) => getPosition(item.player.pos) === "M"),
+    D: players.filter((item) => getPosition(item.player.pos) === "D"),
+    G: players.filter((item) => getPosition(item.player.pos) === "G"),
+    OTHER: players.filter((item) => getPosition(item.player.pos) === "OTHER"),
   };
 }
 
@@ -74,22 +82,18 @@ function buildFormationRows(
 
   const groups = groupPlayers(players);
 
-  const goalkeeper = groups.G;
+  const goalkeeper = [...groups.G];
   const defenders = [...groups.D];
   const midfielders = [...groups.M];
   const forwards = [...groups.F];
 
   const rows: PlayerRow[] = [];
 
-  // Formation numbers are written from defence to attack.
-  // Reverse them because the pitch displays attack at the top.
+  // Formation is written defence-to-attack,
+  // but the pitch displays attack at the top.
   const attackingToDefending = [...formationNumbers].reverse();
 
-  for (
-    let index = 0;
-    index < attackingToDefending.length;
-    index++
-  ) {
+  for (let index = 0; index < attackingToDefending.length; index++) {
     const count = attackingToDefending[index];
 
     let position: "F" | "M" | "D";
@@ -118,11 +122,12 @@ function buildFormationRows(
 
     rows.push({
       label: POSITION_LABELS[position],
+      position,
       players: selectedPlayers,
     });
   }
 
-  // Every starting player must fit into the formation.
+  // A valid formation must account for every starting player.
   if (
     forwards.length > 0 ||
     midfielders.length > 0 ||
@@ -135,55 +140,45 @@ function buildFormationRows(
 
   rows.push({
     label: POSITION_LABELS.G,
+    position: "G",
     players: goalkeeper,
   });
 
   return rows;
 }
 
-function buildPositionRows(
-  players: LineupPlayer[]
-): PlayerRow[] {
+function buildPositionRows(players: LineupPlayer[]): PlayerRow[] {
   const groups = groupPlayers(players);
 
-  const rows: PlayerRow[] = [];
+  const order: PositionGroup[] = ["F", "M", "D", "G", "OTHER"];
 
-  const order: Array<keyof typeof groups> = [
-    "F",
-    "M",
-    "D",
-    "G",
-    "OTHER",
-  ];
-
-  for (const position of order) {
-    if (groups[position].length > 0) {
-      rows.push({
-        label: POSITION_LABELS[position],
-        players: groups[position],
-      });
-    }
-  }
-
-  return rows;
+  return order
+    .filter((position) => groups[position].length > 0)
+    .map((position) => ({
+      label: POSITION_LABELS[position],
+      position,
+      players: groups[position],
+    }));
 }
 
-function PlayerMarker({
-  item,
-}: {
-  item: LineupPlayer;
-}) {
+function PlayerMarker({ item }: { item: LineupPlayer }) {
+  const player = item.player;
+
   return (
     <div
-      className="flex min-w-0 flex-col items-center text-center"
-      title={`${item.player.name} · ${item.player.pos || "Position unavailable"}`}
+      className="group flex min-w-0 flex-col items-center text-center"
+      title={`${player.name} · ${player.pos || "Position unavailable"}`}
     >
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-white bg-white text-sm font-black text-green-900 shadow-lg transition-transform duration-200 hover:scale-110 sm:h-10 sm:w-10">
-        {item.player.number ?? "—"}
+      <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-white/90 bg-white text-sm font-black text-emerald-950 shadow-[0_4px_12px_rgba(0,0,0,0.35)] transition duration-200 group-hover:scale-110 group-hover:border-emerald-300 sm:h-10 sm:w-10">
+        {player.number ?? "—"}
       </div>
 
-      <span className="mt-1 w-full break-words rounded bg-black/75 px-1 py-1 text-[9px] font-semibold leading-tight text-white sm:px-2 sm:text-[10px]">
-        {item.player.name}
+      <span className="mt-1.5 block w-full max-w-[100px] break-words rounded-md border border-white/10 bg-slate-950/90 px-1.5 py-1 text-[9px] font-semibold leading-tight text-white shadow-md sm:text-[10px]">
+        {player.name}
+      </span>
+
+      <span className="mt-0.5 text-[8px] font-medium uppercase tracking-wider text-emerald-100/70">
+        {player.pos || "N/A"}
       </span>
     </div>
   );
@@ -193,110 +188,150 @@ export default function LineupPitch({
   players,
   formation,
 }: LineupPitchProps) {
-  if (players.length === 0) {
+  if (!players || players.length === 0) {
     return (
-      <div className="rounded-xl bg-slate-900 p-6 text-center text-sm text-gray-400">
-        Starting lineup unavailable.
+      <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-8 text-center">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/5 text-2xl">
+          ⚽
+        </div>
+        <p className="text-sm font-semibold text-white">
+          Starting lineup unavailable
+        </p>
+        <p className="mt-1 text-xs text-slate-400">
+          Player formation data has not been provided for this team.
+        </p>
       </div>
     );
   }
 
   const formationRows = buildFormationRows(players, formation);
-
   const rows = formationRows ?? buildPositionRows(players);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-white/10 bg-[#123d32] p-3 sm:p-4">
-      {/* PITCH HEADER */}
+    <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-xl">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-slate-900/80 px-4 py-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
+            Tactical formation
+          </p>
+          <h3 className="mt-1 text-sm font-bold text-white">
+            Starting XI
+          </h3>
+        </div>
 
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-xs text-green-100">
-        <span className="font-bold tracking-wider">
-          ATTACK ↑
-        </span>
-
-        <span className="rounded-full bg-black/20 px-3 py-1">
+        <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-300">
           {formationRows
-            ? `Formation: ${formation}`
+            ? formation
             : "Position-based arrangement"}
         </span>
       </div>
 
-      {/* FOOTBALL PITCH */}
+      {/* Pitch */}
+      <div className="p-3 sm:p-5">
+        <div className="mb-3 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300">
+          <span>Attack</span>
+          <span>↑</span>
+        </div>
 
-      <div className="relative overflow-hidden rounded-lg border-2 border-white/50 bg-gradient-to-b from-green-800 to-green-950">
-        {/* Pitch markings */}
+        <div className="relative isolate overflow-hidden rounded-xl border-2 border-white/35 bg-gradient-to-b from-[#176b45] via-[#105638] to-[#0b422e]">
+          {/* Pitch grass stripes */}
+          <div className="pointer-events-none absolute inset-0 -z-10 grid grid-rows-6 opacity-20">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={index}
+                className={index % 2 === 0 ? "bg-white/10" : ""}
+              />
+            ))}
+          </div>
 
-        <div className="absolute inset-3 border border-white/50" />
+          {/* Pitch boundary */}
+          <div className="pointer-events-none absolute inset-3 rounded-sm border border-white/40" />
 
-        <div className="absolute left-0 right-0 top-1/2 border-t border-white/50" />
+          {/* Halfway line */}
+          <div className="pointer-events-none absolute left-3 right-3 top-1/2 border-t border-white/40" />
 
-        <div className="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/50" />
+          {/* Centre circle */}
+          <div className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/40 sm:h-32 sm:w-32" />
 
-        <div className="absolute left-1/2 top-0 h-16 w-44 max-w-[70%] -translate-x-1/2 border-b border-l border-r border-white/50" />
+          {/* Centre spot */}
+          <div className="pointer-events-none absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70" />
 
-        <div className="absolute bottom-0 left-1/2 h-16 w-44 max-w-[70%] -translate-x-1/2 border-l border-r border-t border-white/50" />
+          {/* Top penalty area */}
+          <div className="pointer-events-none absolute left-1/2 top-3 h-16 w-40 max-w-[65%] -translate-x-1/2 border-b border-l border-r border-white/40 sm:h-20 sm:w-48" />
 
-        {/* Players */}
+          {/* Bottom penalty area */}
+          <div className="pointer-events-none absolute bottom-3 left-1/2 h-16 w-40 max-w-[65%] -translate-x-1/2 border-l border-r border-t border-white/40 sm:h-20 sm:w-48" />
 
-        <div className="relative z-10 flex min-h-[520px] flex-col justify-around gap-5 px-1 py-7 sm:px-3">
-          {rows.map((row, rowIndex) => (
-            <div
-              key={`${row.label}-${rowIndex}`}
-              className="grid w-full items-center justify-items-center gap-x-1 gap-y-3 sm:gap-x-3"
-              style={{
-                gridTemplateColumns: `repeat(${row.players.length}, minmax(0, 1fr))`,
-              }}
-            >
-              {row.players.map((item, playerIndex) => (
-                <div
-                  key={`${item.player.id}-${playerIndex}`}
-                  className="w-full min-w-0 max-w-[100px]"
-                >
-                  <PlayerMarker item={item} />
-                </div>
-              ))}
-            </div>
-          ))}
+          {/* Goal areas */}
+          <div className="pointer-events-none absolute left-1/2 top-3 h-6 w-20 max-w-[35%] -translate-x-1/2 border-b border-l border-r border-white/30 sm:w-24" />
+
+          <div className="pointer-events-none absolute bottom-3 left-1/2 h-6 w-20 max-w-[35%] -translate-x-1/2 border-l border-r border-t border-white/30 sm:w-24" />
+
+          {/* Players */}
+          <div className="relative z-10 flex min-h-[510px] flex-col justify-around gap-5 px-1 py-8 sm:min-h-[590px] sm:px-4 sm:py-9">
+            {rows.map((row, rowIndex) => (
+              <div
+                key={`${row.position}-${rowIndex}`}
+                className="grid w-full items-center justify-items-center gap-x-1 gap-y-3 sm:gap-x-3"
+                style={{
+                  gridTemplateColumns: `repeat(${row.players.length}, minmax(0, 1fr))`,
+                }}
+              >
+                {row.players.map((item, playerIndex) => (
+                  <div
+                    key={`${item.player.id}-${playerIndex}`}
+                    className="w-full min-w-0"
+                  >
+                    <PlayerMarker item={item} />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300">
+          <span>↓</span>
+          <span>Goalkeeper</span>
         </div>
       </div>
 
-      {/* PITCH FOOTER */}
+      {/* Position summary */}
+      <div className="border-t border-white/10 bg-slate-900/70 px-4 py-4">
+        <div className="flex flex-wrap justify-center gap-3 sm:gap-5">
+          {rows.map((row, index) => (
+            <div
+              key={`${row.position}-${index}`}
+              className="flex items-center gap-2 text-xs"
+            >
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span className="text-slate-400">{row.label}</span>
+              <span className="font-bold text-white">
+                {row.players.length}
+              </span>
+            </div>
+          ))}
+        </div>
 
-      <div className="mt-3 flex items-center justify-between text-xs text-green-100">
-        <span className="font-bold tracking-wider">
-          GOALKEEPER ↓
-        </span>
-
-        <span>{players.length} players displayed</span>
-      </div>
-
-      {/* POSITION SUMMARY */}
-
-      <div className="mt-4 flex flex-wrap justify-center gap-4">
-        {rows.map((row, index) => (
-          <div
-            key={`${row.label}-${index}`}
-            className="text-xs text-white"
-          >
-            <span className="font-bold">{row.label}:</span>{" "}
-            {row.players.length}
-          </div>
-        ))}
-      </div>
-
-      {!formationRows && formation && (
-        <p className="mt-3 text-center text-xs text-yellow-200">
-          Formation layout unavailable. Players are grouped
-          using their official position data instead.
+        <p className="mt-3 text-center text-[10px] text-slate-500">
+          {players.length} players displayed
         </p>
-      )}
 
-      {rows.some((row) => row.label === "Other players") && (
-        <p className="mt-3 text-center text-xs text-yellow-200">
-          Some players have unavailable or unrecognised position
-          data. They are displayed separately.
-        </p>
-      )}
+        {!formationRows && formation && (
+          <p className="mt-3 text-center text-xs text-amber-300">
+            Formation layout unavailable. Players are grouped using their
+            position data instead.
+          </p>
+        )}
+
+        {rows.some((row) => row.position === "OTHER") && (
+          <p className="mt-3 text-center text-xs text-amber-300">
+            Some players have unrecognised position data and are displayed
+            separately.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

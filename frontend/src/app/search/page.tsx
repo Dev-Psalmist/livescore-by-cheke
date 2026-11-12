@@ -102,6 +102,18 @@ function formatMatchDate(date: string) {
   }).format(new Date(date));
 }
 
+function isLiveStatus(status: string) {
+  return [
+    "1H",
+    "2H",
+    "HT",
+    "ET",
+    "BT",
+    "P",
+    "LIVE",
+  ].includes(status.toUpperCase());
+}
+
 export default function SearchPage() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<SearchType>("all");
@@ -171,103 +183,176 @@ export default function SearchPage() {
     <main className="min-h-screen bg-slate-950 text-white">
       <Header />
 
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
-        <div className="mb-10">
-          <p className="mb-3 break-words text-xs font-semibold sm:text-sm uppercase tracking-widest text-green-400">
-            Discover Football
-          </p>
+      <section className="relative overflow-hidden border-b border-slate-800 bg-gradient-to-br from-slate-900 via-slate-950 to-emerald-950/40">
+        <div className="pointer-events-none absolute -right-20 -top-32 h-96 w-96 rounded-full bg-green-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-40 left-1/3 h-80 w-80 rounded-full bg-emerald-500/10 blur-3xl" />
 
-          <h1 className="text-3xl font-bold sm:text-4xl md:text-5xl">
-            Global Search
-          </h1>
+        <div className="relative mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
+          <div className="max-w-3xl">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-green-500/20 bg-green-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-green-400">
+              <span className="h-2 w-2 rounded-full bg-green-400" />
+              Global Football Database
+            </div>
 
-          <p className="mt-4 max-w-2xl leading-7 text-slate-400">
-            Find football teams, leagues and match results from
-            around the world.
-          </p>
+            <h1 className="text-4xl font-black tracking-tight sm:text-5xl md:text-6xl">
+              One Search.
+              <span className="block text-green-400">
+                The Entire Game.
+              </span>
+            </h1>
+
+            <p className="mt-6 max-w-2xl text-base leading-8 text-slate-400 sm:text-lg">
+              Discover football teams, explore competitions
+              and find recent match results from across the
+              football world.
+            </p>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <span className="rounded-lg border border-slate-700 bg-slate-900/80 px-4 py-2 text-sm text-slate-300">
+                Teams
+              </span>
+
+              <span className="rounded-lg border border-slate-700 bg-slate-900/80 px-4 py-2 text-sm text-slate-300">
+                Competitions
+              </span>
+
+              <span className="rounded-lg border border-slate-700 bg-slate-900/80 px-4 py-2 text-sm text-slate-300">
+                Match Results
+              </span>
+            </div>
+          </div>
         </div>
+      </section>
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 md:p-8">
-          <form onSubmit={handleSearch}>
-            <label
-              htmlFor="global-search"
-              className="mb-3 block break-words text-xs font-semibold sm:text-sm text-slate-300"
-            >
+      <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-xl shadow-black/10 sm:p-8">
+          <div className="mb-6">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-green-400">
+              Search Centre
+            </p>
+
+            <h2 className="mt-2 text-2xl font-black sm:text-3xl">
               What are you looking for?
-            </label>
+            </h2>
 
+            <p className="mt-2 text-sm text-slate-400">
+              Search across the global football database.
+            </p>
+          </div>
+
+          <form onSubmit={handleSearch}>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <input
-                id="global-search"
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search Arsenal, Premier League..."
-                className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-5 py-4 text-white outline-none placeholder:text-slate-500 focus:border-green-500"
-              />
+              <div className="relative min-w-0 flex-1">
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xl text-slate-500">
+                  ⌕
+                </span>
+
+                <input
+                  id="global-search"
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search Arsenal, Premier League..."
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 py-4 pl-12 pr-4 text-white outline-none transition placeholder:text-slate-500 focus:border-green-500 focus:ring-2 focus:ring-green-500/10"
+                />
+              </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="rounded-xl bg-green-500 w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 font-bold text-slate-950 transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-xl bg-green-500 px-8 py-4 font-bold text-slate-950 transition hover:bg-green-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? "Searching..." : "Search"}
               </button>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-2">
-              {categories.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setCategory(item.id)}
-                  className={`rounded-full px-5 py-2 break-words text-xs font-semibold sm:text-sm transition ${
-                    category === item.id
-                      ? "bg-green-500 text-slate-950"
-                      : "border border-slate-700 text-slate-300 hover:border-green-500 hover:text-green-400"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
+            <div className="mt-7">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500">
+                Search Category
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {categories.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setCategory(item.id)}
+                    className={`rounded-xl px-5 py-3 text-sm font-semibold transition ${
+                      category === item.id
+                        ? "border border-green-400 bg-green-500 text-slate-950 shadow-lg shadow-green-950/20"
+                        : "border border-slate-700 bg-slate-950 text-slate-300 hover:border-green-500 hover:text-green-400"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <p className="mt-4 text-xs text-slate-500">
+            <p className="mt-5 text-xs leading-5 text-slate-500">
               Enter at least three characters. Match searches find
               the latest 10 fixtures for the matching team in the
               current season.
             </p>
           </form>
-        </section>
+        </div>
 
         {loading && (
-          <div className="py-16 text-center">
-            <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-slate-700 border-t-green-400" />
-            <p className="text-slate-400">
-              Searching football data...
+          <div className="mt-10 rounded-2xl border border-slate-800 bg-slate-900/50 py-20 text-center">
+            <div className="mx-auto mb-5 h-12 w-12 animate-spin rounded-full border-4 border-slate-700 border-t-green-400" />
+
+            <h3 className="text-lg font-bold">
+              Searching the Football World
+            </h3>
+
+            <p className="mt-2 text-sm text-slate-400">
+              Retrieving teams, competitions and match information...
             </p>
           </div>
         )}
 
         {!loading && error && (
-          <div className="mt-8 rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-center">
-            <p className="font-medium text-red-400">{error}</p>
+          <div className="mt-8 rounded-2xl border border-red-500/30 bg-red-500/10 p-6">
+            <div className="flex items-start gap-4">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-xl text-red-400">
+                !
+              </span>
+
+              <div>
+                <h3 className="font-bold text-red-400">
+                  Search Unavailable
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-red-300/80">
+                  {error}
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
         {!loading && searched && !error && (
-          <div className="mt-10 space-y-12">
+          <div className="mt-12 space-y-12">
             {(category === "all" || category === "teams") && (
               <section>
-                <div className="mb-5 flex items-center justify-between">
-                  <h2 className="text-xl font-bold sm:text-2xl">Teams</h2>
-                  <span className="text-sm text-slate-400">
+                <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-slate-800 pb-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-green-400">
+                      Clubs & Countries
+                    </p>
+
+                    <h2 className="mt-2 text-2xl font-black">
+                      Teams
+                    </h2>
+                  </div>
+
+                  <span className="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-400">
                     {teams.length} found
                   </span>
                 </div>
 
                 {teams.length === 0 ? (
-                  <p className="rounded-xl border border-slate-800 p-6 text-slate-400">
+                  <p className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 text-sm text-slate-400">
                     No matching teams found.
                   </p>
                 ) : (
@@ -275,32 +360,42 @@ export default function SearchPage() {
                     {teams.map((item) => (
                       <article
                         key={item.team.id}
-                        className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 sm:p-5"
+                        className="group flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 transition hover:-translate-y-1 hover:border-green-500/60"
                       >
-                        {item.team.logo ? (
-                          <img
-                            src={item.team.logo}
-                            alt={`${item.team.name} logo`}
-                            className="h-12 w-12 sm:h-14 sm:w-14 object-contain"
-                          />
-                        ) : (
-                          <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-lg bg-slate-800 font-bold text-green-400">
-                            {item.team.name.slice(0, 2).toUpperCase()}
-                          </div>
-                        )}
+                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 p-2">
+                          {item.team.logo ? (
+                            <img
+                              src={item.team.logo}
+                              alt={`${item.team.name} logo`}
+                              className="max-h-full max-w-full object-contain"
+                            />
+                          ) : (
+                            <span className="font-bold text-green-400">
+                              {item.team.name.slice(0, 2).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
 
                         <div className="min-w-0">
-                          <h3 className="font-bold">
+                          <h3 className="break-words font-bold transition group-hover:text-green-400">
                             {item.team.name}
                           </h3>
+
                           <p className="mt-1 text-sm text-slate-400">
                             {item.team.country || "Country unavailable"}
                           </p>
-                          {item.team.national && (
-                            <span className="mt-1 inline-block text-xs text-green-400">
-                              National team
-                            </span>
-                          )}
+
+                          <div className="mt-2">
+                            {item.team.national ? (
+                              <span className="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-400">
+                                National Team
+                              </span>
+                            ) : (
+                              <span className="rounded-full border border-green-500/20 bg-green-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-green-400">
+                                Club Team
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </article>
                     ))}
@@ -311,15 +406,24 @@ export default function SearchPage() {
 
             {(category === "all" || category === "leagues") && (
               <section>
-                <div className="mb-5 flex items-center justify-between">
-                  <h2 className="text-xl font-bold sm:text-2xl">Leagues</h2>
-                  <span className="text-sm text-slate-400">
+                <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-slate-800 pb-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-green-400">
+                      Global Competitions
+                    </p>
+
+                    <h2 className="mt-2 text-2xl font-black">
+                      Leagues
+                    </h2>
+                  </div>
+
+                  <span className="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-400">
                     {leagues.length} found
                   </span>
                 </div>
 
                 {leagues.length === 0 ? (
-                  <p className="rounded-xl border border-slate-800 p-6 text-slate-400">
+                  <p className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 text-sm text-slate-400">
                     No matching leagues found.
                   </p>
                 ) : (
@@ -327,28 +431,32 @@ export default function SearchPage() {
                     {leagues.map((item) => (
                       <article
                         key={item.league.id}
-                        className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900 p-4 sm:p-5"
+                        className="group flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 transition hover:-translate-y-1 hover:border-green-500/60"
                       >
-                        {item.league.logo ? (
-                          <img
-                            src={item.league.logo}
-                            alt={`${item.league.name} logo`}
-                            className="h-12 w-12 sm:h-14 sm:w-14 object-contain"
-                          />
-                        ) : (
-                          <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-lg bg-slate-800 font-bold text-green-400">
-                            L
-                          </div>
-                        )}
+                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-800 p-2">
+                          {item.league.logo ? (
+                            <img
+                              src={item.league.logo}
+                              alt={`${item.league.name} logo`}
+                              className="max-h-full max-w-full object-contain"
+                            />
+                          ) : (
+                            <span className="text-xl font-black text-green-400">
+                              L
+                            </span>
+                          )}
+                        </div>
 
                         <div className="min-w-0">
-                          <h3 className="font-bold">
+                          <h3 className="break-words font-bold transition group-hover:text-green-400">
                             {item.league.name}
                           </h3>
+
                           <p className="mt-1 text-sm text-slate-400">
                             {item.country?.name || "Country unavailable"}
                           </p>
-                          <p className="mt-1 text-xs text-green-400">
+
+                          <p className="mt-2 text-xs font-semibold text-green-400">
                             {item.league.type}
                           </p>
                         </div>
@@ -361,77 +469,123 @@ export default function SearchPage() {
 
             {category === "matches" && (
               <section>
-                <div className="mb-5">
-                  <h2 className="text-xl font-bold sm:text-2xl">
-                    Match Results
-                  </h2>
-
-                  {matchedTeam && (
-                    <p className="mt-2 text-sm text-slate-400">
-                      Showing recent fixtures for{" "}
-                      <span className="font-semibold text-green-400">
-                        {matchedTeam.team.name}
-                      </span>
+                <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-slate-800 pb-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-green-400">
+                      Recent Fixtures
                     </p>
-                  )}
+
+                    <h2 className="mt-2 text-2xl font-black">
+                      Match Results
+                    </h2>
+
+                    {matchedTeam && (
+                      <p className="mt-2 text-sm text-slate-400">
+                        Showing recent fixtures for{" "}
+                        <span className="font-semibold text-green-400">
+                          {matchedTeam.team.name}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+
+                  <span className="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-400">
+                    {matches.length} matches
+                  </span>
                 </div>
 
                 {matches.length === 0 ? (
-                  <p className="rounded-xl border border-slate-800 p-6 text-slate-400">
+                  <p className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 text-sm text-slate-400">
                     No recent fixtures were found for this team.
                   </p>
                 ) : (
                   <div className="space-y-4">
-                    {matches.map((match) => (
-                      <Link
-                        key={match.fixture.id}
-                        href={`/match/${match.fixture.id}`}
-                        className="block rounded-xl border border-slate-800 bg-slate-900 p-4 sm:p-5 transition hover:border-green-500"
-                      >
-                        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
-                          <span>
-                            {match.league.name} · {match.league.country}
-                          </span>
-                          <span>
-                            {formatMatchDate(match.fixture.date)}
-                          </span>
-                        </div>
+                    {matches.map((match) => {
+                      const live = isLiveStatus(match.fixture.status.short);
 
-                        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-3">
-                          <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
-                            <img
-                              src={match.teams.home.logo}
-                              alt=""
-                              className="h-8 w-8 object-contain"
-                            />
-                            <span className="break-words text-xs font-semibold sm:text-sm">
-                              {match.teams.home.name}
+                      return (
+                        <Link
+                          key={match.fixture.id}
+                          href={`/match/${match.fixture.id}`}
+                          className="group block rounded-2xl border border-slate-800 bg-slate-900 p-4 transition hover:border-green-500/60 sm:p-6"
+                        >
+                          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-bold text-slate-300">
+                                {match.league.name}
+                              </p>
+
+                              <p className="mt-1 text-xs text-slate-500">
+                                {match.league.country}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              {live && (
+                                <span className="inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-red-400">
+                                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" />
+                                  Live
+                                </span>
+                              )}
+
+                              <span className="text-xs text-slate-500">
+                                {formatMatchDate(match.fixture.date)}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-5">
+                            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                              <img
+                                src={match.teams.home.logo}
+                                alt=""
+                                className="h-9 w-9 shrink-0 object-contain sm:h-12 sm:w-12"
+                              />
+
+                              <span className="break-words text-xs font-bold sm:text-base">
+                                {match.teams.home.name}
+                              </span>
+                            </div>
+
+                            <div className="min-w-[76px] text-center sm:min-w-[100px]">
+                              <p className="text-2xl font-black tracking-wider sm:text-3xl">
+                                {match.goals.home ?? "-"}
+                                <span className="mx-1 text-slate-600">:</span>
+                                {match.goals.away ?? "-"}
+                              </p>
+
+                              <p className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                                {match.fixture.status.long}
+                              </p>
+
+                              {match.fixture.status.elapsed !== null && live && (
+                                <p className="mt-1 text-xs font-bold text-red-400">
+                                  {match.fixture.status.elapsed}&apos;
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="flex min-w-0 items-center justify-end gap-2 text-right sm:gap-3">
+                              <span className="break-words text-xs font-bold sm:text-base">
+                                {match.teams.away.name}
+                              </span>
+
+                              <img
+                                src={match.teams.away.logo}
+                                alt=""
+                                className="h-9 w-9 shrink-0 object-contain sm:h-12 sm:w-12"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="mt-5 flex justify-end border-t border-slate-800 pt-4">
+                            <span className="text-xs font-bold text-green-400 transition group-hover:translate-x-1">
+                              Open Match Centre →
                             </span>
                           </div>
-
-                          <div className="text-center">
-                            <p className="text-xl font-extrabold">
-                              {match.goals.home ?? "-"} :{" "}
-                              {match.goals.away ?? "-"}
-                            </p>
-                            <p className="mt-1 text-xs text-slate-400">
-                              {match.fixture.status.long}
-                            </p>
-                          </div>
-
-                          <div className="flex items-center justify-end gap-2 text-right">
-                            <span className="break-words text-xs font-semibold sm:text-sm">
-                              {match.teams.away.name}
-                            </span>
-                            <img
-                              src={match.teams.away.logo}
-                              alt=""
-                              className="h-8 w-8 object-contain"
-                            />
-                          </div>
-                        </div>
-                      </Link>
-                    ))}
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
               </section>
@@ -440,12 +594,18 @@ export default function SearchPage() {
         )}
 
         {!loading && !searched && !error && (
-          <div className="mt-10 rounded-xl border border-dashed border-slate-800 p-12 text-center">
-            <h2 className="text-xl font-semibold">
+          <div className="mt-10 rounded-2xl border border-dashed border-slate-700 bg-slate-900/30 px-6 py-16 text-center">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-700 bg-slate-900 text-3xl">
+              ⌕
+            </div>
+
+            <h2 className="text-xl font-bold sm:text-2xl">
               Search the World of Football
             </h2>
-            <p className="mt-2 text-slate-400">
-              Find teams, competitions and recent matches in one place.
+
+            <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-400">
+              Find teams, competitions and recent matches in one
+              place. Enter a search term above to get started.
             </p>
           </div>
         )}
