@@ -1375,7 +1375,13 @@ export default function MatchCentreClient({
               ) : (
                 <div className="space-y-2">
                   {headToHead.map((game) => (
-                    <div key={game.id} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-3">
+                    <Link
+                      key={game.id}
+                      href={`/match/${game.id}`}
+                      title={`View match: ${game.home} ${game.homeGoals ?? "—"}–${game.awayGoals ?? "—"} ${game.away}`}
+                      aria-label={`Open match centre for ${game.home} versus ${game.away}`}
+                      className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-3 transition-colors hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                    >
                       <div className="flex min-w-0 items-center gap-2">
                         {game.homeLogo && <img src={game.homeLogo} alt="" className="h-5 w-5 shrink-0 object-contain" />}
                         <span className="truncate text-xs font-semibold text-slate-200">{game.home}</span>
@@ -1388,7 +1394,7 @@ export default function MatchCentreClient({
                         <span className="truncate text-right text-xs font-semibold text-slate-200">{game.away}</span>
                         {game.awayLogo && <img src={game.awayLogo} alt="" className="h-5 w-5 shrink-0 object-contain" />}
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               )}
