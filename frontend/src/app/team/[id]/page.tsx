@@ -57,7 +57,7 @@ export default function TeamProfilePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!teamId || !/^\\d+$/.test(teamId)) {
+    if (!teamId || !/^\d+$/.test(teamId)) {
       setError("A valid team could not be identified.");
       setLoading(false);
       return;
