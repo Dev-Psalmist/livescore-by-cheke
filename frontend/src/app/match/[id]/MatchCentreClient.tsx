@@ -138,6 +138,8 @@ interface MatchDetails {
     };
   };
   league: {
+    id: number;
+    season: number;
     name: string;
     country: string;
     logo: string;
@@ -230,10 +232,13 @@ const LIVE_STATUSES = [
 ];
 
 const TABS = [
-  { id: "events", label: "Events", icon: "⚡" },
-  { id: "statistics", label: "Statistics", icon: "📊" },
-  { id: "players", label: "Players", icon: "👤" },
+  { id: "overview", label: "Overview", icon: "⌂" },
   { id: "lineups", label: "Lineups", icon: "⚽" },
+  { id: "table", label: "Table", icon: "🏆" },
+  { id: "statistics", label: "Stats", icon: "📊" },
+  { id: "news", label: "News", icon: "📰" },
+  { id: "betting", label: "Betting", icon: "📈" },
+  { id: "players", label: "Players", icon: "👤" },
   { id: "highlights", label: "Highlights", icon: "▶" },
 ];
 
@@ -483,7 +488,11 @@ export default function MatchCentreClient({
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [statusRefreshError, setStatusRefreshError] = useState("");
-  const [activeTab, setActiveTab] = useState("events");
+  const [activeTab, setActiveTab] = useState("overview");
+  const [standings, setStandings] = useState<Array<{ rank:number; team:{id:number;name:string;logo:string}; points:number; goalsDiff:number; all:{played:number;win:number;draw:number;lose:number}; form?:string|null }>>([]);
+  const [tableError, setTableError] = useState("");
+  const [matchNews, setMatchNews] = useState<Array<{id:string;title:string;link:string;source:string;publishedAt:string;summary?:string}>>([]);
+  const [newsLoading, setNewsLoading] = useState(false);
 
   const [teamForm, setTeamForm] = useState<{ home: Array<{id:number;opponent:string;result:"W"|"D"|"L"}>; away: Array<{id:number;opponent:string;result:"W"|"D"|"L"}> } | null>(null);
   const [now, setNow] = useState(0);
@@ -628,6 +637,40 @@ export default function MatchCentreClient({
       .catch(() => { if (!cancelled) setTeamForm(null); });
     return () => { cancelled = true; };
   }, [match?.teams.home.id, match?.teams.away.id]);
+
+  useEffect(() => {
+    if (!match || !match.league.id || !match.league.season) return;
+    let cancelled = false;
+    fetch(`/api/football/standings?league=${match.league.id}&season=${match.league.season}`, { cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error("Competition table is unavailable.");
+        const rows = data.standings?.[0] || [];
+        if (!cancelled) setStandings(rows);
+      })
+      .catch((err) => { if (!cancelled) setTableError(err instanceof Error ? err.message : "Competition table is unavailable."); });
+    return () => { cancelled = true; };
+  }, [match?.league.id, match?.league.season]);
+
+  useEffect(() => {
+    if (!match) return;
+    let cancelled = false;
+    setNewsLoading(true);
+    fetch("/api/football/news", { cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error("Football news is unavailable.");
+        const terms = [match.teams.home.name, match.teams.away.name, match.league.name].map((term) => term.toLowerCase());
+        const relevant = (data.articles || []).filter((article: {title?:string;summary?:string}) => {
+          const text = `${article.title || ""} ${article.summary || ""}`.toLowerCase();
+          return terms.some((term) => term.length > 2 && text.includes(term));
+        }).slice(0, 10);
+        if (!cancelled) setMatchNews(relevant);
+      })
+      .catch(() => { if (!cancelled) setMatchNews([]); })
+      .finally(() => { if (!cancelled) setNewsLoading(false); });
+    return () => { cancelled = true; };
+  }, [match?.teams.home.name, match?.teams.away.name, match?.league.name]);
 
   const isLive = match
     ? LIVE_STATUSES.includes(match.fixture.status.short.toUpperCase())
@@ -1030,10 +1073,10 @@ export default function MatchCentreClient({
         </section>
 
         {/* MATCH EVENTS */}
-        {activeTab === "events" && (
+        {activeTab === "overview" && (
           <section className="rounded-2xl border border-white/[0.07] bg-[#101d2d] p-4 sm:p-6">
             <SectionHeading
-              eyebrow="The action"
+              eyebrow="Match overview"
               title="Match Events"
               description="Follow goals, cards, substitutions and important moments."
             />
@@ -1241,6 +1284,27 @@ export default function MatchCentreClient({
               limit={6}
             />
           </section>
+        )}
+
+        {activeTab === "table" && (
+          <section className="rounded-2xl border border-white/[0.07] bg-[#101d2d] p-4 sm:p-6">
+            <SectionHeading eyebrow={match.league.name} title="Competition Table" description="Official standings returned by the football data provider." />
+            {tableError ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">{tableError}</p> : standings.length === 0 ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">Standings are not available for this competition or season.</p> : (
+              <div className="overflow-x-auto"><table className="w-full min-w-[620px] text-left text-xs"><thead className="text-[10px] uppercase tracking-wider text-slate-500"><tr><th className="p-3">Pos</th><th className="p-3">Club</th><th className="p-3">P</th><th className="p-3">W</th><th className="p-3">D</th><th className="p-3">L</th><th className="p-3">GD</th><th className="p-3">Pts</th></tr></thead><tbody>{standings.map((row) => <tr key={row.team.id} className={`border-t border-white/[0.06] ${row.team.id === match.teams.home.id || row.team.id === match.teams.away.id ? "bg-emerald-500/[0.06]" : ""}`}><td className="p-3 font-bold text-slate-400">{row.rank}</td><td className="p-3 font-semibold text-white"><span className="flex items-center gap-2">{row.team.logo && <img src={row.team.logo} alt="" className="h-5 w-5 object-contain" />}{row.team.name}</span></td><td className="p-3">{row.all.played}</td><td className="p-3">{row.all.win}</td><td className="p-3">{row.all.draw}</td><td className="p-3">{row.all.lose}</td><td className="p-3">{row.goalsDiff}</td><td className="p-3 font-black text-emerald-400">{row.points}</td></tr>)}</tbody></table></div>
+            )}
+          </section>
+        )}
+
+        {activeTab === "news" && (
+          <section className="rounded-2xl border border-white/[0.07] bg-[#101d2d] p-4 sm:p-6">
+            <SectionHeading eyebrow="Team coverage" title="Related Football News" description={`Headlines mentioning ${homeTeam}, ${awayTeam} or ${match.league.name}.`} />
+            {newsLoading ? <p className="p-8 text-center text-sm text-slate-400">Loading related news...</p> : matchNews.length === 0 ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">No related headlines are currently available. Unrelated football stories are hidden.</p> : <div className="grid gap-3 md:grid-cols-2">{matchNews.map((article) => <a key={article.id} href={article.link} target="_blank" rel="noreferrer" className="rounded-xl border border-white/[0.06] bg-[#0c1725] p-4 transition hover:border-emerald-500/30"><p className="text-sm font-bold text-white">{article.title}</p>{article.summary && <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-400">{article.summary}</p>}<p className="mt-3 text-[10px] font-bold uppercase tracking-wider text-emerald-400">{article.source} · {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString("en-NG") : "Latest"}</p></a>)}</div>}
+            <div className="mt-6 border-t border-white/[0.06] pt-5"><h3 className="mb-3 text-sm font-bold text-white">Video highlights</h3><YouTubeHighlights kind="all" homeTeam={homeTeam} awayTeam={awayTeam} league={match.league.name} limit={4} /></div>
+          </section>
+        )}
+
+        {activeTab === "betting" && (
+          <section className="rounded-2xl border border-white/[0.07] bg-[#101d2d] p-6 sm:p-8"><SectionHeading eyebrow="Match markets" title="Betting Odds" description="Odds are shown only when a verified odds provider is connected." /><div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.05] p-5"><p className="font-bold text-amber-300">Odds provider not configured</p><p className="mt-2 text-sm leading-6 text-slate-400">LiveScore by Cheke does not currently have a verified betting-odds data source. We will not display estimated or invented odds.</p></div></section>
         )}
 
         {/* API DATA DIAGNOSTICS */}
