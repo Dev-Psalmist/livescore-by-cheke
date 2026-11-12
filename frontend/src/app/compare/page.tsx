@@ -75,7 +75,7 @@ function aggregate(profile: PlayerProfile): Totals {
 function PlayerPicker({
   title, selected, onSelect,
 }: {
-  title: string; selected: PlayerProfile | null; onSelect: (player: PlayerProfile) => void;
+  title: string; selected: PlayerProfile | null; onSelect: (player: PlayerProfile | null) => void;
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PlayerSearchResult[]>([]);
@@ -132,7 +132,7 @@ function PlayerPicker({
           <div className="min-w-0 flex-1">
             <h2 className="font-black text-white">{selected.player.name}</h2>
             <p className="mt-1 text-sm text-slate-400">{selected.player.nationality || "Nationality unavailable"}</p>
-            <button type="button" onClick={() => { onSelect(null as unknown as PlayerProfile); setQuery(""); }} className="mt-2 text-xs font-bold text-emerald-400 hover:text-emerald-300">Change player</button>
+            <button type="button" onClick={() => { onSelect(null); setQuery(""); }} className="mt-2 text-xs font-bold text-emerald-400 hover:text-emerald-300">Change player</button>
           </div>
         </div>
       ) : (
@@ -154,7 +154,6 @@ function display(value: number | null, suffix = "") {
 export default function PlayerComparePage() {
   const [first, setFirst] = useState<PlayerProfile | null>(null);
   const [second, setSecond] = useState<PlayerProfile | null>(null);
-  const [error, setError] = useState("");
   const firstTotals = first ? aggregate(first) : null;
   const secondTotals = second ? aggregate(second) : null;
 
