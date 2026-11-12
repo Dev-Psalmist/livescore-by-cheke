@@ -199,6 +199,9 @@ export default function TeamsPage() {
                 Every sport. Every moment.
               </p>
             </div>
+            <a href="/team-compare" className="mt-5 inline-flex items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm font-bold text-emerald-300 transition hover:border-emerald-400 hover:bg-emerald-500/20">
+              ⚖ Compare two teams →
+            </a>
           </div>
         </div>
 
