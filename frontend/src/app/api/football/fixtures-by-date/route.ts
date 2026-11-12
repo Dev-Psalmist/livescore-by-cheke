@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     const response = await fetch(url, {
       headers: { "x-apisports-key": key },
-      cache: "no-store",
+      next: { revalidate: 60 },
     });
     const data = await response.json();
 
