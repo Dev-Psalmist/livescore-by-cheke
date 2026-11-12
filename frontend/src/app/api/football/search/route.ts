@@ -132,7 +132,16 @@ export async function GET(request: NextRequest) {
     }
 
     if (type === "matches") {
-      // First, find the team so we can use its API-Football ID.
+      // A numeric query is treated as an exact fixture ID.
+      if (/^\d+$/.test(query)) {
+        const matches = await fetchFootballData(
+          `/fixtures?id=${encodeURIComponent(query)}`,
+          apiKey
+        );
+        return NextResponse.json({ success: true, type, matches });
+      }
+
+      // Otherwise, find the team and retrieve its latest fixtures.
       const teams = await fetchFootballData(
         `/teams?search=${encodedQuery}`,
         apiKey
