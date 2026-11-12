@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
     // Retrieve events alongside the latest score so the Match Centre
     // can refresh both from one polling cycle.
-    let events: any[] = [];
+    let events: any[] | null = null;
     try {
       const eventsUrl = new URL(`${API_BASE_URL}/fixtures/events`);
       eventsUrl.searchParams.set("fixture", matchId);
