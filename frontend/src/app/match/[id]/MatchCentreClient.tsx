@@ -1025,9 +1025,13 @@ export default function MatchCentreClient({
                   />
                 </div>
 
-                <h2 className="break-words text-sm font-black text-white sm:text-xl lg:text-2xl">
+                <Link
+                  href={`/team/${match.teams.home.id}`}
+                  title={`View ${homeTeam} team profile`}
+                  className="break-words text-sm font-black text-white transition hover:text-emerald-400 sm:text-xl lg:text-2xl"
+                >
                   {homeTeam}
-                </h2>
+                </Link>
 
                 {match.teams.home.winner && (
                   <span className="mt-2 inline-block rounded-full bg-emerald-500/10 px-3 py-1 text-[9px] font-black tracking-wider text-emerald-400">
@@ -1110,9 +1114,13 @@ export default function MatchCentreClient({
                   />
                 </div>
 
-                <h2 className="break-words text-sm font-black text-white sm:text-xl lg:text-2xl">
+                <Link
+                  href={`/team/${match.teams.away.id}`}
+                  title={`View ${awayTeam} team profile`}
+                  className="break-words text-sm font-black text-white transition hover:text-blue-400 sm:text-xl lg:text-2xl"
+                >
                   {awayTeam}
-                </h2>
+                </Link>
 
                 {match.teams.away.winner && (
                   <span className="mt-2 inline-block rounded-full bg-emerald-500/10 px-3 py-1 text-[9px] font-black tracking-wider text-emerald-400">
