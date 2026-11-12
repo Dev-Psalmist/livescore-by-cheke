@@ -72,27 +72,30 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Retrieve events alongside the latest score so the Match Centre
-    // can refresh both from one polling cycle.
+    // Only request event data once the match is in progress or finished.
+    // Scheduled fixtures still refresh their status without extra event calls.
     let events: any[] | null = null;
-    try {
-      const eventsUrl = new URL(`${API_BASE_URL}/fixtures/events`);
-      eventsUrl.searchParams.set("fixture", matchId);
-      const eventsResponse = await fetch(eventsUrl.toString(), {
-        method: "GET",
-        headers: { "x-apisports-key": apiKey },
-        cache: "no-store",
-      });
-      const eventsData = await eventsResponse.json();
-      if (
-        eventsResponse.ok &&
-        !hasApiErrors(eventsData.errors) &&
-        Array.isArray(eventsData.response)
-      ) {
-        events = eventsData.response;
+    const eventEligibleStatuses = ["1H", "HT", "2H", "ET", "BT", "P", "LIVE", "FT", "AET", "PEN"];
+    if (eventEligibleStatuses.includes(match.fixture.status.short)) {
+      try {
+        const eventsUrl = new URL(`${API_BASE_URL}/fixtures/events`);
+        eventsUrl.searchParams.set("fixture", matchId);
+        const eventsResponse = await fetch(eventsUrl.toString(), {
+          method: "GET",
+          headers: { "x-apisports-key": apiKey },
+          cache: "no-store",
+        });
+        const eventsData = await eventsResponse.json();
+        if (
+          eventsResponse.ok &&
+          !hasApiErrors(eventsData.errors) &&
+          Array.isArray(eventsData.response)
+        ) {
+          events = eventsData.response;
+        }
+      } catch {
+        // Keep the score/status response usable if event data is unavailable.
       }
-    } catch {
-      // Keep the score/status response usable if event data is unavailable.
     }
 
     return NextResponse.json(
