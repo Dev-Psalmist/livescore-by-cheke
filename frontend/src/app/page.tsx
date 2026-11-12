@@ -71,12 +71,8 @@ interface ApiResponse<T> {
   error?: unknown;
 }
 
-function getErrorMessage(error: unknown): string {
-  const message = typeof error === "string" ? error : error ? JSON.stringify(error) : "";
-  if (/request limit|daily limit|quota exceeded/i.test(message)) {
-    return "The football data provider's daily request limit has been reached. Live scores and fixtures will return when the quota resets. News and highlights are still available.";
-  }
-  return message || "Unable to retrieve football data.";
+function getErrorMessage(_error: unknown): string {
+  return "Unable to load data right now. Please try again later.";
 }
 
 function formatKickoff(date: string): string {
@@ -140,11 +136,7 @@ export default function HomePage() {
 
       setLiveMatches(formattedMatches);
     } catch (error) {
-      setLiveError(
-        error instanceof Error
-          ? error.message
-          : "Unable to load live matches."
-      );
+      setLiveError("Unable to load data right now. Please try again later.");
     } finally {
       setLiveLoading(false);
     }
@@ -190,11 +182,7 @@ export default function HomePage() {
 
       setUpcomingMatches(formattedMatches);
     } catch (error) {
-      setFixturesError(
-        error instanceof Error
-          ? error.message
-          : "Unable to load upcoming fixtures."
-      );
+      setFixturesError("Unable to load data right now. Please try again later.");
     } finally {
       setFixturesLoading(false);
     }
