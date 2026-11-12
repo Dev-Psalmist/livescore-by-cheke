@@ -116,8 +116,8 @@ export default function TeamComparePage() {
             </div>
             <div className="divide-y divide-slate-800">{metrics.map((metric) => {
               const a = comparison.home[metric.key] as number, b = comparison.away[metric.key] as number;
-              const aWins = a !== b && (metric.higher ? a > b : a < b);
-              const bWins = a !== b && (metric.higher ? b > a : b < a);
+              const aWins = metric.higher !== null && a !== b && (metric.higher ? a > b : a < b);
+              const bWins = metric.higher !== null && a !== b && (metric.higher ? b > a : b < a);
               return <div key={metric.key} className="grid grid-cols-[1fr_minmax(120px,1.2fr)_1fr] items-center gap-2 px-3 py-4 sm:px-6"><p className={`text-center text-lg font-black ${aWins ? "text-emerald-400" : "text-white"}`}>{a}</p><p className="text-center text-[10px] font-bold uppercase tracking-wider text-slate-500 sm:text-xs">{metric.label}</p><p className={`text-center text-lg font-black ${bWins ? "text-emerald-400" : "text-white"}`}>{b}</p></div>;
             })}</div>
             <p className="border-t border-slate-800 px-5 py-4 text-xs leading-5 text-slate-500">Form is ordered newest first by date. A dash is used only where data is unavailable. This comparison covers each team's latest ten completed fixtures, which may span different competitions and seasons.</p>
