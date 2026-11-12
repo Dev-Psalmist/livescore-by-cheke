@@ -33,19 +33,14 @@ function isLive(status: string) {
 }
 
 export default function DateFixtureBrowser() {
-  const dates = useMemo(() => Array.from({ length: 7 }, (_, index) => {
-    const date = new Date();
-    date.setDate(date.getDate() + index - 3);
-    return localDate(date);
-  }), []);
-
-  const [selected, setSelected] = useState(() => localDate(new Date()));
+  const [dates, setDates] = useState<string[]>([]);
+  const [today, setToday] = useState("");
+  const [selected, setSelected] = useState("");
   const [fixtures, setFixtures] = useState<ApiFixture[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const load = useCallback(async (date: string) => {
-    setSelected(date);
     setLoading(true);
     setError("");
     try {
@@ -61,7 +56,21 @@ export default function DateFixtureBrowser() {
     }
   }, []);
 
-  useEffect(() => { void load(selected); }, [load, selected]);
+  useEffect(() => {
+    const currentDay = localDate(new Date());
+    setToday(currentDay);
+    const base = new Date(`${currentDay}T12:00:00+01:00`);
+    setDates(Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(base);
+      date.setDate(date.getDate() + index - 3);
+      return localDate(date);
+    }));
+    setSelected(currentDay);
+  }, []);
+
+  useEffect(() => {
+    if (selected) void load(selected);
+  }, [load, selected]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, ApiFixture[]>();
@@ -87,12 +96,12 @@ export default function DateFixtureBrowser() {
           {dates.map((date) => {
             const label = dayLabel(date);
             const active = selected === date;
-            const today = date === localDate(new Date());
+            const isToday = date === today;
             return (
-              <button key={date} type="button" onClick={() => void load(date)}
+              <button key={date} type="button" onClick={() => setSelected(date)}
                 aria-pressed={active}
                 className={`rounded-xl border px-1 py-3 text-center transition sm:py-3.5 ${active ? "border-emerald-400 bg-emerald-400 text-slate-950" : "border-white/[0.07] bg-[#0e1721] text-slate-300 hover:border-emerald-400/50"}`}>
-                <span className="block text-[10px] font-bold uppercase">{today ? "Today" : label.weekday}</span>
+                <span className="block text-[10px] font-bold uppercase">{isToday ? "Today" : label.weekday}</span>
                 <span className="mt-1 block text-lg font-black">{label.day}</span>
                 <span className="block text-[9px] uppercase opacity-70">{label.month}</span>
               </button>
