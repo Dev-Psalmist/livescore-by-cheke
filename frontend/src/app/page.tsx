@@ -10,6 +10,7 @@ import FixtureCard from "@/components/FixtureCard";
 import NewsFeed from "@/components/NewsFeed";
 import YouTubeHighlights from "@/components/YouTubeHighlights";
 import DateFixtureBrowser from "@/components/DateFixtureBrowser";
+import PopularCompetitions from "@/components/PopularCompetitions";
 
 import type { Match } from "@/types/football";
 
@@ -209,17 +210,9 @@ export default function HomePage() {
       <div className="mx-auto max-w-[1600px] px-3 py-5 sm:px-5 lg:px-6">
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
 
-          {/* COMPETITION NAVIGATION */}
-          <aside className="hidden space-y-5 lg:block">
-            <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
-              <div className="border-b border-white/[0.07] px-4 py-4">
-                <h2 className="text-xs font-black uppercase tracking-[0.16em] text-slate-300">Popular Competitions</h2>
-              </div>
-              <div className="p-4">
-                <p className="text-xs leading-6 text-slate-400">Explore active professional competitions across Europe, Africa, Asia and the Americas.</p>
-                <Link href="/leagues" className="mt-4 inline-flex text-xs font-black text-emerald-400 hover:text-emerald-300">Browse competitions →</Link>
-              </div>
-            </section>
+          {/* DYNAMIC COMPETITIONS */}
+          <aside className="hidden lg:block">
+            <PopularCompetitions />
           </aside>
 
           {/* CENTRE CONTENT */}
