@@ -153,8 +153,12 @@ export default function SearchPage() {
 
     const searchTerm = query.trim();
 
-    if (searchTerm.length < 3) {
-      setError("Enter at least three characters to search.");
+    if (searchTerm.length < (category === "players" ? 4 : 3)) {
+      setError(
+        category === "players"
+          ? "Enter at least four characters to search for a player."
+          : "Enter at least three characters to search."
+      );
       setSearched(false);
       return;
     }
