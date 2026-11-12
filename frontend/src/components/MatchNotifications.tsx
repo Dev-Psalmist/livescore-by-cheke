@@ -21,12 +21,6 @@ interface MatchEvent {
   comments: string | null;
 }
 
-interface EventsResponse {
-  success?: boolean;
-  events?: MatchEvent[];
-  error?: unknown;
-}
-
 interface MatchNotificationsProps {
   matchId: string;
   events: MatchEvent[];
