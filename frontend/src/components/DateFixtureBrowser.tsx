@@ -32,6 +32,14 @@ function isLive(status: string) {
   return ["1H", "2H", "HT", "ET", "BT", "P", "LIVE"].includes(status);
 }
 
+function readableApiError(error: unknown): string {
+  const message = typeof error === "string" ? error : error ? JSON.stringify(error) : "";
+  if (/request limit|daily limit|quota exceeded/i.test(message)) {
+    return "The football data provider's daily request limit has been reached. Match data will be available again when the quota resets. No scores or fixtures have been substituted.";
+  }
+  return message || "Unable to load matches.";
+}
+
 export default function DateFixtureBrowser() {
   const [dates, setDates] = useState<string[]>([]);
   const [today, setToday] = useState("");
@@ -46,7 +54,7 @@ export default function DateFixtureBrowser() {
     try {
       const response = await fetch(`/api/football/fixtures-by-date?date=${date}`, { cache: "no-store" });
       const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(typeof data.error === "string" ? data.error : "Unable to load matches.");
+      if (!response.ok || !data.success) throw new Error(readableApiError(data.error));
       setFixtures(data.matches || []);
     } catch (err) {
       setFixtures([]);
