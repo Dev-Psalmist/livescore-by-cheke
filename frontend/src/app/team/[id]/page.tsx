@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import Header from "@/components/Header";
@@ -47,7 +47,7 @@ const dateLabel = (value: string) =>
     minute: "2-digit",
   }).format(new Date(value));
 
-export default function TeamProfilePage() {
+function TeamProfileContent() {
   const params = useParams<{ id: string }>();
   const teamId = params.id;
   const [team, setTeam] = useState<Team | null>(null);
@@ -206,5 +206,24 @@ export default function TeamProfilePage() {
       )}
       <Footer />
     </main>
+  );
+}
+
+
+export default function TeamProfilePage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-slate-950 text-white">
+          <Header />
+          <div className="mx-auto max-w-7xl px-4 py-24 text-center text-slate-400">
+            Loading team profile...
+          </div>
+          <Footer />
+        </main>
+      }
+    >
+      <TeamProfileContent />
+    </Suspense>
   );
 }
