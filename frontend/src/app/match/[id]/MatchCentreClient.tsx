@@ -507,6 +507,7 @@ export default function MatchCentreClient({
   }, []);
 
   const statusRefreshInFlight = useRef(false);
+  const loadedMatchData = useRef(new Set<string>());
 
   const loadMatch = useCallback(
     async (isRefresh = false) => {
@@ -635,66 +636,163 @@ export default function MatchCentreClient({
   }, [id, match?.fixture.status.short]);
 
   useEffect(() => {
-    if (!match) return;
+    if (!match || activeTab !== "overview") return;
+
+    const homeId = match.teams.home.id;
+    const awayId = match.teams.away.id;
+    const requestKey = `team-form:${homeId}:${awayId}`;
+    if (loadedMatchData.current.has(requestKey)) return;
+
     let cancelled = false;
-    fetch(`/api/football/team-form?home=${match.teams.home.id}&away=${match.teams.away.id}`, { cache: "no-store" })
+
+    fetch(`/api/football/team-form?home=${homeId}&away=${awayId}`, {
+      cache: "no-store",
+    })
       .then(async (response) => {
         const data = await response.json();
-        if (!response.ok || !data.success) throw new Error(data.error || "Recent form unavailable.");
-        if (!cancelled) setTeamForm({ home: data.home || [], away: data.away || [] });
+        if (!response.ok || !data.success) {
+          throw new Error("Recent form unavailable.");
+        }
+        if (!cancelled) {
+          loadedMatchData.current.add(requestKey);
+          setTeamForm({ home: data.home || [], away: data.away || [] });
+        }
       })
-      .catch(() => { if (!cancelled) setTeamForm(null); });
-    return () => { cancelled = true; };
-  }, [match?.teams.home.id, match?.teams.away.id]);
+      .catch(() => {
+        if (!cancelled) setTeamForm(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, match?.teams.home.id, match?.teams.away.id]);
 
   useEffect(() => {
-    if (!match) return;
+    if (!match || activeTab !== "statistics") return;
+
+    const homeId = match.teams.home.id;
+    const awayId = match.teams.away.id;
+    const requestKey = `head-to-head:${homeId}:${awayId}`;
+    if (loadedMatchData.current.has(requestKey)) return;
+
     let cancelled = false;
     setHeadToHeadLoading(true);
-    fetch(`/api/football/head-to-head?home=${match.teams.home.id}&away=${match.teams.away.id}`, { cache: "no-store" })
+
+    fetch(`/api/football/head-to-head?home=${homeId}&away=${awayId}`, {
+      cache: "no-store",
+    })
       .then(async (response) => {
         const data = await response.json();
-        if (!response.ok || !data.success) throw new Error(data.error || "Head-to-head unavailable.");
-        if (!cancelled) setHeadToHead(data.matches || []);
+        if (!response.ok || !data.success) {
+          throw new Error("Head-to-head unavailable.");
+        }
+        if (!cancelled) {
+          loadedMatchData.current.add(requestKey);
+          setHeadToHead(data.matches || []);
+        }
       })
-      .catch(() => { if (!cancelled) setHeadToHead([]); })
-      .finally(() => { if (!cancelled) setHeadToHeadLoading(false); });
-    return () => { cancelled = true; };
-  }, [match?.teams.home.id, match?.teams.away.id]);
+      .catch(() => {
+        if (!cancelled) setHeadToHead([]);
+      })
+      .finally(() => {
+        if (!cancelled) setHeadToHeadLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, match?.teams.home.id, match?.teams.away.id]);
 
   useEffect(() => {
-    if (!match || !match.league.id || !match.league.season) return;
+    if (
+      !match ||
+      activeTab !== "table" ||
+      !match.league.id ||
+      !match.league.season
+    ) {
+      return;
+    }
+
+    const leagueId = match.league.id;
+    const season = match.league.season;
+    const requestKey = `standings:${leagueId}:${season}`;
+    if (loadedMatchData.current.has(requestKey)) return;
+
     let cancelled = false;
-    fetch(`/api/football/standings?league=${match.league.id}&season=${match.league.season}`, { cache: "no-store" })
+    setTableError("");
+
+    fetch(`/api/football/standings?league=${leagueId}&season=${season}`, {
+      cache: "no-store",
+    })
       .then(async (response) => {
         const data = await response.json();
-        if (!response.ok || !data.success) throw new Error("Competition table is unavailable.");
+        if (!response.ok || !data.success) {
+          throw new Error("Competition table is unavailable.");
+        }
         const rows = data.standings?.[0] || [];
-        if (!cancelled) setStandings(rows);
+        if (!cancelled) {
+          loadedMatchData.current.add(requestKey);
+          setStandings(rows);
+        }
       })
-      .catch((err) => { if (!cancelled) setTableError(err instanceof Error ? err.message : "Competition table is unavailable."); });
-    return () => { cancelled = true; };
-  }, [match?.league.id, match?.league.season]);
+      .catch(() => {
+        if (!cancelled) {
+          setTableError("Unable to load data right now. Please try again later.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, match?.league.id, match?.league.season]);
 
   useEffect(() => {
-    if (!match) return;
+    if (!match || activeTab !== "news") return;
+
+    const homeName = match.teams.home.name;
+    const awayName = match.teams.away.name;
+    const leagueName = match.league.name;
+    const requestKey = `news:${homeName}:${awayName}:${leagueName}`.toLowerCase();
+    if (loadedMatchData.current.has(requestKey)) return;
+
     let cancelled = false;
     setNewsLoading(true);
+
     fetch("/api/football/news", { cache: "no-store" })
       .then(async (response) => {
         const data = await response.json();
-        if (!response.ok || !data.success) throw new Error("Football news is unavailable.");
-        const terms = [match.teams.home.name, match.teams.away.name, match.league.name].map((term) => term.toLowerCase());
-        const relevant = (data.articles || []).filter((article: {title?:string;summary?:string}) => {
-          const text = `${article.title || ""} ${article.summary || ""}`.toLowerCase();
-          return terms.some((term) => term.length > 2 && text.includes(term));
-        }).slice(0, 10);
-        if (!cancelled) setMatchNews(relevant);
+        if (!response.ok || !data.success) {
+          throw new Error("Football news is unavailable.");
+        }
+
+        const terms = [homeName, awayName, leagueName].map((term) =>
+          term.toLowerCase()
+        );
+        const relevant = (data.articles || [])
+          .filter((article: { title?: string; summary?: string }) => {
+            const articleText = `${article.title || ""} ${article.summary || ""}`.toLowerCase();
+            return terms.some(
+              (term) => term.length > 2 && articleText.includes(term)
+            );
+          })
+          .slice(0, 10);
+
+        if (!cancelled) {
+          loadedMatchData.current.add(requestKey);
+          setMatchNews(relevant);
+        }
       })
-      .catch(() => { if (!cancelled) setMatchNews([]); })
-      .finally(() => { if (!cancelled) setNewsLoading(false); });
-    return () => { cancelled = true; };
-  }, [match?.teams.home.name, match?.teams.away.name, match?.league.name]);
+      .catch(() => {
+        if (!cancelled) setMatchNews([]);
+      })
+      .finally(() => {
+        if (!cancelled) setNewsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, match?.teams.home.name, match?.teams.away.name, match?.league.name]);
 
   const isLive = match
     ? LIVE_STATUSES.includes(match.fixture.status.short.toUpperCase())
