@@ -496,6 +496,7 @@ export default function MatchCentreClient({
   const [newsLoading, setNewsLoading] = useState(false);
 
   const [teamForm, setTeamForm] = useState<{ home: Array<{id:number;opponent:string;result:"W"|"D"|"L"}>; away: Array<{id:number;opponent:string;result:"W"|"D"|"L"}> } | null>(null);
+  const [teamFormLoading, setTeamFormLoading] = useState(false);
   const [headToHead, setHeadToHead] = useState<Array<{id:number;date:string;home:string;away:string;homeLogo?:string;awayLogo?:string;homeGoals:number|null;awayGoals:number|null;competition:string}>>([]);
   const [headToHeadLoading, setHeadToHeadLoading] = useState(false);
   const [now, setNow] = useState(0);
@@ -644,6 +645,7 @@ export default function MatchCentreClient({
     if (loadedMatchData.current.has(requestKey)) return;
 
     let cancelled = false;
+    setTeamFormLoading(true);
 
     fetch(`/api/football/team-form?home=${homeId}&away=${awayId}`, {
       cache: "no-store",
@@ -660,6 +662,9 @@ export default function MatchCentreClient({
       })
       .catch(() => {
         if (!cancelled) setTeamForm(null);
+      })
+      .finally(() => {
+        if (!cancelled) setTeamFormLoading(false);
       });
 
     return () => {
@@ -1136,10 +1141,22 @@ export default function MatchCentreClient({
             {([{name:homeTeam, form:teamForm?.home}, {name:awayTeam, form:teamForm?.away}] as const).map((team) => (
               <div key={team.name} className="rounded-xl bg-[#0b1624] p-4">
                 <p className="mb-3 text-sm font-bold text-white">{team.name}</p>
-                <div className="flex flex-wrap gap-2">
-                  {team.form?.length ? team.form.map((game) => (
-                    <span key={game.id} title={`vs ${game.opponent}`} className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white ${game.result === "W" ? "bg-emerald-600" : game.result === "L" ? "bg-red-600" : "bg-amber-500"}`}>{game.result}</span>
-                  )) : <span className="text-xs text-slate-500">Recent results unavailable</span>}
+                <div className="flex min-h-8 flex-wrap items-center gap-2">
+                  {teamFormLoading ? (
+                    <span className="text-xs text-slate-500">Loading recent results...</span>
+                  ) : team.form?.length ? (
+                    team.form.map((game) => (
+                      <span
+                        key={game.id}
+                        title={`vs ${game.opponent}`}
+                        className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white ${game.result === "W" ? "bg-emerald-600" : game.result === "L" ? "bg-red-600" : "bg-amber-500"}`}
+                      >
+                        {game.result}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-xs text-slate-500">Recent results unavailable</span>
+                  )}
                 </div>
               </div>
             ))}
