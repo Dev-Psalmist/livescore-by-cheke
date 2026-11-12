@@ -16,6 +16,8 @@ interface PlayerStatistics {
   goals?: {
     total?: number | null;
     assists?: number | null;
+    conceded?: number | null;
+    saves?: number | null;
   } | null;
   passes?: {
     total?: number | null;
@@ -26,6 +28,24 @@ interface PlayerStatistics {
     total?: number | null;
     blocks?: number | null;
     interceptions?: number | null;
+  } | null;
+  duels?: {
+    total?: number | null;
+    won?: number | null;
+  } | null;
+  dribbles?: {
+    attempts?: number | null;
+    success?: number | null;
+    past?: number | null;
+  } | null;
+  fouls?: {
+    drawn?: number | null;
+    committed?: number | null;
+  } | null;
+  penalty?: {
+    scored?: number | null;
+    missed?: number | null;
+    saved?: number | null;
   } | null;
   cards?: {
     yellow?: number | null;
@@ -163,6 +183,66 @@ function PlayerCard({ player }: { player: MatchPlayer }) {
       highlight: false,
     },
     {
+      label: "Interceptions",
+      value: stats?.tackles?.interceptions,
+      highlight: false,
+    },
+    {
+      label: "Blocks",
+      value: stats?.tackles?.blocks,
+      highlight: false,
+    },
+    {
+      label: "Duels won",
+      value: stats?.duels?.won,
+      highlight: false,
+    },
+    {
+      label: "Successful dribbles",
+      value: stats?.dribbles?.success,
+      highlight: false,
+    },
+    {
+      label: "Dribbles attempted",
+      value: stats?.dribbles?.attempts,
+      highlight: false,
+    },
+    {
+      label: "Fouls drawn",
+      value: stats?.fouls?.drawn,
+      highlight: false,
+    },
+    {
+      label: "Fouls committed",
+      value: stats?.fouls?.committed,
+      highlight: false,
+    },
+    {
+      label: "Saves",
+      value: stats?.goals?.saves,
+      highlight: true,
+    },
+    {
+      label: "Goals conceded",
+      value: stats?.goals?.conceded,
+      highlight: false,
+    },
+    {
+      label: "Penalties scored",
+      value: stats?.penalty?.scored,
+      highlight: true,
+    },
+    {
+      label: "Penalties missed",
+      value: stats?.penalty?.missed,
+      highlight: false,
+    },
+    {
+      label: "Penalty saves",
+      value: stats?.penalty?.saved,
+      highlight: true,
+    },
+    {
       label: "Yellow cards",
       value: stats?.cards?.yellow,
       highlight: false,
@@ -279,6 +359,18 @@ function PlayerCard({ player }: { player: MatchPlayer }) {
 }
 
 function TeamPlayers({ team }: { team: PlayerTeam }) {
+  const sortedPlayers = [...team.players].sort((first, second) => {
+    const firstRating = Number(first.statistics?.[0]?.games?.rating);
+    const secondRating = Number(second.statistics?.[0]?.games?.rating);
+    const firstHasRating = Number.isFinite(firstRating);
+    const secondHasRating = Number.isFinite(secondRating);
+
+    if (firstHasRating && secondHasRating) return secondRating - firstRating;
+    if (firstHasRating) return -1;
+    if (secondHasRating) return 1;
+    return first.player.name.localeCompare(second.player.name);
+  });
+
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-slate-900/60 p-4">
@@ -304,13 +396,13 @@ function TeamPlayers({ team }: { team: PlayerTeam }) {
         </div>
 
         <span className="ml-auto shrink-0 rounded-full border border-white/10 bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300">
-          {team.players.length} players
+          {team.players.length} players · highest ratings first
         </span>
       </div>
 
       {team.players.length > 0 ? (
         <div className="grid gap-3 lg:grid-cols-2">
-          {team.players.map((player) => (
+          {sortedPlayers.map((player) => (
             <PlayerCard key={player.player.id} player={player} />
           ))}
         </div>
