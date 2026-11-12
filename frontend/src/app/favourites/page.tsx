@@ -157,8 +157,13 @@ export default function FavouritesPage() {
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <h3 className="break-words text-lg font-bold leading-snug transition group-hover:text-green-400">
-                          {item.team.name}
+                        <h3 className="break-words text-lg font-bold leading-snug">
+                          <Link
+                            href={`/team/${item.team.id}`}
+                            className="transition-colors hover:text-green-400 focus-visible:text-green-400"
+                          >
+                            {item.team.name}
+                          </Link>
                         </h3>
 
                         <p className="mt-2 text-sm text-slate-400">
