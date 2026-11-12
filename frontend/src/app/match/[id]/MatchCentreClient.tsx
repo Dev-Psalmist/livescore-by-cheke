@@ -895,6 +895,29 @@ export default function MatchCentreClient({
                 <p className="mt-4 text-[10px] leading-relaxed text-slate-500 sm:text-xs">
                   {formatDate(match.fixture.date)}
                 </p>
+
+                {isScheduled && remaining > 0 && (
+                  <div className="mx-auto mt-4 grid max-w-[260px] grid-cols-4 gap-2">
+                    {[
+                      { label: "Days", value: countdown.days },
+                      { label: "Hours", value: countdown.hours },
+                      { label: "Minutes", value: countdown.minutes },
+                      { label: "Seconds", value: countdown.seconds },
+                    ].map((unit) => (
+                      <div
+                        key={unit.label}
+                        className="rounded-lg border border-emerald-500/15 bg-emerald-500/[0.06] px-2 py-2"
+                      >
+                        <p className="text-lg font-black tabular-nums text-emerald-300">
+                          {String(unit.value).padStart(2, "0")}
+                        </p>
+                        <p className="mt-0.5 text-[8px] font-bold uppercase tracking-wider text-slate-500">
+                          {unit.label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="min-w-0 text-center">
