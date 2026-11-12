@@ -324,7 +324,7 @@ export default function SearchPage() {
             </div>
 
             <p className="mt-5 text-xs leading-5 text-slate-500">
-              Enter at least three characters for teams, competitions and matches. Player searches require at least four characters.
+              Enter at least three characters for teams and competitions. Player searches require four; match search also accepts a fixture ID.
             </p>
           </form>
         </div>
