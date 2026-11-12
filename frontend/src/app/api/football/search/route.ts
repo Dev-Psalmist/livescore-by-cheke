@@ -112,8 +112,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (type === "players") {
+      if (query.length < 4) {
+        return NextResponse.json({
+          success: true,
+          type,
+          players: [],
+        });
+      }
       const players = await fetchFootballData(
-        `/players?search=${encodedQuery}`,
+        `/players/profiles?search=${encodedQuery}`,
         apiKey
       );
 
@@ -168,20 +175,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // "All" searches teams, players and leagues together.
+    // Player profile search requires at least four characters.
     const [teams, players, leagues] = await Promise.all([
-      fetchFootballData(
-        `/teams?search=${encodedQuery}`,
-        apiKey
-      ),
-      fetchFootballData(
-        `/players?search=${encodedQuery}`,
-        apiKey
-      ),
-      fetchFootballData(
-        `/leagues?search=${encodedQuery}`,
-        apiKey
-      ),
+      fetchFootballData(`/teams?search=${encodedQuery}`, apiKey),
+      query.length >= 4
+        ? fetchFootballData(`/players/profiles?search=${encodedQuery}`, apiKey)
+        : Promise.resolve([]),
+      fetchFootballData(`/leagues?search=${encodedQuery}`, apiKey),
     ]);
 
     return NextResponse.json({
