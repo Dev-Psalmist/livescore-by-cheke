@@ -512,6 +512,8 @@ export default function MatchCentreClient({
   const [newsLoading, setNewsLoading] = useState(false);
 
   const [teamForm, setTeamForm] = useState<{ home: Array<{id:number;opponent:string;result:"W"|"D"|"L"}>; away: Array<{id:number;opponent:string;result:"W"|"D"|"L"}> } | null>(null);
+  const [headToHead, setHeadToHead] = useState<Array<{id:number;date:string;home:string;away:string;homeLogo?:string;awayLogo?:string;homeGoals:number|null;awayGoals:number|null;competition:string}>>([]);
+  const [headToHeadLoading, setHeadToHeadLoading] = useState(false);
   const [now, setNow] = useState(0);
 
   useEffect(() => {
@@ -652,6 +654,21 @@ export default function MatchCentreClient({
         if (!cancelled) setTeamForm({ home: data.home || [], away: data.away || [] });
       })
       .catch(() => { if (!cancelled) setTeamForm(null); });
+    return () => { cancelled = true; };
+  }, [match?.teams.home.id, match?.teams.away.id]);
+
+  useEffect(() => {
+    if (!match) return;
+    let cancelled = false;
+    setHeadToHeadLoading(true);
+    fetch(`/api/football/head-to-head?home=${match.teams.home.id}&away=${match.teams.away.id}`, { cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.error || "Head-to-head unavailable.");
+        if (!cancelled) setHeadToHead(data.matches || []);
+      })
+      .catch(() => { if (!cancelled) setHeadToHead([]); })
+      .finally(() => { if (!cancelled) setHeadToHeadLoading(false); });
     return () => { cancelled = true; };
   }, [match?.teams.home.id, match?.teams.away.id]);
 
@@ -1137,6 +1154,40 @@ export default function MatchCentreClient({
               title="Match Statistics"
               description="Compare the official statistics recorded for both teams."
             />
+
+            <div className="mb-7 rounded-xl border border-white/[0.06] bg-[#0c1725] p-4 sm:p-5">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Recent meetings</p>
+                  <h3 className="mt-1 text-base font-black text-white">Head-to-Head</h3>
+                </div>
+                <span className="text-[10px] text-slate-500">Last 5 completed meetings</span>
+              </div>
+              {headToHeadLoading ? (
+                <p className="py-5 text-center text-sm text-slate-400">Loading previous meetings...</p>
+              ) : headToHead.length === 0 ? (
+                <p className="py-5 text-center text-sm text-slate-400">No previous completed meetings were returned for these teams.</p>
+              ) : (
+                <div className="space-y-2">
+                  {headToHead.map((game) => (
+                    <div key={game.id} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-3">
+                      <div className="flex min-w-0 items-center gap-2">
+                        {game.homeLogo && <img src={game.homeLogo} alt="" className="h-5 w-5 shrink-0 object-contain" />}
+                        <span className="truncate text-xs font-semibold text-slate-200">{game.home}</span>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-sm font-black tabular-nums text-white">{game.homeGoals ?? "—"} : {game.awayGoals ?? "—"}</p>
+                        <p className="mt-1 text-[9px] text-slate-500">{new Date(game.date).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric", timeZone: "Africa/Lagos" })}</p>
+                      </div>
+                      <div className="flex min-w-0 items-center justify-end gap-2">
+                        <span className="truncate text-right text-xs font-semibold text-slate-200">{game.away}</span>
+                        {game.awayLogo && <img src={game.awayLogo} alt="" className="h-5 w-5 shrink-0 object-contain" />}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {statisticRows.length === 0 ? (
               <div className="rounded-xl border border-white/[0.06] bg-[#0c1725] py-12 text-center">
