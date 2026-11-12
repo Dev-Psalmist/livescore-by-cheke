@@ -93,7 +93,10 @@ export default function TeamComparePage() {
       const response = await fetch(`/api/football/team-comparison?home=${first.id}&away=${second.id}`);
       const payload: ComparePayload = await response.json();
       if (!response.ok || !payload.success || !payload.home || !payload.away) throw new Error("Unable to compare these teams right now.");
-      setComparison({\n        home: { ...payload.home, team: { id: first.id, name: first.name, logo: first.logo } },\n        away: { ...payload.away, team: { id: second.id, name: second.name, logo: second.logo } },\n      });
+      setComparison({
+        home: { ...payload.home, team: { id: first.id, name: first.name, logo: first.logo } },
+        away: { ...payload.away, team: { id: second.id, name: second.name, logo: second.logo } },
+      });
     } catch { setError("Unable to load team comparison right now. Please try again later."); }
     finally { setLoading(false); }
   }
