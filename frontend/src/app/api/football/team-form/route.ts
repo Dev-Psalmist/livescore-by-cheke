@@ -11,13 +11,12 @@ export async function GET(request: NextRequest) {
   const fetchForm = async (team: string) => {
     const url = new URL("https://v3.football.api-sports.io/fixtures");
     url.searchParams.set("team", team);
-    url.searchParams.set("last", "5");
-    url.searchParams.set("status", "FT-AET-PEN");
+    url.searchParams.set("last", "10");
     url.searchParams.set("timezone", "Africa/Lagos");
     const response = await fetch(url, { headers: { "x-apisports-key": key }, next: { revalidate: 900 } });
     const data = await response.json();
     if (!response.ok || (data.errors && Object.keys(data.errors).length)) throw new Error("Recent form is temporarily unavailable.");
-    return (data.response || []).map((item: any) => ({
+    return (data.response || []).filter((item: any) => ["FT", "AET", "PEN"].includes(item.fixture.status.short)).slice(0, 5).map((item: any) => ({
       id: item.fixture.id,
       date: item.fixture.date,
       opponent: item.teams.home.id === Number(team) ? item.teams.away.name : item.teams.home.name,
