@@ -9,6 +9,7 @@ import LiveMatchCard from "@/components/LiveMatchCard";
 import FixtureCard from "@/components/FixtureCard";
 import NewsFeed from "@/components/NewsFeed";
 import YouTubeHighlights from "@/components/YouTubeHighlights";
+import DateFixtureBrowser from "@/components/DateFixtureBrowser";
 
 import type { Match } from "@/types/football";
 
@@ -225,72 +226,18 @@ export default function HomePage() {
       <Header />
 
       <div className="mx-auto max-w-[1600px] px-3 py-5 sm:px-5 lg:px-6">
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[220px_minmax(0,1fr)_310px]">
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
 
-          {/* LEFT SIDEBAR */}
+          {/* COMPETITION NAVIGATION */}
           <aside className="hidden space-y-5 lg:block">
             <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
               <div className="border-b border-white/[0.07] px-4 py-4">
-                <h2 className="text-xs font-black uppercase tracking-[0.16em] text-slate-300">
-                  Navigation
-                </h2>
+                <h2 className="text-xs font-black uppercase tracking-[0.16em] text-slate-300">Popular Competitions</h2>
               </div>
-
-              <nav className="space-y-1 p-2">
-                {quickLinks.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-slate-300 transition hover:bg-emerald-500/10 hover:text-emerald-400"
-                  >
-                    <span>{item.icon}</span>
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-            </section>
-
-            <section className="rounded-xl border border-white/[0.07] bg-[#141e29] p-3">
-              <div className="px-2 py-3">
-                <h2 className="text-xs font-black uppercase tracking-[0.16em] text-slate-300">
-                  Popular Competitions
-                </h2>
+              <div className="p-4">
+                <p className="text-xs leading-6 text-slate-400">Explore active professional competitions across Europe, Africa, Asia and the Americas.</p>
+                <Link href="/leagues" className="mt-4 inline-flex text-xs font-black text-emerald-400 hover:text-emerald-300">Browse competitions →</Link>
               </div>
-
-              <div className="space-y-1">
-                {competitions.map((competition, index) => (
-                  <Link
-                    key={competition}
-                    href="/leagues"
-                    className="flex items-center gap-3 rounded-lg px-2 py-3 text-xs font-medium text-slate-400 transition hover:bg-white/[0.04] hover:text-emerald-400"
-                  >
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#202d3b] text-[10px] font-black text-emerald-400">
-                      {index + 1}
-                    </span>
-                    {competition}
-                  </Link>
-                ))}
-              </div>
-
-              <Link
-                href="/leagues"
-                className="mt-3 block border-t border-white/[0.07] px-2 pt-4 text-xs font-bold text-emerald-400 hover:text-emerald-300"
-              >
-                All competitions →
-              </Link>
-            </section>
-
-            <section className="rounded-xl border border-emerald-500/15 bg-gradient-to-br from-emerald-950/70 to-[#141e29] p-5">
-              <p className="text-2xl">⚽</p>
-              <h2 className="mt-4 text-sm font-black">
-                Football Never Stops.
-              </h2>
-              <p className="mt-2 text-xs leading-6 text-slate-400">
-                Follow the teams, competitions and matches that matter to you.
-              </p>
-              <p className="mt-4 text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400">
-                Every sport. Every moment.
-              </p>
             </section>
           </aside>
 
@@ -371,6 +318,8 @@ export default function HomePage() {
                 </p>
               </div>
             </section>
+
+            <DateFixtureBrowser />
 
             {/* LIVE MATCHES */}
             <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
@@ -559,56 +508,15 @@ export default function HomePage() {
             </section>
           </div>
 
-          {/* RIGHT INFORMATION PANEL */}
-          <aside className="min-w-0 space-y-5">
-            <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
-              <div className="border-b border-white/[0.07] p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-400">
-                  Around the Game
-                </p>
-                <h2 className="mt-1 text-lg font-black">Football News</h2>
-              </div>
-              <div className="p-3">
-                <NewsFeed limit={4} />
-              </div>
-            </section>
-
-            <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
-              <div className="border-b border-white/[0.07] p-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-400">
-                  Watch the Action
-                </p>
-                <h2 className="mt-1 text-lg font-black">Match Highlights</h2>
-              </div>
-              <div className="p-3">
-                <YouTubeHighlights kind="all" limit={3} compact />
-              </div>
-            </section>
-
-            <section className="rounded-xl border border-emerald-500/15 bg-gradient-to-br from-[#15372b] to-[#141e29] p-5">
-              <p className="text-[10px] font-black uppercase tracking-[0.17em] text-emerald-400">
-                LiveScore by Cheke
-              </p>
-              <h2 className="mt-3 text-xl font-black leading-snug">
-                Your Game.
-                <br />
-                Your Moments.
-              </h2>
-              <p className="mt-3 text-xs leading-6 text-slate-400">
-                Stay connected to the football world with scores, fixtures,
-                news and match coverage.
-              </p>
-              <Link
-                href="/highlights"
-                className="mt-5 inline-block text-xs font-black text-emerald-400 hover:text-emerald-300"
-              >
-                Explore Highlights →
-              </Link>
-            </section>
-          </aside>
         </div>
       </div>
 
+      <section className="mx-auto max-w-[1600px] px-3 pb-10 sm:px-5 lg:px-6">
+        <NewsFeed />
+        <div className="mt-8">
+          <YouTubeHighlights kind="all" limit={6} />
+        </div>
+      </section>
       <Footer />
     </main>
   );
