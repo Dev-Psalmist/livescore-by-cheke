@@ -22,11 +22,13 @@ interface ApiFootballFixture {
   };
   teams: {
     home: {
+      id: number;
       name: string;
       code: string | null;
       logo?: string;
     };
     away: {
+      id: number;
       name: string;
       code: string | null;
       logo?: string;
@@ -80,6 +82,7 @@ export default function LiveScoresPage() {
             ? `${item.fixture.status.elapsed}'`
             : item.fixture.status.short,
         homeTeam: {
+          id: item.teams.home.id,
           name: item.teams.home.name,
           shortName:
             item.teams.home.code ||
@@ -87,6 +90,7 @@ export default function LiveScoresPage() {
           logo: item.teams.home.logo,
         },
         awayTeam: {
+          id: item.teams.away.id,
           name: item.teams.away.name,
           shortName:
             item.teams.away.code ||
