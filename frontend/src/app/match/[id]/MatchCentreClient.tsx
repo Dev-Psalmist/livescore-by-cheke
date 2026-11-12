@@ -1693,7 +1693,7 @@ export default function MatchCentreClient({
                         <tr key={row.team.id} className={isMatchTeam ? "border-t border-white/[0.06] bg-emerald-500/[0.07]" : "border-t border-white/[0.06] hover:bg-white/[0.02]"}>
                           <td className="p-3 font-bold text-slate-400">{row.rank}</td>
                           <td className="p-3 font-semibold text-white">
-                            <div className="flex items-center gap-2">{row.team.logo && <img src={row.team.logo} alt="" className="h-5 w-5 object-contain" />}<span>{row.team.name}</span></div>
+                            <div className="flex items-center gap-2">{row.team.logo && <img src={row.team.logo} alt="" className="h-5 w-5 object-contain" />}<Link href={`/team/${row.team.id}`} className="transition hover:text-emerald-300 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 rounded-sm" aria-label={`View ${row.team.name} team profile`}>{row.team.name}</Link></div>
                             {row.description && <p className="mt-1 max-w-[220px] text-[9px] font-medium text-emerald-300/80">{row.description}</p>}
                           </td>
                           <td className="p-3">{row.all.played}</td><td className="p-3">{row.all.win}</td><td className="p-3">{row.all.draw}</td><td className="p-3">{row.all.lose}</td>
