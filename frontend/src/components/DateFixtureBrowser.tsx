@@ -165,7 +165,7 @@ export default function DateFixtureBrowser() {
                       Match Centre →
                     </Link>
                   </div>
-                </article>         </Link>
+                </article>
               );
             })}
           </section>
