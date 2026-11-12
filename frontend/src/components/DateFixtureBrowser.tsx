@@ -6,7 +6,7 @@ import Link from "next/link";
 type ApiFixture = {
   fixture: { id: number; date: string; status: { short: string; long: string; elapsed: number | null } };
   league: { id: number; name: string; logo?: string; country?: string };
-  teams: { home: { name: string; logo?: string }; away: { name: string; logo?: string } };
+  teams: { home: { id: number; name: string; logo?: string }; away: { id: number; name: string; logo?: string } };
   goals: { home: number | null; away: number | null };
 };
 
@@ -132,16 +132,20 @@ export default function DateFixtureBrowser() {
               const finished = isFinished(status);
               const live = isLive(status);
               return (
-                <Link key={game.fixture.id} href={`/match/${game.fixture.id}`}
+                <article key={game.fixture.id}
                   className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-white/[0.05] px-3 py-3.5 last:border-0 hover:bg-white/[0.025] sm:px-4">
                   <div className="min-w-0 space-y-2">
                     <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
                       {game.teams.home.logo && <img src={game.teams.home.logo} alt="" className="h-5 w-5 object-contain" />}
-                      <span className="truncate">{game.teams.home.name}</span>
+                      <Link href={`/team/${game.teams.home.id}`} className="truncate transition-colors hover:text-emerald-400">
+                        {game.teams.home.name}
+                      </Link>
                     </div>
                     <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
                       {game.teams.away.logo && <img src={game.teams.away.logo} alt="" className="h-5 w-5 object-contain" />}
-                      <span className="truncate">{game.teams.away.name}</span>
+                      <Link href={`/team/${game.teams.away.id}`} className="truncate transition-colors hover:text-emerald-400">
+                        {game.teams.away.name}
+                      </Link>
                     </div>
                   </div>
                   <div className="min-w-[76px] text-right">
@@ -157,8 +161,11 @@ export default function DateFixtureBrowser() {
                     <span className={`mt-1 block text-[9px] font-black uppercase tracking-wider ${live ? "text-red-400" : finished ? "text-slate-500" : "text-emerald-400"}`}>
                       {live ? (game.fixture.status.elapsed ? `${game.fixture.status.elapsed}'` : "Live") : finished ? "Full time" : "Kick-off"}
                     </span>
+                    <Link href={`/match/${game.fixture.id}`} className="mt-2 inline-block text-[9px] font-black uppercase tracking-wider text-slate-400 transition hover:text-emerald-400">
+                      Match Centre →
+                    </Link>
                   </div>
-                </Link>
+                </article>         </Link>
               );
             })}
           </section>
