@@ -5,7 +5,7 @@ const API_BASE_URL = "https://v3.football.api-sports.io";
 export async function GET(request: NextRequest) {
   const fixtureId = new URL(request.url).searchParams.get("id");
 
-  if (!fixtureId || !/^\\d+$/.test(fixtureId)) {
+  if (!fixtureId || !/^\d+$/.test(fixtureId)) {
     return NextResponse.json(
       { success: false, error: "A valid match ID is required." },
       { status: 400 }
