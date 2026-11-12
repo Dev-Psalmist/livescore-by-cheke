@@ -12,6 +12,7 @@ import YouTubeHighlights from "@/components/YouTubeHighlights";
 import DateFixtureBrowser from "@/components/DateFixtureBrowser";
 import PopularCompetitions from "@/components/PopularCompetitions";
 import { useFavourites } from "@/hooks/useFavourites";
+import { useFavouriteLeagues } from "@/hooks/useFavouriteLeagues";
 
 import type { Match } from "@/types/football";
 
@@ -95,6 +96,7 @@ export default function HomePage() {
   const [fixturesError, setFixturesError] = useState("");
 
   const { favourites, loaded: favouritesLoaded } = useFavourites();
+  const { favourites: followedLeagues, loaded: followedLeaguesLoaded } = useFavouriteLeagues();
   const favouriteNames = new Set(
     favourites.map((item) => item.team.name.toLowerCase())
   );
@@ -318,6 +320,27 @@ export default function HomePage() {
                     </Link>
                   ))}
                   {favourites.length > 10 && <span className="self-center text-[10px] text-slate-500">+{favourites.length - 10} more</span>}
+                </div>
+              </section>
+            )}
+
+            {followedLeaguesLoaded && followedLeagues.length > 0 && (
+              <section className="rounded-xl border border-emerald-500/20 bg-[#141e29] p-4 sm:p-5">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-400">Your competitions</p>
+                    <h2 className="mt-1 text-base font-black text-white">Followed Leagues & Cups</h2>
+                  </div>
+                  <Link href="/search" className="text-[10px] font-bold text-emerald-400 hover:text-emerald-300">Find more →</Link>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {followedLeagues.slice(0, 10).map((item) => (
+                    <Link key={item.league.id} href={`/leagues?league=${item.league.id}`} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-emerald-400/40">
+                      {item.league.logo && <img src={item.league.logo} alt="" className="h-5 w-5 object-contain" />}
+                      {item.league.name}
+                    </Link>
+                  ))}
+                  {followedLeagues.length > 10 && <span className="self-center text-[10px] text-slate-500">+{followedLeagues.length - 10} more</span>}
                 </div>
               </section>
             )}
