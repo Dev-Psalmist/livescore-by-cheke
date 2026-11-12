@@ -509,7 +509,7 @@ export default function MatchCentreClient({
 
   const [teamForm, setTeamForm] = useState<{ home: Array<{id:number;date:string;opponent:string;goalsFor:number|null;goalsAgainst:number|null;result:"W"|"D"|"L"}>; away: Array<{id:number;date:string;opponent:string;goalsFor:number|null;goalsAgainst:number|null;result:"W"|"D"|"L"}> } | null>(null);
   const [teamFormLoading, setTeamFormLoading] = useState(false);
-  const [headToHead, setHeadToHead] = useState<Array<{id:number;date:string;home:string;away:string;homeLogo?:string;awayLogo?:string;homeGoals:number|null;awayGoals:number|null;competition:string}>>([]);
+  const [headToHead, setHeadToHead] = useState<Array<{id:number;date:string;home:string;away:string;homeId:number;awayId:number;homeLogo?:string;awayLogo?:string;homeGoals:number|null;awayGoals:number|null;competition:string}>>([]);
   const [headToHeadLoading, setHeadToHeadLoading] = useState(false);
   const [now, setNow] = useState(0);
   const [shareFeedback, setShareFeedback] = useState("");
@@ -1384,14 +1384,14 @@ export default function MatchCentreClient({
                     >
                       <div className="flex min-w-0 items-center gap-2">
                         {game.homeLogo && <img src={game.homeLogo} alt="" className="h-5 w-5 shrink-0 object-contain" />}
-                        <span className="truncate text-xs font-semibold text-slate-200">{game.home}</span>
+                        <Link href={`/team/${game.homeId}`} className="truncate text-xs font-semibold text-slate-200 hover:text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">{game.home}</Link>
                       </div>
                       <div className="text-center">
                         <p className="text-sm font-black tabular-nums text-white">{game.homeGoals ?? "—"} : {game.awayGoals ?? "—"}</p>
                         <p className="mt-1 text-[9px] text-slate-500">{new Date(game.date).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric", timeZone: "Africa/Lagos" })}</p>
                       </div>
                       <div className="flex min-w-0 items-center justify-end gap-2">
-                        <span className="truncate text-right text-xs font-semibold text-slate-200">{game.away}</span>
+                        <Link href={`/team/${game.awayId}`} className="truncate text-right text-xs font-semibold text-slate-200 hover:text-blue-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">{game.away}</Link>
                         {game.awayLogo && <img src={game.awayLogo} alt="" className="h-5 w-5 shrink-0 object-contain" />}
                       </div>
                     </Link>
