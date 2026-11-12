@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 interface MatchEvent {
@@ -11,9 +12,11 @@ interface MatchEvent {
     name: string;
   };
   player: {
+    id?: number | null;
     name: string | null;
   };
   assist: {
+    id?: number | null;
     name: string | null;
   } | null;
   type: string;
@@ -109,13 +112,24 @@ function GoalScorer({ event }: { event: MatchEvent }) {
         <span className="mt-0.5 text-base">⚽</span>
 
         <div className="min-w-0">
-          <p className="break-words text-sm font-bold text-white">
-            {event.player?.name || "Unknown scorer"}
-          </p>
+          {event.player?.id ? (
+            <Link href={`/player/${event.player.id}`} className="break-words text-sm font-bold text-white transition hover:text-emerald-300">
+              {event.player.name || "Unknown scorer"}
+            </Link>
+          ) : (
+            <p className="break-words text-sm font-bold text-white">
+              {event.player?.name || "Unknown scorer"}
+            </p>
+          )}
 
           <p className="mt-1 text-xs text-slate-400">
             {getGoalDescription(event)}
-            {event.assist?.name ? ` · Assist: ${event.assist.name}` : ""}
+            {event.assist?.name ? " · Assist: " : ""}
+            {event.assist?.name && event.assist.id ? (
+              <Link href={`/player/${event.assist.id}`} className="transition hover:text-emerald-300">
+                {event.assist.name}
+              </Link>
+            ) : event.assist?.name || ""}
           </p>
         </div>
       </div>
@@ -142,20 +156,30 @@ function EventCard({ event }: { event: MatchEvent }) {
         </span>
       </div>
 
-      <p className="break-words text-sm font-bold text-white">
-        {event.player?.name || event.detail || "Match event"}
-      </p>
+      {event.player?.id ? (
+        <Link href={`/player/${event.player.id}`} className="break-words text-sm font-bold text-white transition hover:text-emerald-300">
+          {event.player.name || event.detail || "Match event"}
+        </Link>
+      ) : (
+        <p className="break-words text-sm font-bold text-white">
+          {event.player?.name || event.detail || "Match event"}
+        </p>
+      )}
 
       {(type === "subst" || type === "substitution") &&
         event.assist?.name && (
           <p className="mt-1 text-xs text-slate-400">
-            Replaced: {event.assist.name}
+            Replaced: {event.assist.id ? (
+              <Link href={`/player/${event.assist.id}`} className="transition hover:text-emerald-300">{event.assist.name}</Link>
+            ) : event.assist.name}
           </p>
         )}
 
       {type === "goal" && event.assist?.name && (
         <p className="mt-1 text-xs text-slate-400">
-          Assist: {event.assist.name}
+          Assist: {event.assist.id ? (
+            <Link href={`/player/${event.assist.id}`} className="transition hover:text-emerald-300">{event.assist.name}</Link>
+          ) : event.assist.name}
         </p>
       )}
 
