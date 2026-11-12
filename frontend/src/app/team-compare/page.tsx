@@ -14,7 +14,15 @@ type TeamSummary = {
   form: { id: number; date: string; opponent: string; goalsFor: number; goalsAgainst: number; result: "W" | "D" | "L" }[];
 };
 type SearchPayload = { success: boolean; teams?: Team[]; error?: string };
-type ComparePayload = { success: boolean; home?: TeamSummary; away?: TeamSummary; error?: string };
+type HeadToHeadMatch = {
+  id: number; date: string; home: string; away: string;
+  homeLogo: string; awayLogo: string; homeGoals: number | null;
+  awayGoals: number | null; competition: string;
+};
+type ComparePayload = {
+  success: boolean; home?: TeamSummary; away?: TeamSummary;
+  headToHead?: HeadToHeadMatch[]; error?: string;
+};
 
 function TeamPicker({ title, selected, onSelect }: {
   title: string; selected: Team["team"] | null; onSelect: (team: Team["team"] | null) => void;
@@ -81,7 +89,7 @@ function FormPills({ form }: { form: TeamSummary["form"] }) {
 export default function TeamComparePage() {
   const [first, setFirst] = useState<Team["team"] | null>(null);
   const [second, setSecond] = useState<Team["team"] | null>(null);
-  const [comparison, setComparison] = useState<{ home: TeamSummary; away: TeamSummary } | null>(null);
+  const [comparison, setComparison] = useState<{ home: TeamSummary; away: TeamSummary; headToHead: HeadToHeadMatch[] } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -96,6 +104,7 @@ export default function TeamComparePage() {
       setComparison({
         home: { ...payload.home, team: { id: first.id, name: first.name, logo: first.logo } },
         away: { ...payload.away, team: { id: second.id, name: second.name, logo: second.logo } },
+        headToHead: payload.headToHead ?? [],
       });
     } catch { setError("Unable to load team comparison right now. Please try again later."); }
     finally { setLoading(false); }
@@ -123,6 +132,43 @@ export default function TeamComparePage() {
               const bWins = metric.higher !== null && a !== b && (metric.higher ? b > a : b < a);
               return <div key={metric.key} className="grid grid-cols-[1fr_minmax(120px,1.2fr)_1fr] items-center gap-2 px-3 py-4 sm:px-6"><p className={`text-center text-lg font-black ${aWins ? "text-emerald-400" : "text-white"}`}>{a}</p><p className="text-center text-[10px] font-bold uppercase tracking-wider text-slate-500 sm:text-xs">{metric.label}</p><p className={`text-center text-lg font-black ${bWins ? "text-emerald-400" : "text-white"}`}>{b}</p></div>;
             })}</div>
+            <section className="border-t border-slate-800 p-5 sm:p-6">
+              <div className="mb-5">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-400">Head-to-head</p>
+                <h2 className="mt-1 text-xl font-black">Previous meetings</h2>
+                <p className="mt-1 text-xs text-slate-500">The five most recent completed meetings between these teams.</p>
+              </div>
+              {comparison.headToHead.length ? (
+                <div className="space-y-3">
+                  {comparison.headToHead.map((match) => {
+                    const homeWon = match.homeGoals !== null && match.awayGoals !== null && match.homeGoals > match.awayGoals;
+                    const awayWon = match.homeGoals !== null && match.awayGoals !== null && match.awayGoals > match.homeGoals;
+                    return (
+                      <div key={match.id} className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/70 p-3 sm:p-4">
+                        <div className="flex min-w-0 items-center gap-2">
+                          {match.homeLogo && <img src={match.homeLogo} alt="" className="h-7 w-7 shrink-0 object-contain" />}
+                          <span className={`truncate text-xs font-bold sm:text-sm ${homeWon ? "text-emerald-300" : "text-slate-200"}`}>{match.home}</span>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-lg font-black tabular-nums">{match.homeGoals ?? "–"} <span className="text-slate-500">:</span> {match.awayGoals ?? "–"}</p>
+                          <p className="mt-1 text-[10px] text-slate-500">{new Date(match.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</p>
+                        </div>
+                        <div className="flex min-w-0 items-center justify-end gap-2">
+                          <span className={`truncate text-right text-xs font-bold sm:text-sm ${awayWon ? "text-emerald-300" : "text-slate-200"}`}>{match.away}</span>
+                          {match.awayLogo && <img src={match.awayLogo} alt="" className="h-7 w-7 shrink-0 object-contain" />}
+                        </div>
+                        <p className="col-span-3 -mt-1 text-center text-[10px] text-slate-500">{match.competition}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-slate-700 px-4 py-8 text-center">
+                  <p className="text-sm font-semibold text-slate-300">No previous meetings found</p>
+                  <p className="mt-1 text-xs text-slate-500">There are no completed head-to-head fixtures available for these teams.</p>
+                </div>
+              )}
+            </section>
             <p className="border-t border-slate-800 px-5 py-4 text-xs leading-5 text-slate-500">Form is ordered newest first by date. A dash is used only where data is unavailable. This comparison covers each team's latest ten completed fixtures, which may span different competitions and seasons.</p>
           </section>
         ) : !loading && <div className="mt-10 rounded-2xl border border-dashed border-slate-700 bg-slate-900/30 px-6 py-12 text-center"><p className="text-lg font-bold">Choose two teams to get started</p><p className="mt-2 text-sm text-slate-400">Select clubs or national teams above, then compare their recent results.</p></div>}
