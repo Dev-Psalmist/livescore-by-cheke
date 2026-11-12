@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 interface PlayerStatistics {
   games?: {
     minutes?: number | null;
@@ -283,7 +285,13 @@ function PlayerCard({ player }: { player: MatchPlayer }) {
 
         <div className="min-w-0 flex-1">
           <h4 className="truncate text-sm font-bold text-white sm:text-base">
-            {player.player.name}
+            <Link
+              href={`/player/${player.player.id}`}
+              title={`View ${player.player.name}'s player profile`}
+              className="rounded-sm transition hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            >
+              {player.player.name}
+            </Link>
           </h4>
 
           <p className="mt-1 text-xs text-slate-400">
