@@ -60,7 +60,7 @@ function TeamPicker({ title, selected, onSelect }: {
   );
 }
 
-const metrics: { key: keyof TeamSummary; label: string; higher: boolean }[] = [
+const metrics: { key: keyof TeamSummary; label: string; higher: boolean | null }[] = [
   { key: "matchesPlayed", label: "Matches played", higher: true },
   { key: "wins", label: "Wins", higher: true },
   { key: "draws", label: "Draws", higher: null },
