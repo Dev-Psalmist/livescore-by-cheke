@@ -5,6 +5,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useFavourites } from "@/hooks/useFavourites";
+import FavouriteTeamFixtures from "@/components/FavouriteTeamFixtures";
 
 export default function FavouritesPage() {
   const {
@@ -219,6 +220,8 @@ export default function FavouritesPage() {
                         {item.venue.city || "City unavailable"}
                       </p>
                     </div>
+
+                    <FavouriteTeamFixtures teamId={item.team.id} teamName={item.team.name} />
 
                     <button
                       type="button"
