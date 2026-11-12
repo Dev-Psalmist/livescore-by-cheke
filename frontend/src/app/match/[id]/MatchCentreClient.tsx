@@ -1581,9 +1581,13 @@ export default function MatchCentreClient({
                                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/[0.05] text-xs font-bold text-slate-400">
                                     {item.player.number}
                                   </span>
-                                  <span className="truncate font-medium text-slate-200">
+                                  <Link
+                                    href={`/player/${item.player.id}`}
+                                    title={`View ${item.player.name}'s player profile`}
+                                    className="truncate font-medium text-slate-200 transition hover:text-emerald-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-400"
+                                  >
                                     {item.player.name}
-                                  </span>
+                                  </Link>
                                 </div>
                                 <span className="shrink-0 text-[10px] font-bold text-slate-500">
                                   {item.player.pos}
