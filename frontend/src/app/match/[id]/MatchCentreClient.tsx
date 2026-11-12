@@ -19,8 +19,8 @@ interface MatchEvent {
     extra: number | null;
   };
   team: { name: string };
-  player: { name: string | null };
-  assist: { name: string | null } | null;
+  player: { id?: number | null; name: string | null };
+  assist: { id?: number | null; name: string | null } | null;
   type: string;
   detail: string;
   comments: string | null;
