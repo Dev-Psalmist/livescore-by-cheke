@@ -44,6 +44,11 @@ interface MatchLineup {
     name: string;
     logo: string;
   };
+  coach?: {
+    id: number | null;
+    name: string;
+    photo?: string | null;
+  } | null;
   formation: string;
   startXI: LineupPlayer[];
   substitutes: LineupPlayer[];
@@ -1214,6 +1219,31 @@ export default function MatchCentreClient({
                           {lineup.formation || "N/A"}
                         </span>
                       </div>
+
+                      {lineup.coach?.name && (
+                        <div className="mb-5 flex items-center gap-3 rounded-xl border border-white/[0.06] bg-[#0c1725] px-3 py-2.5">
+                          {lineup.coach.photo ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={lineup.coach.photo}
+                              alt=""
+                              className="h-9 w-9 rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.06] text-xs font-black text-emerald-300">
+                              CO
+                            </span>
+                          )}
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                              Head coach
+                            </p>
+                            <p className="mt-0.5 text-sm font-semibold text-white">
+                              {lineup.coach.name}
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="mb-7">
                         <LineupPitch
