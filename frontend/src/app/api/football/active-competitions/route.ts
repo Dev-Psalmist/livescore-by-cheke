@@ -4,8 +4,8 @@ const API = "https://v3.football.api-sports.io";
 const WINDOW_DAYS = 14;
 const EXCLUDED = /\b(u\s?17|u\s?18|u\s?19|u\s?20|u\s?21|u\s?23|under[- ]?(17|18|19|20|21|23)|youth|academy|reserve|reserves| ii\b|b team)\b/i;
 const LIVE_STATUSES = ["1H", "HT", "2H", "ET", "BT", "P", "LIVE", "INT", "SUSP"];
-const INTERNATIONAL = /world cup|world cup qualifier|qualification.*world cup|nations league|african cup of nations|afcon|africa cup|euro qualifier|european championship|uefa euro|copa america|asian cup|afc asian|gold cup|concacaf|copa afric|caf champions league|caf confederation cup|international friendly/i;
-const REGIONAL_COUNTRIES = /^(world|africa|europe|asia|south america|north and central america)$/i;
+const INTERNATIONAL = /world cup|world cup qualifier|qualification.*world cup|nations league|african cup of nations|afcon|africa cup|euro qualifier|european championship|uefa euro|copa america|asian cup|afc asian|gold cup|concacaf|copa afric|international friendly/i;
+const CLUB_CONTINENTAL = /club world cup|champions league|confederation cup|copa libertadores|copa sudamericana|europa league|conference league/i;
 
 const POPULARITY: Array<[RegExp, number]> = [
   [/fifa world cup|world cup qualifier/i, 110],
@@ -36,8 +36,8 @@ function popularity(name: string): number {
 
 function isInternational(league: any): boolean {
   const name = String(league.name || "");
-  const country = String(league.country || "");
-  return INTERNATIONAL.test(name) || REGIONAL_COUNTRIES.test(country);
+  if (CLUB_CONTINENTAL.test(name)) return false;
+  return INTERNATIONAL.test(name);
 }
 
 export async function GET() {
