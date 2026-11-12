@@ -145,11 +145,13 @@ interface MatchDetails {
   };
   teams: {
     home: {
+      id: number;
       name: string;
       logo: string;
       winner: boolean | null;
     };
     away: {
+      id: number;
       name: string;
       logo: string;
       winner: boolean | null;
@@ -483,6 +485,15 @@ export default function MatchCentreClient({
   const [statusRefreshError, setStatusRefreshError] = useState("");
   const [activeTab, setActiveTab] = useState("events");
 
+  const [teamForm, setTeamForm] = useState<{ home: Array<{id:number;opponent:string;result:"W"|"D"|"L"}>; away: Array<{id:number;opponent:string;result:"W"|"D"|"L"}> } | null>(null);
+  const [now, setNow] = useState(0);
+
+  useEffect(() => {
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const statusRefreshInFlight = useRef(false);
 
   const loadMatch = useCallback(
@@ -605,11 +616,31 @@ export default function MatchCentreClient({
     };
   }, [id, match?.fixture.status.short]);
 
+  useEffect(() => {
+    if (!match) return;
+    let cancelled = false;
+    fetch(`/api/football/team-form?home=${match.teams.home.id}&away=${match.teams.away.id}`, { cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.error || "Recent form unavailable.");
+        if (!cancelled) setTeamForm({ home: data.home || [], away: data.away || [] });
+      })
+      .catch(() => { if (!cancelled) setTeamForm(null); });
+    return () => { cancelled = true; };
+  }, [match?.teams.home.id, match?.teams.away.id]);
+
   const isLive = match
-    ? LIVE_STATUSES.includes(
-        match.fixture.status.short.toUpperCase()
-      )
+    ? LIVE_STATUSES.includes(match.fixture.status.short.toUpperCase())
     : false;
+  const isScheduled = match && ["NS", "TBD"].includes(match.fixture.status.short.toUpperCase());
+  const kickoffTime = match ? new Date(match.fixture.date).getTime() : 0;
+  const remaining = Math.max(0, kickoffTime - now);
+  const countdown = {
+    days: Math.floor(remaining / 86400000),
+    hours: Math.floor((remaining % 86400000) / 3600000),
+    minutes: Math.floor((remaining % 3600000) / 60000),
+    seconds: Math.floor((remaining % 60000) / 1000),
+  };
 
   const formatDate = (date: string) =>
     new Date(date).toLocaleString("en-NG", {
@@ -880,6 +911,38 @@ export default function MatchCentreClient({
                 </p>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* RECENT FORM */}
+        <section className="mb-7 rounded-2xl border border-white/[0.07] bg-[#101d2d] p-5 sm:p-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">Team performance</p>
+              <h2 className="mt-1 text-lg font-black">Last five matches</h2>
+            </div>
+            {isScheduled && remaining > 0 && (
+              <div className="flex gap-2 text-center">
+                {Object.entries(countdown).map(([unit, value]) => (
+                  <div key={unit} className="min-w-12 rounded-lg bg-[#0b1624] px-2 py-2">
+                    <div className="text-lg font-black text-emerald-400">{String(value).padStart(2,"0")}</div>
+                    <div className="text-[8px] font-bold uppercase text-slate-500">{unit}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {([{name:homeTeam, form:teamForm?.home}, {name:awayTeam, form:teamForm?.away}] as const).map((team) => (
+              <div key={team.name} className="rounded-xl bg-[#0b1624] p-4">
+                <p className="mb-3 text-sm font-bold text-white">{team.name}</p>
+                <div className="flex flex-wrap gap-2">
+                  {team.form?.length ? team.form.map((game) => (
+                    <span key={game.id} title={`vs ${game.opponent}`} className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white ${game.result === "W" ? "bg-emerald-600" : game.result === "L" ? "bg-red-600" : "bg-amber-500"}`}>{game.result}</span>
+                  )) : <span className="text-xs text-slate-500">Recent results unavailable</span>}
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
