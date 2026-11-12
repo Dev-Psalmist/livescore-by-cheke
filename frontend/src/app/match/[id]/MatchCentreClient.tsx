@@ -127,6 +127,16 @@ interface PlayerTeam {
   players: MatchPlayer[];
 }
 
+interface MatchInjury {
+  team: { id: number; name: string; logo?: string | null };
+  player: {
+    id: number;
+    name: string;
+    type?: string | null;
+    reason?: string | null;
+  };
+}
+
 interface MatchDetails {
   fixture: {
     id: number;
@@ -185,6 +195,7 @@ interface MatchDetails {
     statistics: MatchStatistic[];
   }>;
   players?: PlayerTeam[];
+  injuries?: MatchInjury[];
 }
 
 interface EndpointDiagnostic {
@@ -203,6 +214,7 @@ interface MatchResponse {
     lineups?: EndpointDiagnostic;
     statistics?: EndpointDiagnostic;
     players?: EndpointDiagnostic;
+    injuries?: EndpointDiagnostic;
   };
 }
 
@@ -1317,6 +1329,48 @@ export default function MatchCentreClient({
                 })}
               </div>
             )}
+
+            <div className="mt-6 rounded-2xl border border-white/[0.07] bg-[#101d2d] p-4 sm:p-6">
+              <SectionHeading
+                eyebrow="Team availability"
+                title="Injuries & Suspensions"
+                description="Absence reports returned by the football data provider."
+              />
+              {(match.injuries ?? []).length === 0 ? (
+                <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">
+                  No injury or suspension records were returned for this fixture. This does not necessarily mean both squads are fully available.
+                </p>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {(match.injuries ?? []).map((absence, index) => {
+                    const reason = absence.player.reason || "Reason not provided";
+                    const category = absence.player.type || "Unavailable";
+                    const isSuspension = /suspend/i.test(`${category} ${reason}`);
+                    return (
+                      <div
+                        key={`${absence.player.id}-${index}`}
+                        className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-[#0c1725] p-3"
+                      >
+                        {absence.team.logo ? (
+                          <img src={absence.team.logo} alt="" className="h-9 w-9 object-contain" />
+                        ) : (
+                          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.05] text-xs font-bold text-slate-400">
+                            {absence.team.name.slice(0, 2).toUpperCase()}
+                          </span>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-bold text-white">{absence.player.name}</p>
+                          <p className="truncate text-xs text-slate-400">{absence.team.name} · {reason}</p>
+                        </div>
+                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-wider ${isSuspension ? "bg-amber-500/10 text-amber-300" : "bg-red-500/10 text-red-300"}`}>
+                          {isSuspension ? "Suspended" : category}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </section>
         )}
 
