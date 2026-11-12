@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
@@ -43,7 +43,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-export default function PlayerProfilePage() {
+function PlayerProfileContent() {
   const params = useParams<{ id: string }>();
   const playerId = params.id;
   const season = useMemo(() => String(new Date().getFullYear()), []);
@@ -167,5 +167,24 @@ export default function PlayerProfilePage() {
       </div>
       <Footer />
     </main>
+  );
+}
+
+
+export default function PlayerProfilePage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-slate-950 text-white">
+          <Header />
+          <div className="mx-auto max-w-7xl px-4 py-24 text-center text-sm text-slate-400">
+            Loading player profile...
+          </div>
+          <Footer />
+        </main>
+      }
+    >
+      <PlayerProfileContent />
+    </Suspense>
   );
 }
