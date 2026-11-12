@@ -152,6 +152,7 @@ interface MatchDetails {
       name: string | null;
       city: string | null;
     };
+    referee?: string | null;
   };
   league: {
     id: number;
@@ -1125,7 +1126,7 @@ export default function MatchCentreClient({
             </div>
 
             {/* Match information */}
-            <div className="mt-8 grid gap-3 border-t border-white/[0.07] pt-6 sm:grid-cols-3">
+            <div className="mt-8 grid gap-3 border-t border-white/[0.07] pt-6 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-xl bg-black/10 px-4 py-3 text-center">
                 <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-slate-500">
                   Venue
@@ -1159,6 +1160,14 @@ export default function MatchCentreClient({
                   {match.score.fulltime.home ?? "-"}
                   <span className="mx-2 text-slate-600">:</span>
                   {match.score.fulltime.away ?? "-"}
+                </p>
+              </div>
+              <div className="rounded-xl bg-black/10 px-4 py-3 text-center">
+                <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-slate-500">
+                  Referee
+                </p>
+                <p className="text-xs font-semibold text-slate-300">
+                  {match.fixture.referee || "Not provided"}
                 </p>
               </div>
             </div>
