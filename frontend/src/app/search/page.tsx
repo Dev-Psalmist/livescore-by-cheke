@@ -244,9 +244,6 @@ export default function SearchPage() {
                 Players
               </span>
               <span className="rounded-lg border border-slate-700 bg-slate-900/80 px-4 py-2 text-sm text-slate-300">
-                Players
-              </span>
-              <span className="rounded-lg border border-slate-700 bg-slate-900/80 px-4 py-2 text-sm text-slate-300">
                 Competitions
               </span>
 
