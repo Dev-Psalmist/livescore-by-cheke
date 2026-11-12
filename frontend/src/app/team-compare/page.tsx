@@ -63,7 +63,7 @@ function TeamPicker({ title, selected, onSelect }: {
 const metrics: { key: keyof TeamSummary; label: string; higher: boolean }[] = [
   { key: "matchesPlayed", label: "Matches played", higher: true },
   { key: "wins", label: "Wins", higher: true },
-  { key: "draws", label: "Draws", higher: true },
+  { key: "draws", label: "Draws", higher: null },
   { key: "losses", label: "Losses", higher: false },
   { key: "goalsFor", label: "Goals scored", higher: true },
   { key: "goalsAgainst", label: "Goals conceded", higher: false },
@@ -93,7 +93,7 @@ export default function TeamComparePage() {
       const response = await fetch(`/api/football/team-comparison?home=${first.id}&away=${second.id}`);
       const payload: ComparePayload = await response.json();
       if (!response.ok || !payload.success || !payload.home || !payload.away) throw new Error("Unable to compare these teams right now.");
-      setComparison({ home: payload.home, away: payload.away });
+      setComparison({\n        home: { ...payload.home, team: { id: first.id, name: first.name, logo: first.logo } },\n        away: { ...payload.away, team: { id: second.id, name: second.name, logo: second.logo } },\n      });
     } catch { setError("Unable to load team comparison right now. Please try again later."); }
     finally { setLoading(false); }
   }
@@ -120,7 +120,7 @@ export default function TeamComparePage() {
               const bWins = a !== b && (metric.higher ? b > a : b < a);
               return <div key={metric.key} className="grid grid-cols-[1fr_minmax(120px,1.2fr)_1fr] items-center gap-2 px-3 py-4 sm:px-6"><p className={`text-center text-lg font-black ${aWins ? "text-emerald-400" : "text-white"}`}>{a}</p><p className="text-center text-[10px] font-bold uppercase tracking-wider text-slate-500 sm:text-xs">{metric.label}</p><p className={`text-center text-lg font-black ${bWins ? "text-emerald-400" : "text-white"}`}>{b}</p></div>;
             })}</div>
-            <p className="border-t border-slate-800 px-5 py-4 text-xs leading-5 text-slate-500">Form is shown oldest to newest within the returned recent results? Results are ordered newest first by date. A dash is used only where data is unavailable. This comparison covers each team's latest ten completed fixtures, which may span different competitions and seasons.</p>
+            <p className="border-t border-slate-800 px-5 py-4 text-xs leading-5 text-slate-500">Form is ordered newest first by date. A dash is used only where data is unavailable. This comparison covers each team's latest ten completed fixtures, which may span different competitions and seasons.</p>
           </section>
         ) : !loading && <div className="mt-10 rounded-2xl border border-dashed border-slate-700 bg-slate-900/30 px-6 py-12 text-center"><p className="text-lg font-bold">Choose two teams to get started</p><p className="mt-2 text-sm text-slate-400">Select clubs or national teams above, then compare their recent results.</p></div>}
       </div>
