@@ -84,25 +84,6 @@ function formatKickoff(date: string): string {
   }).format(new Date(date));
 }
 
-const competitions = [
-  "Premier League",
-  "La Liga",
-  "Bundesliga",
-  "Serie A",
-  "Ligue 1",
-  "Champions League",
-  "Europa League",
-];
-
-const quickLinks = [
-  { label: "Live Scores", href: "/live", icon: "🔴" },
-  { label: "Fixtures", href: "/fixtures", icon: "📅" },
-  { label: "Competitions", href: "/leagues", icon: "🏆" },
-  { label: "Teams", href: "/teams", icon: "⚽" },
-  { label: "Search", href: "/search", icon: "🔎" },
-  { label: "Favourites", href: "/favourites", icon: "♥" },
-];
-
 export default function HomePage() {
   const [liveMatches, setLiveMatches] = useState<Match[]>([]);
   const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
