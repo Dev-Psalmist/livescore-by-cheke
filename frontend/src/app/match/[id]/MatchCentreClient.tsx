@@ -491,7 +491,16 @@ export default function MatchCentreClient({
   const [error, setError] = useState("");
   const [statusRefreshError, setStatusRefreshError] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
-  const [standings, setStandings] = useState<Array<{ rank:number; team:{id:number;name:string;logo:string}; points:number; goalsDiff:number; all:{played:number;win:number;draw:number;lose:number}; form?:string|null }>>([]);
+  const [standings, setStandings] = useState<Array<{
+    rank: number;
+    team: { id: number; name: string; logo: string };
+    points: number;
+    goalsDiff: number;
+    form?: string | null;
+    description?: string | null;
+    group?: string | null;
+    all: { played: number; win: number; draw: number; lose: number; goals?: { for: number; against: number } };
+  }>>([]);
   const [tableError, setTableError] = useState("");
   const [matchNews, setMatchNews] = useState<Array<{id:string;title:string;link:string;source:string;publishedAt:string;summary?:string}>>([]);
   const [newsLoading, setNewsLoading] = useState(false);
@@ -1591,7 +1600,35 @@ export default function MatchCentreClient({
           <section className="rounded-2xl border border-white/[0.07] bg-[#101d2d] p-4 sm:p-6">
             <SectionHeading eyebrow={match.league.name} title="Competition Table" description="Official standings returned by the football data provider." />
             {tableError ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">{tableError}</p> : standings.length === 0 ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">Standings are not available for this competition or season.</p> : (
-              <div className="overflow-x-auto"><table className="w-full min-w-[620px] text-left text-xs"><thead className="text-[10px] uppercase tracking-wider text-slate-500"><tr><th className="p-3">Pos</th><th className="p-3">Club</th><th className="p-3">P</th><th className="p-3">W</th><th className="p-3">D</th><th className="p-3">L</th><th className="p-3">GD</th><th className="p-3">Pts</th></tr></thead><tbody>{standings.map((row) => <tr key={row.team.id} className={`border-t border-white/[0.06] ${row.team.id === match.teams.home.id || row.team.id === match.teams.away.id ? "bg-emerald-500/[0.06]" : ""}`}><td className="p-3 font-bold text-slate-400">{row.rank}</td><td className="p-3 font-semibold text-white"><span className="flex items-center gap-2">{row.team.logo && <img src={row.team.logo} alt="" className="h-5 w-5 object-contain" />}{row.team.name}</span></td><td className="p-3">{row.all.played}</td><td className="p-3">{row.all.win}</td><td className="p-3">{row.all.draw}</td><td className="p-3">{row.all.lose}</td><td className="p-3">{row.goalsDiff}</td><td className="p-3 font-black text-emerald-400">{row.points}</td></tr>)}</tbody></table></div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[820px] text-left text-xs">
+                  <thead className="bg-[#0c1725] text-[10px] uppercase tracking-wider text-slate-500">
+                    <tr><th className="p-3">Pos</th><th className="p-3">Club</th><th className="p-3">P</th><th className="p-3">W</th><th className="p-3">D</th><th className="p-3">L</th><th className="p-3">GF</th><th className="p-3">GA</th><th className="p-3">GD</th><th className="p-3">Form</th><th className="p-3">Pts</th></tr>
+                  </thead>
+                  <tbody>
+                    {standings.map((row) => {
+                      const isMatchTeam = row.team.id === match.teams.home.id || row.team.id === match.teams.away.id;
+                      return (
+                        <tr key={row.team.id} className={isMatchTeam ? "border-t border-white/[0.06] bg-emerald-500/[0.07]" : "border-t border-white/[0.06] hover:bg-white/[0.02]"}>
+                          <td className="p-3 font-bold text-slate-400">{row.rank}</td>
+                          <td className="p-3 font-semibold text-white">
+                            <div className="flex items-center gap-2">{row.team.logo && <img src={row.team.logo} alt="" className="h-5 w-5 object-contain" />}<span>{row.team.name}</span></div>
+                            {row.description && <p className="mt-1 max-w-[220px] text-[9px] font-medium text-emerald-300/80">{row.description}</p>}
+                          </td>
+                          <td className="p-3">{row.all.played}</td><td className="p-3">{row.all.win}</td><td className="p-3">{row.all.draw}</td><td className="p-3">{row.all.lose}</td>
+                          <td className="p-3">{row.all.goals?.for ?? "—"}</td><td className="p-3">{row.all.goals?.against ?? "—"}</td>
+                          <td className="p-3 font-semibold">{row.goalsDiff > 0 ? "+" + row.goalsDiff : row.goalsDiff}</td>
+                          <td className="p-3">
+                            {row.form ? <div className="flex items-center gap-1">{row.form.slice(-5).split("").map((result, index) => <span key={index} title={result} className={result === "W" ? "flex h-5 w-5 items-center justify-center rounded bg-emerald-500/15 text-[9px] font-black text-emerald-300" : result === "D" ? "flex h-5 w-5 items-center justify-center rounded bg-amber-500/15 text-[9px] font-black text-amber-300" : "flex h-5 w-5 items-center justify-center rounded bg-red-500/15 text-[9px] font-black text-red-300"}>{result}</span>)}</div> : <span className="text-slate-600">—</span>}
+                          </td>
+                          <td className="p-3 font-black text-emerald-400">{row.points}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-3 text-[10px] text-slate-500">GF: goals for · GA: goals against · GD: goal difference. Form and qualification notes are supplied by the competition data provider.</p>
             )}
           </section>
         )}
