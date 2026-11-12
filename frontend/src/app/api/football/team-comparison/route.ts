@@ -57,7 +57,7 @@ function summarize(teamId: number, fixtures: Fixture[]) {
 export async function GET(request: NextRequest) {
   const home = request.nextUrl.searchParams.get("home");
   const away = request.nextUrl.searchParams.get("away");
-  if (!home || !away || !/^\\d+$/.test(home) || !/^\\d+$/.test(away) || home === away) {
+  if (!home || !away || !/^[0-9]+$/.test(home) || !/^[0-9]+$/.test(away) || home === away) {
     return NextResponse.json({ success: false, error: "Select two different valid teams." }, { status: 400 });
   }
 
