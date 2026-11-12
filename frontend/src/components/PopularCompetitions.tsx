@@ -18,12 +18,14 @@ type CompetitionResponse = {
   success?: boolean;
   focus?: "international" | "club" | "balanced";
   competitions?: Competition[];
+  error?: unknown;
 };
 
 export default function PopularCompetitions() {
   const [items, setItems] = useState<Competition[]>([]);
   const [focus, setFocus] = useState<CompetitionResponse["focus"]>("balanced");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -32,13 +34,23 @@ export default function PopularCompetitions() {
       try {
         const response = await fetch("/api/football/active-competitions", { cache: "no-store" });
         const data: CompetitionResponse = await response.json();
-        if (!response.ok || !data.success) throw new Error("Competition list unavailable.");
+        if (!response.ok || !data.success) {
+          const message = typeof data.error === "string" ? data.error : data.error ? JSON.stringify(data.error) : "";
+          if (/request limit|daily limit|quota exceeded/i.test(message)) {
+            throw new Error("The football data provider's daily request limit has been reached. Competitions will refresh when the quota resets.");
+          }
+          throw new Error(message || "Competition data is temporarily unavailable.");
+        }
         if (!cancelled) {
           setItems(data.competitions || []);
           setFocus(data.focus || "balanced");
+          setError("");
         }
-      } catch {
-        if (!cancelled) setItems([]);
+      } catch (err) {
+        if (!cancelled) {
+          setItems([]);
+          setError(err instanceof Error ? err.message : "Competition data is temporarily unavailable.");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -72,7 +84,10 @@ export default function PopularCompetitions() {
 
       <div className="max-h-[70vh] space-y-1 overflow-y-auto p-2">
         {loading && <p className="p-3 text-xs text-slate-500">Finding the most relevant competitions...</p>}
-        {!loading && items.length === 0 && (
+        {!loading && error && (
+          <p role="status" className="p-3 text-xs leading-5 text-amber-300">{error}</p>
+        )}
+        {!loading && !error && items.length === 0 && (
           <p className="p-3 text-xs text-slate-500">No active or upcoming competitions were found.</p>
         )}
 
