@@ -124,16 +124,23 @@ export default function MatchNotifications({
     }
   }, [events, enabled, homeTeam, awayTeam, matchId]);
 
-  // Read existing browser notification permission.
+  // Restore this match's alert preference when the page is reopened.
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     if ("Notification" in window) {
       setPermission(Notification.permission);
+      const savedPreference = window.localStorage.getItem(
+        `livescore:match-alerts:${matchId}`
+      );
+      setEnabled(
+        savedPreference === "true" &&
+        Notification.permission === "granted"
+      );
     } else {
       setMessage("This browser does not support notifications.");
     }
-  }, []);
+  }, [matchId]);
 
   async function enableNotifications() {
     if (!("Notification" in window)) {
@@ -151,6 +158,10 @@ export default function MatchNotifications({
 
     if (result === "granted") {
       setEnabled(true);
+      window.localStorage.setItem(
+        `livescore:match-alerts:${matchId}`,
+        "true"
+      );
       setMessage("Notifications are enabled for this match.");
     } else if (result === "denied") {
       setEnabled(false);
@@ -165,6 +176,7 @@ export default function MatchNotifications({
 
   function disableNotifications() {
     setEnabled(false);
+    window.localStorage.removeItem(`livescore:match-alerts:${matchId}`);
     setMessage("Notifications are paused.");
   }
 
@@ -174,6 +186,17 @@ export default function MatchNotifications({
     const oldStatus = previousStatus.current;
 
     if (currentStatus !== oldStatus && enabled) {
+      if (
+        ["NS", "TBD"].includes(oldStatus) &&
+        LIVE_EVENT_STATUSES.includes(currentStatus)
+      ) {
+        sendNotification(
+          "Kick-off",
+          `${homeTeam} vs ${awayTeam} has started.`,
+          `${matchId}-kickoff`
+        );
+      }
+
       if (currentStatus === "HT") {
         sendNotification(
           "Half-time",
@@ -243,8 +266,8 @@ export default function MatchNotifications({
             </div>
 
             <p className="mt-1 text-xs leading-relaxed text-slate-400">
-              Get instant browser alerts for goals, red cards,
-              half-time and full-time.
+              Get browser alerts for kick-off, goals, red cards,
+              half-time and full-time while this match page is open.
             </p>
 
             <p className="mt-2 text-[10px] font-medium text-slate-500">
@@ -318,7 +341,7 @@ export default function MatchNotifications({
 
         {enabled && (
           <p className="mt-2 text-[10px] font-medium text-emerald-400">
-            Browser notifications are enabled for this match.
+            Alerts are saved for this match. Keep this page open to receive live updates.
           </p>
         )}
       </div>
