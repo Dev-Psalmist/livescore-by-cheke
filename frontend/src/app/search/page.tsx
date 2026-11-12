@@ -522,14 +522,15 @@ export default function SearchPage() {
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {players.map((item) => {
                       return (
-                        <article key={item.player.id} className="flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5">
+                        <Link href={`/player/${item.player.id}`} key={item.player.id} className="group flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5 transition hover:-translate-y-1 hover:border-green-500/60">
                           {item.player.photo ? <img src={item.player.photo} alt="" className="h-16 w-16 shrink-0 rounded-full bg-slate-800 object-cover" /> : <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-slate-800 font-black text-green-400">{item.player.name.slice(0,2).toUpperCase()}</div>}
                           <div className="min-w-0">
-                            <h3 className="truncate font-bold text-white">{item.player.name}</h3>
+                            <h3 className="truncate font-bold text-white transition group-hover:text-green-400">{item.player.name}</h3>
                             <p className="mt-1 text-xs text-slate-400">{item.player.nationality || "Nationality unavailable"}{item.player.age ? " · " + item.player.age + " years" : ""}</p>
                             <p className="mt-2 text-[10px] text-slate-500">{item.player.height || "Height unavailable"}{item.player.weight ? " · " + item.player.weight : ""}</p>
+                            <p className="mt-3 text-[10px] font-bold uppercase tracking-wider text-green-400">View player profile →</p>
                           </div>
-                        </article>
+                        </Link>
                       );
                     })}
                   </div>
