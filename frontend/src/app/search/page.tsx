@@ -244,6 +244,9 @@ export default function SearchPage() {
                 Players
               </span>
               <span className="rounded-lg border border-slate-700 bg-slate-900/80 px-4 py-2 text-sm text-slate-300">
+                Players
+              </span>
+              <span className="rounded-lg border border-slate-700 bg-slate-900/80 px-4 py-2 text-sm text-slate-300">
                 Competitions
               </span>
 
@@ -321,9 +324,7 @@ export default function SearchPage() {
             </div>
 
             <p className="mt-5 text-xs leading-5 text-slate-500">
-              Enter at least three characters. Match searches find
-              the latest 10 fixtures for the matching team in the
-              current season.
+              Enter at least three characters for teams, competitions and matches. Player searches require at least four characters.
             </p>
           </form>
         </div>
