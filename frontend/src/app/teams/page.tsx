@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -286,9 +287,10 @@ export default function TeamsPage() {
 
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {teams.map((item) => (
-                <article
+                <Link
+                  href={`/team/${item.team.id}`}
                   key={item.team.id}
-                  className="group overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 transition duration-300 hover:-translate-y-1 hover:border-green-500/60 hover:shadow-xl hover:shadow-green-950/20"
+                  className="group block overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 transition duration-300 hover:-translate-y-1 hover:border-green-500/60 hover:shadow-xl hover:shadow-green-950/20"
                 >
                   <div className="h-1 bg-gradient-to-r from-green-600 via-green-400 to-emerald-300 opacity-70 transition group-hover:opacity-100" />
 
@@ -385,7 +387,7 @@ export default function TeamsPage() {
                       )}
                     </div>
                   </div>
-                </article>
+                </Link>
               ))}
             </div>
           </section>
