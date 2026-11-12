@@ -574,10 +574,16 @@ export default function MatchCentreClient({
     const currentStatus =
       match.fixture.status.short.toUpperCase();
 
-    if (!LIVE_STATUSES.includes(currentStatus)) return;
+    const isScheduledStatus = ["NS", "TBD"].includes(currentStatus);
+    if (!LIVE_STATUSES.includes(currentStatus) && !isScheduledStatus) return;
 
-    const intervalMs =
-      currentStatus === "HT" ? 15000 : 5000;
+    // Check upcoming fixtures periodically so the countdown switches to
+    // the official live status as soon as the provider reports kickoff.
+    const intervalMs = isScheduledStatus
+      ? 30000
+      : currentStatus === "HT"
+        ? 15000
+        : 5000;
 
     let cancelled = false;
 
