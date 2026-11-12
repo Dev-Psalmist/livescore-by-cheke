@@ -59,7 +59,9 @@ export async function GET() {
 
     for (let index = 0; index < responses.length; index++) {
       if (!responses[index].ok || (payloads[index].errors && Object.keys(payloads[index].errors).length)) {
-        throw new Error("Competition data is temporarily unavailable.");
+        throw new Error(
+          JSON.stringify(payloads[index].errors || "Competition data is temporarily unavailable.")
+        );
       }
     }
 
