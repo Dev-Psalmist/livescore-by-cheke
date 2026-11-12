@@ -21,7 +21,7 @@ export async function GET() {
         headers: {
           "x-apisports-key": apiKey,
         },
-        cache: "no-store",
+        next: { revalidate: 60 },
       }
     );
 
