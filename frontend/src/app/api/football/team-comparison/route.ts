@@ -4,7 +4,7 @@ const API_BASE = "https://v3.football.api-sports.io";
 const FINISHED = new Set(["FT", "AET", "PEN"]);
 
 type HeadToHeadMatch = {
-  id: number; date: string; home: string; away: string;
+  id: number; date: string; homeId: number; awayId: number; home: string; away: string;
   homeLogo: string; awayLogo: string; homeGoals: number | null;
   awayGoals: number | null; competition: string;
 };
@@ -107,6 +107,8 @@ export async function GET(request: NextRequest) {
         .map((item: any) => ({
           id: item.fixture.id,
           date: item.fixture.date,
+          homeId: item.teams.home.id,
+          awayId: item.teams.away.id,
           home: item.teams.home.name,
           away: item.teams.away.name,
           homeLogo: item.teams.home.logo,
