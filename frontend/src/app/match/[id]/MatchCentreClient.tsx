@@ -507,7 +507,7 @@ export default function MatchCentreClient({
   const [matchNews, setMatchNews] = useState<Array<{id:string;title:string;link:string;source:string;publishedAt:string;summary?:string}>>([]);
   const [newsLoading, setNewsLoading] = useState(false);
 
-  const [teamForm, setTeamForm] = useState<{ home: Array<{id:number;opponent:string;result:"W"|"D"|"L"}>; away: Array<{id:number;opponent:string;result:"W"|"D"|"L"}> } | null>(null);
+  const [teamForm, setTeamForm] = useState<{ home: Array<{id:number;date:string;opponent:string;goalsFor:number|null;goalsAgainst:number|null;result:"W"|"D"|"L"}>; away: Array<{id:number;date:string;opponent:string;goalsFor:number|null;goalsAgainst:number|null;result:"W"|"D"|"L"}> } | null>(null);
   const [teamFormLoading, setTeamFormLoading] = useState(false);
   const [headToHead, setHeadToHead] = useState<Array<{id:number;date:string;home:string;away:string;homeLogo?:string;awayLogo?:string;homeGoals:number|null;awayGoals:number|null;competition:string}>>([]);
   const [headToHeadLoading, setHeadToHeadLoading] = useState(false);
@@ -1211,13 +1211,15 @@ export default function MatchCentreClient({
                     <span className="text-xs text-slate-500">Loading recent results...</span>
                   ) : team.form?.length ? (
                     team.form.map((game) => (
-                      <span
+                      <Link
                         key={game.id}
-                        title={`vs ${game.opponent}`}
-                        className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white ${game.result === "W" ? "bg-emerald-600" : game.result === "L" ? "bg-red-600" : "bg-amber-500"}`}
+                        href={`/match/${game.id}`}
+                        title={`${game.result} vs ${game.opponent} · ${game.goalsFor ?? "—"}-${game.goalsAgainst ?? "—"} · View match`}
+                        aria-label={`View match: ${team.name} ${game.goalsFor ?? "—"}-${game.goalsAgainst ?? "—"} ${game.opponent}, result ${game.result}`}
+                        className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-black text-white transition hover:scale-110 hover:ring-2 hover:ring-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${game.result === "W" ? "bg-emerald-600" : game.result === "L" ? "bg-red-600" : "bg-amber-500"}`}
                       >
                         {game.result}
-                      </span>
+                      </Link>
                     ))
                   ) : (
                     <span className="text-xs text-slate-500">Recent results unavailable</span>
