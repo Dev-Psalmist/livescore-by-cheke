@@ -34,6 +34,8 @@ export async function GET(request: NextRequest) {
         date: item.fixture.date,
         home: item.teams.home.name,
         away: item.teams.away.name,
+        homeId: item.teams.home.id,
+        awayId: item.teams.away.id,
         homeLogo: item.teams.home.logo,
         awayLogo: item.teams.away.logo,
         homeGoals: item.goals.home,
