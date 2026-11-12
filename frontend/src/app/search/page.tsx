@@ -6,7 +6,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-type SearchType = "all" | "teams" | "leagues" | "matches";
+type SearchType = "all" | "teams" | "players" | "leagues" | "matches";
 
 interface TeamResult {
   team: {
@@ -38,6 +38,23 @@ interface LeagueResult {
     year: number;
     current: boolean;
   }[];
+}
+
+interface PlayerResult {
+  player: {
+    id: number;
+    name: string;
+    age: number | null;
+    nationality: string | null;
+    photo: string | null;
+    height?: string | null;
+    weight?: string | null;
+  };
+  statistics?: Array<{
+    team?: { name?: string; logo?: string };
+    league?: { name?: string; season?: number };
+    games?: { position?: string | null; number?: number | null };
+  }>;
 }
 
 interface MatchResult {
@@ -77,6 +94,7 @@ interface SearchResponse {
   error?: string;
   teams?: TeamResult[];
   leagues?: LeagueResult[];
+  players?: PlayerResult[];
   matches?: MatchResult[];
   matchedTeam?: TeamResult | null;
 }
@@ -87,6 +105,7 @@ const categories: {
 }[] = [
   { id: "all", label: "All Results" },
   { id: "teams", label: "Teams" },
+  { id: "players", label: "Players" },
   { id: "leagues", label: "Leagues" },
   { id: "matches", label: "Matches" },
 ];
@@ -120,6 +139,7 @@ export default function SearchPage() {
 
   const [teams, setTeams] = useState<TeamResult[]>([]);
   const [leagues, setLeagues] = useState<LeagueResult[]>([]);
+  const [players, setPlayers] = useState<PlayerResult[]>([]);
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [matchedTeam, setMatchedTeam] =
     useState<TeamResult | null>(null);
@@ -146,6 +166,7 @@ export default function SearchPage() {
 
       setTeams([]);
       setLeagues([]);
+      setPlayers([]);
       setMatches([]);
       setMatchedTeam(null);
 
@@ -164,6 +185,7 @@ export default function SearchPage() {
 
       setTeams(data.teams || []);
       setLeagues(data.leagues || []);
+      setPlayers(data.players || []);
       setMatches(data.matches || []);
       setMatchedTeam(data.matchedTeam || null);
 
@@ -213,6 +235,9 @@ export default function SearchPage() {
               </span>
 
               <span className="rounded-lg border border-slate-700 bg-slate-900/80 px-4 py-2 text-sm text-slate-300">
+                Players
+              </span>
+              <span className="rounded-lg border border-slate-700 bg-slate-900/80 px-4 py-2 text-sm text-slate-300">
                 Competitions
               </span>
 
@@ -252,7 +277,7 @@ export default function SearchPage() {
                   type="search"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search Arsenal, Premier League..."
+                  placeholder="Search Arsenal, Haaland, Premier League..."
                   className="w-full rounded-xl border border-slate-700 bg-slate-950 py-4 pl-12 pr-4 text-white outline-none transition placeholder:text-slate-500 focus:border-green-500 focus:ring-2 focus:ring-green-500/10"
                 />
               </div>
@@ -462,6 +487,38 @@ export default function SearchPage() {
                         </div>
                       </article>
                     ))}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {(category === "all" || category === "players") && (
+              <section>
+                <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-slate-800 pb-5">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-green-400">Player Directory</p>
+                    <h2 className="mt-2 text-2xl font-black">Players</h2>
+                  </div>
+                  <span className="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-400">{players.length} found</span>
+                </div>
+                {players.length === 0 ? (
+                  <p className="rounded-2xl border border-slate-800 bg-slate-900/50 p-6 text-sm text-slate-400">No matching players found.</p>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {players.map((item) => {
+                      const latest = item.statistics?.[0];
+                      return (
+                        <article key={item.player.id} className="flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5">
+                          {item.player.photo ? <img src={item.player.photo} alt="" className="h-16 w-16 shrink-0 rounded-full bg-slate-800 object-cover" /> : <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-slate-800 font-black text-green-400">{item.player.name.slice(0,2).toUpperCase()}</div>}
+                          <div className="min-w-0">
+                            <h3 className="truncate font-bold text-white">{item.player.name}</h3>
+                            <p className="mt-1 text-xs text-slate-400">{item.player.nationality || "Nationality unavailable"}{item.player.age ? " · " + item.player.age + " years" : ""}</p>
+                            <p className="mt-2 truncate text-xs font-semibold text-green-400">{latest?.team?.name || "Club unavailable"}</p>
+                            <p className="mt-1 text-[10px] text-slate-500">{latest?.games?.position || "Position unavailable"}{latest?.league?.name ? " · " + latest.league.name : ""}</p>
+                          </div>
+                        </article>
+                      );
+                    })}
                   </div>
                 )}
               </section>
