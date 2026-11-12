@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useFavouriteLeagues } from "@/hooks/useFavouriteLeagues";
 
 type Competition = {
   id: number;
@@ -26,6 +27,11 @@ export default function PopularCompetitions() {
   const [focus, setFocus] = useState<CompetitionResponse["focus"]>("balanced");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { favourites: followedLeagues } = useFavouriteLeagues();
+  const followedIds = new Set(followedLeagues.map((item) => item.league.id));
+  const prioritisedItems = [...items].sort(
+    (a, b) => Number(followedIds.has(b.id)) - Number(followedIds.has(a.id))
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -87,7 +93,7 @@ export default function PopularCompetitions() {
           <p className="p-3 text-xs text-slate-500">No active or upcoming competitions were found.</p>
         )}
 
-        {items.map((item) => (
+        {prioritisedItems.map((item) => (
           <Link
             key={item.id}
             href={`/leagues?league=${item.id}`}
@@ -101,6 +107,7 @@ export default function PopularCompetitions() {
             <span className="min-w-0 flex-1">
               <span className="block truncate font-semibold">{item.name}</span>
               <span className="mt-0.5 block truncate text-[10px] text-slate-500">{item.country}</span>
+              {followedIds.has(item.id) && <span className="mt-1 inline-block rounded bg-emerald-400/10 px-1.5 py-0.5 text-[8px] font-black uppercase text-emerald-300">Following</span>}
               <span className="mt-1 flex flex-wrap gap-1.5">
                 {item.liveMatches > 0 && (
                   <span className="rounded bg-red-500/10 px-1.5 py-0.5 text-[9px] font-bold text-red-300">
