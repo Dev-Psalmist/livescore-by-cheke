@@ -72,9 +72,11 @@ interface ApiResponse<T> {
 }
 
 function getErrorMessage(error: unknown): string {
-  if (typeof error === "string") return error;
-  if (error) return JSON.stringify(error);
-  return "Unable to retrieve football data.";
+  const message = typeof error === "string" ? error : error ? JSON.stringify(error) : "";
+  if (/request limit|daily limit|quota exceeded/i.test(message)) {
+    return "The football data provider's daily request limit has been reached. Live scores and fixtures will return when the quota resets. News and highlights are still available.";
+  }
+  return message || "Unable to retrieve football data.";
 }
 
 function formatKickoff(date: string): string {
