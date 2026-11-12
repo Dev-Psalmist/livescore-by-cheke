@@ -1014,6 +1014,8 @@ export default function MatchCentreClient({
           </div>
         </section>
 
+{activeTab === "overview" && (
+        <>
         {/* RECENT FORM */}
         <section className="mb-7 rounded-2xl border border-white/[0.07] bg-[#101d2d] p-5 sm:p-6">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
@@ -1046,21 +1048,24 @@ export default function MatchCentreClient({
           </div>
         </section>
 
+        </>
+      )}
+
         {/* REFRESH FEEDBACK */}
         {error && match && (
           <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300">
-            Refresh failed: {error}. Previously retrieved match
-            information is still displayed.
+            Unable to load data right now. Please try again later. Previously retrieved match information is still displayed.
           </div>
         )}
 
         {statusRefreshError && (
           <div className="mb-5 rounded-xl border border-yellow-500/20 bg-yellow-500/10 p-4 text-sm text-yellow-300">
-            Automatic score refresh failed: {statusRefreshError}.
-            The last successfully retrieved score remains displayed.
+            Unable to load data right now. Please try again later. The last successfully retrieved score remains displayed.
           </div>
         )}
 
+{activeTab === "overview" && (
+        <>
         {/* MATCH INSIGHTS */}
         <section className="mb-7">
           <MatchInsights
@@ -1084,6 +1089,9 @@ export default function MatchCentreClient({
             awayTeam={awayTeam}
           />
         </section>
+
+        </>
+      )}
 
         {/* CONTENT NAVIGATION */}
         <section className="mb-6">
