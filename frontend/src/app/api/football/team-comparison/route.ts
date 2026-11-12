@@ -3,6 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 const API_BASE = "https://v3.football.api-sports.io";
 const FINISHED = new Set(["FT", "AET", "PEN"]);
 
+type HeadToHeadMatch = {
+  id: number; date: string; home: string; away: string;
+  homeLogo: string; awayLogo: string; homeGoals: number | null;
+  awayGoals: number | null; competition: string;
+};
+
 type Fixture = {
   fixture: { id: number; date: string; status: { short: string } };
   league: { name: string; country: string };
@@ -83,16 +89,47 @@ export async function GET(request: NextRequest) {
       return payload.response as Fixture[];
     };
 
-    const [homeFixtures, awayFixtures] = await Promise.all([
+    const fetchHeadToHead = async (): Promise<HeadToHeadMatch[]> => {
+      const url = new URL(`${API_BASE}/fixtures`);
+      url.searchParams.set("h2h", `${home}-${away}`);
+      url.searchParams.set("last", "5");
+      url.searchParams.set("timezone", "Africa/Lagos");
+      const response = await fetch(url, {
+        headers: { "x-apisports-key": apiKey },
+        next: { revalidate: 900 },
+      });
+      if (!response.ok) throw new Error("Provider request failed");
+      const payload = await response.json();
+      const hasErrors = payload?.errors && Object.keys(payload.errors).length > 0;
+      if (hasErrors || !Array.isArray(payload?.response)) throw new Error("Invalid provider response");
+      return payload.response
+        .filter((item: any) => FINISHED.has(item.fixture.status.short))
+        .map((item: any) => ({
+          id: item.fixture.id,
+          date: item.fixture.date,
+          home: item.teams.home.name,
+          away: item.teams.away.name,
+          homeLogo: item.teams.home.logo,
+          awayLogo: item.teams.away.logo,
+          homeGoals: item.goals.home,
+          awayGoals: item.goals.away,
+          competition: item.league.name,
+        }));
+    };
+
+    const [homeFixtures, awayFixtures, headToHead] = await Promise.all([
       fetchTeamFixtures(home),
       fetchTeamFixtures(away),
+      fetchHeadToHead(),
     ]);
     const homeSummary = summarize(Number(home), homeFixtures);
     const awaySummary = summarize(Number(away), awayFixtures);
-    if (!homeSummary.matchesPlayed && !awaySummary.matchesPlayed) {
-      return NextResponse.json({ success: true, home: homeSummary, away: awaySummary });
-    }
-    return NextResponse.json({ success: true, home: homeSummary, away: awaySummary });
+    return NextResponse.json({
+      success: true,
+      home: homeSummary,
+      away: awaySummary,
+      headToHead,
+    });
   } catch (error) {
     console.error("Team comparison API error:", error);
     return NextResponse.json(
