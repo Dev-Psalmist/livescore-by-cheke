@@ -162,7 +162,7 @@ export default function PlayerComparePage() {
     <main className="min-h-screen bg-slate-950 text-white">
       <Header />
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:py-14">
-        <a href="/search" className="text-sm font-semibold text-emerald-400 hover:text-emerald-300">← Back to search</a>
+        <Link href="/search" className="text-sm font-semibold text-emerald-400 hover:text-emerald-300">← Back to search</Link>
         <div className="mt-7 max-w-3xl">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">Player comparison</p>
           <h1 className="mt-2 text-4xl font-black sm:text-5xl">Who leads the numbers?</h1>
