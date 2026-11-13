@@ -22,6 +22,7 @@ export async function GET() {
           "x-apisports-key": apiKey,
         },
         next: { revalidate: 60 },
+        signal: AbortSignal.timeout(10000),
       }
     );
 
