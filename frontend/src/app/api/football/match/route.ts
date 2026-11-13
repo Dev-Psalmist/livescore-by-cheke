@@ -3,17 +3,23 @@ import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
 const API_BASE_URL = "https://v3.football.api-sports.io";
 
+type RecordValue = Record<string, unknown>;
+
 type EndpointResult = {
-  data: any[];
+  data: unknown[];
   diagnostic: {
     endpoint: string;
     httpStatus: number | null;
     success: boolean;
     results: number;
-    errors: any;
+    errors: unknown;
     message: string;
   };
 };
+
+function isRecord(value: unknown): value is RecordValue {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 async function fetchOptionalMatchData(
   endpoint: string,
@@ -34,9 +40,9 @@ async function fetchOptionalMatchData(
       next: { revalidate: revalidateSeconds },
     });
 
-    let data: any;
+    let payload: unknown;
     try {
-      data = await response.json();
+      payload = await response.json();
     } catch {
       return {
         data: [],
@@ -47,8 +53,9 @@ async function fetchOptionalMatchData(
       };
     }
 
-    const apiErrors = data?.errors ?? null;
-    if (!response.ok || hasFootballApiErrors(apiErrors) || !Array.isArray(data?.response)) {
+    const apiErrors = isRecord(payload) ? payload.errors ?? null : null;
+    const responseData = isRecord(payload) ? payload.response : null;
+    if (!response.ok || hasFootballApiErrors(apiErrors) || !Array.isArray(responseData)) {
       return {
         data: [],
         diagnostic: {
@@ -59,11 +66,11 @@ async function fetchOptionalMatchData(
     }
 
     return {
-      data: data.response,
+      data: responseData,
       diagnostic: {
         endpoint, httpStatus: response.status, success: true,
-        results: data.response.length, errors: null,
-        message: data.response.length > 0
+        results: responseData.length, errors: null,
+        message: responseData.length > 0
           ? "Data retrieved successfully."
           : "The API request succeeded but returned no data.",
       },
@@ -101,7 +108,7 @@ export async function GET(request: NextRequest) {
     }
 
     const matchId = request.nextUrl.searchParams.get("id");
-    if (!matchId || !/^\d+$/.test(matchId)) {
+    if (!matchId || !/^\\d+$/.test(matchId) || Number(matchId) <= 0) {
       return NextResponse.json(
         { success: false, error: "A valid match ID is required." },
         { status: 400 }
@@ -116,9 +123,9 @@ export async function GET(request: NextRequest) {
       next: { revalidate: 30 },
     });
 
-    let fixtureData: any;
+    let fixturePayload: unknown;
     try {
-      fixtureData = await fixtureResponse.json();
+      fixturePayload = await fixtureResponse.json();
     } catch {
       return NextResponse.json(
         { success: false, error: "The football data provider returned an invalid response." },
@@ -126,21 +133,24 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!fixtureResponse.ok || hasFootballApiErrors(fixtureData?.errors)) {
+    const fixtureErrors = isRecord(fixturePayload) ? fixturePayload.errors : null;
+    const fixtureList = isRecord(fixturePayload) ? fixturePayload.response : null;
+
+    if (!fixtureResponse.ok || hasFootballApiErrors(fixtureErrors)) {
       return NextResponse.json(
         { success: false, error: "Unable to retrieve match information." },
         { status: fixtureResponse.ok ? 502 : fixtureResponse.status }
       );
     }
 
-    if (!Array.isArray(fixtureData?.response)) {
+    if (!Array.isArray(fixtureList)) {
       return NextResponse.json(
         { success: false, error: "The football data provider returned unexpected match data." },
         { status: 502 }
       );
     }
 
-    const match = fixtureData.response[0];
+    const match = fixtureList[0];
     if (!match) {
       return NextResponse.json(
         { success: false, error: "Match information was not found." },
@@ -148,9 +158,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const isScheduled = ["NS", "TBD"].includes(
-      String(match.fixture?.status?.short || "").toUpperCase()
-    );
+    const fixture = isRecord(match) && isRecord(match.fixture) ? match.fixture : null;
+    const matchStatus = fixture && isRecord(fixture.status) ? fixture.status.short : null;
+    const isScheduled = ["NS", "TBD"].includes(String(matchStatus || "").toUpperCase());
 
     const [eventsResult, lineupsResult, statisticsResult, playersResult, injuriesResult] =
       await Promise.all([
@@ -167,7 +177,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       match: {
-        ...match,
+        ...(isRecord(match) ? match : {}),
         events: eventsResult.data,
         lineups: lineupsResult.data,
         statistics: statisticsResult.data,
