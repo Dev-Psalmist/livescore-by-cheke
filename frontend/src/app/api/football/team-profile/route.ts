@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
+import { fetchFootballApiData, FootballApiRequestError } from "@/lib/football-api";
 
 const API = "https://v3.football.api-sports.io";
 
-interface TeamProfilePayload {
-  errors?: unknown;
-  response?: unknown;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export async function GET(request: NextRequest) {
@@ -19,51 +18,23 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!teamId || !/^\d+$/.test(teamId)) {
+  if (!teamId || !/^\\d+$/.test(teamId) || Number(teamId) <= 0) {
     return NextResponse.json(
       { success: false, error: "A valid team ID is required." },
       { status: 400 }
     );
   }
 
-  try {
-    const url = new URL(`${API}/teams`);
-    url.searchParams.set("id", teamId);
+  const url = new URL(`${API}/teams`);
+  url.searchParams.set("id", teamId);
 
-    const response = await fetchFootballApi(url, {
-      headers: { "x-apisports-key": key },
+  try {
+    const data = await fetchFootballApiData<unknown>(url, key, {
       next: { revalidate: 3600 },
     });
+    const item = data.response[0];
 
-    let data: TeamProfilePayload;
-    try {
-      data = (await response.json()) as TeamProfilePayload;
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "The football data provider returned an invalid response." },
-        { status: 502 }
-      );
-    }
-
-    if (!response.ok || hasFootballApiErrors(data.errors)) {
-      return NextResponse.json(
-        { success: false, error: "Unable to load team information." },
-        { status: response.ok ? 502 : response.status }
-      );
-    }
-
-    if (!Array.isArray(data.response)) {
-      return NextResponse.json(
-        { success: false, error: "The football data provider returned unexpected team data." },
-        { status: 502 }
-      );
-    }
-
-    const item = data.response[0] as
-      | { team?: unknown; venue?: unknown }
-      | undefined;
-
-    if (!item?.team || typeof item.team !== "object") {
+    if (!isRecord(item) || !isRecord(item.team)) {
       return NextResponse.json(
         { success: false, error: "Team not found." },
         { status: 404 }
@@ -77,9 +48,15 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Team profile API error:", error);
+    const status = error instanceof FootballApiRequestError ? error.status : 502;
     return NextResponse.json(
-      { success: false, error: "Unable to load team information." },
-      { status: 502 }
+      {
+        success: false,
+        error: status === 429
+          ? "The football data provider has reached its request limit."
+          : "Unable to load team information.",
+      },
+      { status }
     );
   }
 }
