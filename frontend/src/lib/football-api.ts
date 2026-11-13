@@ -1,7 +1,14 @@
 /** Shared safeguards for requests to the API-Football provider. */
+type FootballFetchInit = RequestInit & {
+  next?: {
+    revalidate?: number | false;
+    tags?: string[];
+  };
+};
+
 export async function fetchFootballApi(
   input: RequestInfo | URL,
-  init: RequestInit = {},
+  init: FootballFetchInit = {},
   timeoutMs = 10_000,
 ): Promise<Response> {
   const signal = init.signal ?? AbortSignal.timeout(timeoutMs);
