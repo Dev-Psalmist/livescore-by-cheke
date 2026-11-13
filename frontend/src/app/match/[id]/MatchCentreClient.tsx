@@ -1203,9 +1203,9 @@ export default function MatchCentreClient({
             )}
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            {([{name:homeTeam, form:teamForm?.home}, {name:awayTeam, form:teamForm?.away}] as const).map((team) => (
-              <div key={team.name} className="rounded-xl bg-[#0b1624] p-4">
-                <p className="mb-3 text-sm font-bold text-white">{team.name}</p>
+            {([{id:match.teams.home.id, name:homeTeam, form:teamForm?.home}, {id:match.teams.away.id, name:awayTeam, form:teamForm?.away}] as const).map((team) => (
+              <div key={team.id} className="rounded-xl bg-[#0b1624] p-4">
+                <p className="mb-3 text-sm font-bold text-white"><Link href={`/team/${team.id}`} className="transition-colors hover:text-emerald-400 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">{team.name}</Link></p>
                 <div className="flex min-h-8 flex-wrap items-center gap-2">
                   {teamFormLoading ? (
                     <span className="text-xs text-slate-500">Loading recent results...</span>
