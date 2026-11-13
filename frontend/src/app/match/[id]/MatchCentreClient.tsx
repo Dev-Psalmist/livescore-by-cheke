@@ -505,13 +505,17 @@ export default function MatchCentreClient({
     all: { played: number; win: number; draw: number; lose: number; goals?: { for: number; against: number } };
   }>>([]);
   const [tableError, setTableError] = useState("");
+  const [standingsLoading, setStandingsLoading] = useState(false);
   const [matchNews, setMatchNews] = useState<Array<{id:string;title:string;link:string;source:string;publishedAt:string;summary?:string}>>([]);
   const [newsLoading, setNewsLoading] = useState(false);
+  const [newsError, setNewsError] = useState("");
 
   const [teamForm, setTeamForm] = useState<{ home: Array<{id:number;date:string;opponent:string;goalsFor:number|null;goalsAgainst:number|null;result:"W"|"D"|"L"}>; away: Array<{id:number;date:string;opponent:string;goalsFor:number|null;goalsAgainst:number|null;result:"W"|"D"|"L"}> } | null>(null);
   const [teamFormLoading, setTeamFormLoading] = useState(false);
+  const [teamFormError, setTeamFormError] = useState("");
   const [headToHead, setHeadToHead] = useState<Array<{id:number;date:string;home:string;away:string;homeId:number;awayId:number;homeLogo?:string;awayLogo?:string;homeGoals:number|null;awayGoals:number|null;competition:string}>>([]);
   const [headToHeadLoading, setHeadToHeadLoading] = useState(false);
+  const [headToHeadError, setHeadToHeadError] = useState("");
   const [now, setNow] = useState(0);
   const [shareFeedback, setShareFeedback] = useState("");
 
@@ -600,6 +604,18 @@ export default function MatchCentreClient({
   );
 
   useEffect(() => {
+    loadedMatchData.current.clear();
+    setMatch(null);
+    setDiagnostics(undefined);
+    setStandings([]);
+    setTableError("");
+    setMatchNews([]);
+    setNewsError("");
+    setTeamForm(null);
+    setTeamFormError("");
+    setHeadToHead([]);
+    setHeadToHeadError("");
+    setStatusRefreshError("");
     void loadMatch();
   }, [loadMatch]);
 
@@ -650,6 +666,13 @@ export default function MatchCentreClient({
         setMatch((currentMatch) => {
           if (!currentMatch) return currentMatch;
 
+          const refreshedStatus = data.status!.short.toUpperCase();
+          const refreshedScore = {
+            home: data.goals!.home,
+            away: data.goals!.away,
+          };
+          const finishedStatuses = ["FT", "AET", "PEN"];
+
           return {
             ...currentMatch,
             fixture: {
@@ -657,6 +680,15 @@ export default function MatchCentreClient({
               status: data.status!,
             },
             goals: data.goals!,
+            score: {
+              ...currentMatch.score,
+              ...(refreshedStatus === "HT"
+                ? { halftime: refreshedScore }
+                : {}),
+              ...(finishedStatuses.includes(refreshedStatus)
+                ? { fulltime: refreshedScore }
+                : {}),
+            },
             events: Array.isArray(data.events)
               ? data.events
               : currentMatch.events,
@@ -704,6 +736,7 @@ export default function MatchCentreClient({
 
     let cancelled = false;
     setTeamFormLoading(true);
+    setTeamFormError("");
 
     fetch(`/api/football/team-form?home=${homeId}&away=${awayId}`, {
       cache: "no-store",
@@ -719,7 +752,10 @@ export default function MatchCentreClient({
         }
       })
       .catch(() => {
-        if (!cancelled) setTeamForm(null);
+        if (!cancelled) {
+          setTeamForm(null);
+          setTeamFormError("Recent form could not be loaded. Please try again.");
+        }
       })
       .finally(() => {
         if (!cancelled) setTeamFormLoading(false);
@@ -740,6 +776,7 @@ export default function MatchCentreClient({
 
     let cancelled = false;
     setHeadToHeadLoading(true);
+    setHeadToHeadError("");
 
     fetch(`/api/football/head-to-head?home=${homeId}&away=${awayId}`, {
       cache: "no-store",
@@ -755,7 +792,10 @@ export default function MatchCentreClient({
         }
       })
       .catch(() => {
-        if (!cancelled) setHeadToHead([]);
+        if (!cancelled) {
+          setHeadToHead([]);
+          setHeadToHeadError("Previous meetings could not be loaded. Please try again.");
+        }
       })
       .finally(() => {
         if (!cancelled) setHeadToHeadLoading(false);
@@ -783,6 +823,7 @@ export default function MatchCentreClient({
 
     let cancelled = false;
     setTableError("");
+    setStandingsLoading(true);
 
     fetch(`/api/football/standings?league=${leagueId}&season=${season}`, {
       cache: "no-store",
@@ -802,6 +843,9 @@ export default function MatchCentreClient({
         if (!cancelled) {
           setTableError("Unable to load data right now. Please try again later.");
         }
+      })
+      .finally(() => {
+        if (!cancelled) setStandingsLoading(false);
       });
 
     return () => {
@@ -820,6 +864,7 @@ export default function MatchCentreClient({
 
     let cancelled = false;
     setNewsLoading(true);
+    setNewsError("");
 
     fetch("/api/football/news", { cache: "no-store" })
       .then(async (response) => {
@@ -846,7 +891,10 @@ export default function MatchCentreClient({
         }
       })
       .catch(() => {
-        if (!cancelled) setMatchNews([]);
+        if (!cancelled) {
+          setMatchNews([]);
+          setNewsError("Related football news could not be loaded. Please try again.");
+        }
       })
       .finally(() => {
         if (!cancelled) setNewsLoading(false);
@@ -1230,6 +1278,8 @@ export default function MatchCentreClient({
                         {game.result}
                       </Link>
                     ))
+                  ) : teamFormError ? (
+                    <span className="text-xs text-amber-300">{teamFormError}</span>
                   ) : (
                     <span className="text-xs text-slate-500">Recent results unavailable</span>
                   )}
@@ -1332,6 +1382,7 @@ export default function MatchCentreClient({
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
+                aria-pressed={activeTab === tab.id}
                 className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-xs font-bold transition sm:px-5 sm:text-sm ${
                   activeTab === tab.id
                     ? "bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/10"
@@ -1383,6 +1434,8 @@ export default function MatchCentreClient({
               </div>
               {headToHeadLoading ? (
                 <p className="py-5 text-center text-sm text-slate-400">Loading previous meetings...</p>
+              ) : headToHeadError ? (
+                <p className="py-5 text-center text-sm text-amber-300">{headToHeadError}</p>
               ) : headToHead.length === 0 ? (
                 <p className="py-5 text-center text-sm text-slate-400">No previous completed meetings were returned for these teams.</p>
               ) : (
@@ -1706,7 +1759,7 @@ export default function MatchCentreClient({
         {activeTab === "table" && (
           <section className="rounded-2xl border border-white/[0.07] bg-[#101d2d] p-4 sm:p-6">
             <SectionHeading eyebrow={match.league.name} title="Competition Table" description="Official standings returned by the football data provider." />
-            {tableError ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">{tableError}</p> : standings.length === 0 ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">Standings are not available for this competition or season.</p> : (
+            {tableError ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">{tableError}</p> : standingsLoading ? <p className="rounded-xl bg-[#0c1725] p-5 text-center text-sm text-slate-400" role="status">Loading competition standings...</p> : standings.length === 0 ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">Standings are not available for this competition or season.</p> : (
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[820px] text-left text-xs">
@@ -1745,7 +1798,7 @@ export default function MatchCentreClient({
         {activeTab === "news" && (
           <section className="rounded-2xl border border-white/[0.07] bg-[#101d2d] p-4 sm:p-6">
             <SectionHeading eyebrow="Team coverage" title="Related Football News" description={`Headlines mentioning ${homeTeam}, ${awayTeam} or ${match.league.name}.`} />
-            {newsLoading ? <p className="p-8 text-center text-sm text-slate-400">Loading related news...</p> : matchNews.length === 0 ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">No related headlines are currently available. Unrelated football stories are hidden.</p> : <div className="grid gap-3 md:grid-cols-2">{matchNews.map((article) => <a key={article.id} href={article.link} target="_blank" rel="noreferrer" className="rounded-xl border border-white/[0.06] bg-[#0c1725] p-4 transition hover:border-emerald-500/30"><p className="text-sm font-bold text-white">{article.title}</p>{article.summary && <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-400">{article.summary}</p>}<p className="mt-3 text-[10px] font-bold uppercase tracking-wider text-emerald-400">{article.source} · {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString("en-NG") : "Latest"}</p></a>)}</div>}
+            {newsLoading ? <p className="p-8 text-center text-sm text-slate-400">Loading related news...</p> : newsError ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-amber-300">{newsError}</p> : matchNews.length === 0 ? <p className="rounded-xl bg-[#0c1725] p-5 text-sm text-slate-400">No related headlines are currently available. Unrelated football stories are hidden.</p> : <div className="grid gap-3 md:grid-cols-2">{matchNews.map((article) => <a key={article.id} href={article.link} target="_blank" rel="noreferrer" className="rounded-xl border border-white/[0.06] bg-[#0c1725] p-4 transition hover:border-emerald-500/30"><p className="text-sm font-bold text-white">{article.title}</p>{article.summary && <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-400">{article.summary}</p>}<p className="mt-3 text-[10px] font-bold uppercase tracking-wider text-emerald-400">{article.source} · {article.publishedAt ? new Date(article.publishedAt).toLocaleDateString("en-NG") : "Latest"}</p></a>)}</div>}
             <div className="mt-6 border-t border-white/[0.06] pt-5"><h3 className="mb-3 text-sm font-bold text-white">Video highlights</h3><YouTubeHighlights kind="all" homeTeam={homeTeam} awayTeam={awayTeam} league={match.league.name} limit={4} /></div>
           </section>
         )}
