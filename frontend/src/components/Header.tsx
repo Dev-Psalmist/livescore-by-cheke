@@ -1,8 +1,22 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const navLinks = [
+  { label: "Home", href: "/" },
+  { label: "Live", href: "/live" },
+  { label: "Fixtures", href: "/fixtures" },
+  { label: "Leagues", href: "/leagues" },
+  { label: "Teams", href: "/teams" },
+  { label: "News", href: "/news" },
+  { label: "Highlights", href: "/highlights" },
+  { label: "Search", href: "/search" },
+  { label: "Favourites", href: "/favourites" },
+];
 
 export default function Header() {
+  const pathname = usePathname();
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#101820]/95 backdrop-blur-xl">
@@ -34,6 +48,30 @@ export default function Header() {
         </div>
       </div>
 
+      <nav aria-label="Primary navigation" className="border-t border-white/[0.06]">
+        <div className="mobile-nav-scroll mx-auto flex max-w-[1600px] items-center gap-1 overflow-x-auto px-3 py-2 sm:px-6">
+          {navLinks.map((item) => {
+            const active =
+              pathname === item.href ||
+              (item.href !== "/" && pathname.startsWith(`${item.href}/`));
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={`shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 ${
+                  active
+                    ? "bg-emerald-500/10 text-emerald-300"
+                    : "text-slate-400 hover:bg-white/[0.05] hover:text-white"
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </header>
   );
 }
