@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import AuthNavigation from "@/components/auth/AuthNavigation";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -87,10 +88,11 @@ export default function Header() {
           </Link>
           <Link
             href="/favourites"
-            className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-black text-[#101820] transition hover:bg-emerald-400 sm:px-4 sm:text-sm"
+            className="hidden rounded-lg bg-emerald-500 px-3 py-2 text-xs font-black text-[#101820] transition hover:bg-emerald-400 sm:block sm:px-4 sm:text-sm"
           >
             ♥ Favourites
           </Link>
+          <AuthNavigation />
         </div>
       </div>
 
