@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 import Header from "@/components/Header";
@@ -98,6 +98,8 @@ export default function HomePage() {
 
   const [liveError, setLiveError] = useState("");
   const [fixturesError, setFixturesError] = useState("");
+  const liveRequestInFlight = useRef(false);
+  const fixturesRequestInFlight = useRef(false);
 
   const { favourites, loaded: favouritesLoaded } = useFavourites();
   const { favourites: followedLeagues, loaded: followedLeaguesLoaded } = useFavouriteLeagues();
@@ -114,9 +116,12 @@ export default function HomePage() {
     (a, b) => Number(isFavouriteMatch(b)) - Number(isFavouriteMatch(a))
   );
 
-  const loadLiveMatches = useCallback(async () => {
+  const loadLiveMatches = useCallback(async (silent = false) => {
+    if (liveRequestInFlight.current) return;
+    liveRequestInFlight.current = true;
+
     try {
-      setLiveLoading(true);
+      if (!silent) setLiveLoading(true);
       setLiveError("");
 
       const response = await fetch("/api/football/live", {
@@ -159,15 +164,21 @@ export default function HomePage() {
 
       setLiveMatches(formattedMatches);
     } catch (error) {
-      setLiveError("Unable to load data right now. Please try again later.");
+      if (!silent) {
+        setLiveError("Unable to load data right now. Please try again later.");
+      }
     } finally {
-      setLiveLoading(false);
+      liveRequestInFlight.current = false;
+      if (!silent) setLiveLoading(false);
     }
   }, []);
 
-  const loadUpcomingMatches = useCallback(async () => {
+  const loadUpcomingMatches = useCallback(async (silent = false) => {
+    if (fixturesRequestInFlight.current) return;
+    fixturesRequestInFlight.current = true;
+
     try {
-      setFixturesLoading(true);
+      if (!silent) setFixturesLoading(true);
       setFixturesError("");
 
       const response = await fetch("/api/football/fixtures", {
@@ -207,15 +218,32 @@ export default function HomePage() {
 
       setUpcomingMatches(formattedMatches);
     } catch (error) {
-      setFixturesError("Unable to load data right now. Please try again later.");
+      if (!silent) {
+        setFixturesError("Unable to load data right now. Please try again later.");
+      }
     } finally {
-      setFixturesLoading(false);
+      fixturesRequestInFlight.current = false;
+      if (!silent) setFixturesLoading(false);
     }
   }, []);
 
   useEffect(() => {
     void loadLiveMatches();
     void loadUpcomingMatches();
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      void loadLiveMatches(true);
+      void loadUpcomingMatches(true);
+    };
+
+    const interval = window.setInterval(refreshWhenVisible, 60_000);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
   }, [loadLiveMatches, loadUpcomingMatches]);
 
   return (
