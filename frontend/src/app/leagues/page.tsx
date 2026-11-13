@@ -7,6 +7,7 @@ import FixtureCard from "@/components/FixtureCard";
 import StandingsTable from "@/components/StandingsTable";
 import Footer from "@/components/Footer";
 import LeagueFavouriteButton from "@/components/LeagueFavouriteButton";
+import FollowedLeaguesPanel from "@/components/FollowedLeaguesPanel";
 
 import type { Match } from "@/types/football";
 
@@ -391,6 +392,8 @@ export default function LeaguesPage() {
 
           </div>
         </section>
+
+        <FollowedLeaguesPanel />
 
         {/* COMPETITION DISCOVERY */}
         <section id="competitions" className="mt-8">
