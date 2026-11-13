@@ -9,6 +9,11 @@ export default function AuthNavigation() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+      setReady(true);
+      return;
+    }
+
     const supabase = createClient();
 
     void supabase.auth.getUser().then(({ data }) => {
