@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import FixtureCard from "@/components/FixtureCard";
 import StandingsTable from "@/components/StandingsTable";
 import Footer from "@/components/Footer";
+import LeagueFavouriteButton from "@/components/LeagueFavouriteButton";
 
 import type { Match } from "@/types/football";
 
@@ -640,6 +641,11 @@ export default function LeaguesPage() {
                   </p>
                 </div>
 
+                <LeagueFavouriteButton
+                  league={selectedLeague.league}
+                  country={{ name: selectedLeague.country.name, flag: selectedLeague.country.flag }}
+                  compact
+                />
                 <button
                   type="button"
                   onClick={() => setSelectedLeague(null)}
