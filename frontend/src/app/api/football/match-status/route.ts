@@ -58,39 +58,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Only request event data once the match is in progress or finished.
-    // Scheduled fixtures still refresh their status without extra event calls.
-    let events: any[] | null = null;
-    const eventEligibleStatuses = ["1H", "HT", "2H", "ET", "BT", "P", "LIVE", "INT", "SUSP", "INTERRUPTED", "FT", "AET", "PEN"];
-    if (eventEligibleStatuses.includes(match.fixture.status.short)) {
-      try {
-        const eventsUrl = new URL(`${API_BASE_URL}/fixtures/events`);
-        eventsUrl.searchParams.set("fixture", matchId);
-        const eventsResponse = await fetchFootballApi(eventsUrl.toString(), {
-          method: "GET",
-          headers: { "x-apisports-key": apiKey },
-          next: { revalidate: 60 },
-          signal: AbortSignal.timeout(10000),
-        });
-        const eventsData = await eventsResponse.json();
-        if (
-          eventsResponse.ok &&
-          !hasFootballApiErrors(eventsData.errors) &&
-          Array.isArray(eventsData.response)
-        ) {
-          events = eventsData.response;
-        }
-      } catch {
-        // Keep the score/status response usable if event data is unavailable.
-      }
-    }
+    // Keep this endpoint focused on score and status.
+    // Match events are refreshed independently when the Overview tab is active.
 
     return NextResponse.json(
       {
         success: true,
         status: match.fixture.status,
         goals: match.goals,
-        events,
       },
       {
         headers: {
