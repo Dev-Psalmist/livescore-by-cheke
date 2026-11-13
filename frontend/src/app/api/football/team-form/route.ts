@@ -1,9 +1,68 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
+import { fetchFootballApiData, FootballApiRequestError } from "@/lib/football-api";
 
-interface TeamFormPayload {
-  errors?: unknown;
-  response?: unknown;
+type RecordValue = Record<string, unknown>;
+
+function isRecord(value: unknown): value is RecordValue {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getRecord(value: unknown, key: string): RecordValue | null {
+  if (!isRecord(value)) return null;
+  const nested = value[key];
+  return isRecord(nested) ? nested : null;
+}
+
+function getString(value: unknown): string | null {
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function getNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function mapRecentFormFixture(value: unknown, teamId: number) {
+  const fixture = getRecord(value, "fixture");
+  const status = getRecord(fixture, "status");
+  const teams = getRecord(value, "teams");
+  const home = getRecord(teams, "home");
+  const away = getRecord(teams, "away");
+  const goals = getRecord(value, "goals");
+
+  const statusShort = getString(status?.short);
+  if (!["FT", "AET", "PEN"].includes(statusShort ?? "")) return null;
+
+  const homeId = getNumber(home?.id);
+  const awayId = getNumber(away?.id);
+  const homeName = getString(home?.name);
+  const awayName = getString(away?.name);
+  const id = getNumber(fixture?.id);
+  const date = getString(fixture?.date);
+  const homeGoals = getNumber(goals?.home);
+  const awayGoals = getNumber(goals?.away);
+
+  if (
+    homeId === null || awayId === null ||
+    !homeName || !awayName || id === null || !date ||
+    homeGoals === null || awayGoals === null
+  ) {
+    return null;
+  }
+
+  const isHome = homeId === teamId;
+  if (!isHome && awayId !== teamId) return null;
+
+  const goalsFor = isHome ? homeGoals : awayGoals;
+  const goalsAgainst = isHome ? awayGoals : homeGoals;
+
+  return {
+    id,
+    date,
+    opponent: isHome ? awayName : homeName,
+    goalsFor,
+    goalsAgainst,
+    result: goalsFor > goalsAgainst ? "W" : goalsFor < goalsAgainst ? "L" : "D",
+  };
 }
 
 export async function GET(request: NextRequest) {
@@ -14,7 +73,11 @@ export async function GET(request: NextRequest) {
 
   const home = request.nextUrl.searchParams.get("home");
   const away = request.nextUrl.searchParams.get("away");
-  if (!home || !away || !/^\d+$/.test(home) || !/^\d+$/.test(away) || home === away) {
+  if (
+    !home || !away ||
+    !/^\\d+$/.test(home) || !/^\\d+$/.test(away) ||
+    Number(home) <= 0 || Number(away) <= 0 || home === away
+  ) {
     return NextResponse.json({ success: false, error: "Valid, different home and away team IDs are required." }, { status: 400 });
   }
 
@@ -24,41 +87,14 @@ export async function GET(request: NextRequest) {
     url.searchParams.set("last", "10");
     url.searchParams.set("timezone", "Africa/Lagos");
 
-    const response = await fetchFootballApi(url, {
-      headers: { "x-apisports-key": key },
+    const data = await fetchFootballApiData<unknown>(url, key, {
       next: { revalidate: 900 },
     });
 
-    let data: TeamFormPayload;
-    try {
-      data = (await response.json()) as TeamFormPayload;
-    } catch {
-      throw new Error("The football data provider returned an invalid response.");
-    }
-
-    if (!response.ok || hasFootballApiErrors(data.errors)) {
-      throw new Error("Recent form is temporarily unavailable.");
-    }
-    if (!Array.isArray(data.response)) {
-      throw new Error("The football data provider returned unexpected fixture data.");
-    }
-
     return data.response
-      .filter((item: any) => ["FT", "AET", "PEN"].includes(item?.fixture?.status?.short))
-      .slice(0, 5)
-      .map((item: any) => {
-        const isHome = item.teams.home.id === Number(team);
-        const goalsFor = isHome ? item.goals.home : item.goals.away;
-        const goalsAgainst = isHome ? item.goals.away : item.goals.home;
-        return {
-          id: item.fixture.id,
-          date: item.fixture.date,
-          opponent: isHome ? item.teams.away.name : item.teams.home.name,
-          goalsFor,
-          goalsAgainst,
-          result: goalsFor > goalsAgainst ? "W" : goalsFor < goalsAgainst ? "L" : "D",
-        };
-      });
+      .map((item) => mapRecentFormFixture(item, Number(team)))
+      .filter((match): match is NonNullable<typeof match> => match !== null)
+      .slice(0, 5);
   };
 
   try {
@@ -66,9 +102,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, home: homeForm, away: awayForm });
   } catch (error) {
     console.error("Team form API error:", error);
+    const status = error instanceof FootballApiRequestError ? error.status : 502;
     return NextResponse.json(
-      { success: false, error: "Unable to load recent form right now. Please try again." },
-      { status: 502 }
+      {
+        success: false,
+        error: status === 429
+          ? "The football data provider has reached its request limit. Please try again later."
+          : "Unable to load recent form right now. Please try again.",
+      },
+      { status }
     );
   }
 }
