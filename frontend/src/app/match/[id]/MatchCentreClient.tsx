@@ -675,14 +675,22 @@ export default function MatchCentreClient({
       }
     };
 
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        void refreshMatchStatus();
+      }
+    };
+
     const interval = window.setInterval(
-      refreshMatchStatus,
+      refreshWhenVisible,
       intervalMs
     );
+    document.addEventListener("visibilitychange", refreshWhenVisible);
 
     return () => {
       cancelled = true;
       window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
   }, [id, match?.fixture.status.short]);
 
