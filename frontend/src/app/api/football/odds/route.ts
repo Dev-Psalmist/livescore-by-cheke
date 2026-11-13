@@ -92,7 +92,6 @@ export async function GET(request: NextRequest) {
       return id === undefined || String(id) === fixtureId;
     }) ?? data.response[0];
 
-    const bookmakersRaw = getRecord(fixtureOdds, "bookmakers");
     const rawList = isRecord(fixtureOdds) && Array.isArray(fixtureOdds.bookmakers)
       ? fixtureOdds.bookmakers
       : [];
