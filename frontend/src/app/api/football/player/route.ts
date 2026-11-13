@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const apiKey = process.env.API_FOOTBALL_KEY;
   if (!apiKey) {
     return NextResponse.json(
-      { success: false, error: "Unable to load data right now. Please try again later." },
+      { success: false, error: "Football API is not configured." },
       { status: 503 }
     );
   }
@@ -30,25 +30,27 @@ export async function GET(request: NextRequest) {
     const response = await fetch(url.toString(), {
       headers: { "x-apisports-key": apiKey },
       next: { revalidate: 21600 },
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
       return NextResponse.json(
-        { success: false, error: "Unable to load data right now. Please try again later." },
+        { success: false, error: "Unable to load player data right now." },
         { status: 502 }
       );
     }
 
     const payload = await response.json();
-    const hasErrors = payload?.errors && (
-      Array.isArray(payload.errors)
-        ? payload.errors.length > 0
-        : Object.keys(payload.errors).length > 0
-    );
+    const apiErrors = payload?.errors;
+    const hasErrors = Array.isArray(apiErrors)
+      ? apiErrors.length > 0
+      : apiErrors && typeof apiErrors === "object"
+        ? Object.keys(apiErrors).length > 0
+        : Boolean(apiErrors);
 
     if (hasErrors || !Array.isArray(payload?.response)) {
       return NextResponse.json(
-        { success: false, error: "Unable to load data right now. Please try again later." },
+        { success: false, error: "Unable to load player data right now." },
         { status: 502 }
       );
     }
@@ -61,7 +63,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Player profile API error:", error);
     return NextResponse.json(
-      { success: false, error: "Unable to load data right now. Please try again later." },
+      { success: false, error: "Unable to load player data right now. Please try again." },
       { status: 502 }
     );
   }
