@@ -51,9 +51,11 @@ export function useFavouriteLeagues() {
   useEffect(() => {
     let active = true;
     let supabase: ReturnType<typeof createClient> | null = null;
+    let activeUserId: string | null = null;
 
     const showGuestFavourites = () => {
       if (!active) return;
+      activeUserId = null;
       setUserId(null);
       setFavourites(readFavouriteLeagues());
       setLoaded(true);
@@ -93,6 +95,7 @@ export function useFavouriteLeagues() {
       }
 
       if (!active) return;
+      activeUserId = id;
       setUserId(id);
       setFavourites(combined);
       setLoaded(true);
@@ -124,12 +127,12 @@ export function useFavouriteLeagues() {
       });
 
       const handleStorageChange = (event: StorageEvent) => {
-        if (!userId && (event.key === STORAGE_KEY || event.key === null)) {
+        if (!activeUserId && (event.key === STORAGE_KEY || event.key === null)) {
           setFavourites(readFavouriteLeagues());
         }
       };
       const handleLocalChange = () => {
-        if (!userId) setFavourites(readFavouriteLeagues());
+        if (!activeUserId) setFavourites(readFavouriteLeagues());
       };
       window.addEventListener("storage", handleStorageChange);
       window.addEventListener(CHANGE_EVENT, handleLocalChange);
