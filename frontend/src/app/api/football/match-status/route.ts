@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
         "x-apisports-key": apiKey,
       },
       cache: "no-store",
+      signal: AbortSignal.timeout(10000),
     });
 
     const data = await response.json();
@@ -83,7 +84,8 @@ export async function GET(request: NextRequest) {
         const eventsResponse = await fetch(eventsUrl.toString(), {
           method: "GET",
           headers: { "x-apisports-key": apiKey },
-          cache: "no-store",
+          next: { revalidate: 30 },
+          signal: AbortSignal.timeout(10000),
         });
         const eventsData = await eventsResponse.json();
         if (
