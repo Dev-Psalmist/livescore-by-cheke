@@ -140,9 +140,9 @@ export default function TeamComparePage() {
         {comparison ? (
           <section className="mt-10 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-slate-800 p-4 sm:p-6">
-              <div className="text-center">{comparison.home.team.logo && <img src={comparison.home.team.logo} alt="" className="mx-auto mb-2 h-12 w-12 object-contain" />}<p className="text-sm font-black sm:text-lg">{comparison.home.team.name}</p><FormPills form={comparison.home.form} /></div>
+              <div className="text-center">{comparison.home.team.logo && <img src={comparison.home.team.logo} alt="" className="mx-auto mb-2 h-12 w-12 object-contain" />}<Link href={`/team/${comparison.home.team.id}`} aria-label={`View ${comparison.home.team.name} team profile`} className="text-sm font-black transition hover:text-emerald-400 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 sm:text-lg">{comparison.home.team.name}</Link><FormPills form={comparison.home.form} /></div>
               <span className="rounded-full bg-slate-800 px-3 py-2 text-xs font-black text-emerald-400">VS</span>
-              <div className="text-center">{comparison.away.team.logo && <img src={comparison.away.team.logo} alt="" className="mx-auto mb-2 h-12 w-12 object-contain" />}<p className="text-sm font-black sm:text-lg">{comparison.away.team.name}</p><FormPills form={comparison.away.form} /></div>
+              <div className="text-center">{comparison.away.team.logo && <img src={comparison.away.team.logo} alt="" className="mx-auto mb-2 h-12 w-12 object-contain" />}<Link href={`/team/${comparison.away.team.id}`} aria-label={`View ${comparison.away.team.name} team profile`} className="text-sm font-black transition hover:text-emerald-400 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 sm:text-lg">{comparison.away.team.name}</Link><FormPills form={comparison.away.form} /></div>
             </div>
             <div className="divide-y divide-slate-800">{metrics.map((metric) => {
               const a = comparison.home[metric.key] as number, b = comparison.away[metric.key] as number;
