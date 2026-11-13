@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import Header from "@/components/Header";
 import FixtureCard from "@/components/FixtureCard";
@@ -151,6 +151,29 @@ export default function LeaguesPage() {
   useEffect(() => {
     void fetchLeagues();
   }, [fetchLeagues]);
+
+  const queryLeagueHandled = useRef(false);
+
+  useEffect(() => {
+    if (leagues.length === 0 || queryLeagueHandled.current) return;
+
+    const requestedLeagueId = Number(
+      new URLSearchParams(window.location.search).get("league")
+    );
+
+    if (!Number.isSafeInteger(requestedLeagueId) || requestedLeagueId <= 0) {
+      return;
+    }
+
+    const requestedLeague = leagues.find(
+      (item) => item.league.id === requestedLeagueId
+    );
+
+    if (requestedLeague) {
+      queryLeagueHandled.current = true;
+      void selectLeague(requestedLeague);
+    }
+  }, [leagues]);
 
   async function selectLeague(league: League) {
     setSelectedLeague(league);
