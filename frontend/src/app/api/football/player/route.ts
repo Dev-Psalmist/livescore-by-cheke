@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
 const API_BASE = "https://v3.football.api-sports.io";
+
+interface PlayerPayload {
+  errors?: unknown;
+  response?: unknown;
+}
 
 export async function GET(request: NextRequest) {
   const playerId = request.nextUrl.searchParams.get("id");
@@ -27,31 +33,25 @@ export async function GET(request: NextRequest) {
     url.searchParams.set("id", playerId);
     url.searchParams.set("season", season);
 
-    const response = await fetch(url.toString(), {
+    const response = await fetchFootballApi(url, {
       headers: { "x-apisports-key": apiKey },
       next: { revalidate: 21600 },
-      signal: AbortSignal.timeout(10000),
     });
 
-    if (!response.ok) {
+    let payload: PlayerPayload;
+    try {
+      payload = (await response.json()) as PlayerPayload;
+    } catch {
       return NextResponse.json(
-        { success: false, error: "Unable to load player data right now." },
+        { success: false, error: "The football data provider returned an invalid response." },
         { status: 502 }
       );
     }
 
-    const payload = await response.json();
-    const apiErrors = payload?.errors;
-    const hasErrors = Array.isArray(apiErrors)
-      ? apiErrors.length > 0
-      : apiErrors && typeof apiErrors === "object"
-        ? Object.keys(apiErrors).length > 0
-        : Boolean(apiErrors);
-
-    if (hasErrors || !Array.isArray(payload?.response)) {
+    if (!response.ok || hasFootballApiErrors(payload.errors) || !Array.isArray(payload.response)) {
       return NextResponse.json(
         { success: false, error: "Unable to load player data right now." },
-        { status: 502 }
+        { status: response.ok ? 502 : response.status }
       );
     }
 
