@@ -26,9 +26,9 @@ export async function GET(request: NextRequest) {
   if (
     !league ||
     !season ||
-    !/^\\d+$/.test(league) ||
+    !/^\d+$/.test(league) ||
     Number(league) <= 0 ||
-    !/^\\d{4}$/.test(season)
+    !/^\d{4}$/.test(season)
   ) {
     return NextResponse.json(
       { success: false, error: "A valid league ID and season are required." },

@@ -63,7 +63,7 @@ function mapBookmaker(value: unknown) {
 export async function GET(request: NextRequest) {
   const fixtureId = request.nextUrl.searchParams.get("id");
 
-  if (!fixtureId || !/^\\d+$/.test(fixtureId) || Number(fixtureId) <= 0) {
+  if (!fixtureId || !/^\d+$/.test(fixtureId) || Number(fixtureId) <= 0) {
     return NextResponse.json(
       { success: false, error: "A valid match ID is required." },
       { status: 400 }

@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!team || !/^\\d+$/.test(team) || Number(team) <= 0) {
+  if (!team || !/^\d+$/.test(team) || Number(team) <= 0) {
     return NextResponse.json(
       { success: false, error: "A valid team ID is required." },
       { status: 400 }

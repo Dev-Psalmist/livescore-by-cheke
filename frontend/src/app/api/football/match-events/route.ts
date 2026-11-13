@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   }
 
   const matchId = request.nextUrl.searchParams.get("id");
-  if (!matchId || !/^\\d+$/.test(matchId) || Number(matchId) <= 0) {
+  if (!matchId || !/^\d+$/.test(matchId) || Number(matchId) <= 0) {
     return NextResponse.json(
       { success: false, error: "A valid match ID is required." },
       { status: 400 }

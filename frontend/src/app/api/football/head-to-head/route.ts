@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
 
   const home = request.nextUrl.searchParams.get("home");
   const away = request.nextUrl.searchParams.get("away");
-  if (!home || !away || !/^\\d+$/.test(home) || !/^\\d+$/.test(away) || home === away) {
+  if (!home || !away || !/^\d+$/.test(home) || !/^\d+$/.test(away) || home === away) {
     return NextResponse.json({ success: false, error: "Valid, different home and away team IDs are required." }, { status: 400 });
   }
 
