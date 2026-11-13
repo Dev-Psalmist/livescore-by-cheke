@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
 const API = "https://v3.football.api-sports.io";
 const youthPattern =
   /\b(u\s?17|u\s?18|u\s?19|u\s?20|u\s?21|u\s?23|under[- ]?(17|18|19|20|21|23)|youth|academy|reserve|reserves| ii\b|b team)\b/i;
+
+interface FixturesPayload {
+  errors?: unknown;
+  response?: unknown;
+}
 
 export async function GET(request: NextRequest) {
   const key = process.env.API_FOOTBALL_KEY;
@@ -32,28 +38,41 @@ export async function GET(request: NextRequest) {
     url.searchParams.set("date", date);
     url.searchParams.set("timezone", "Africa/Lagos");
 
-    const response = await fetch(url, {
+    const response = await fetchFootballApi(url, {
       headers: { "x-apisports-key": key },
       next: { revalidate: 60 },
-      signal: AbortSignal.timeout(10000),
     });
-    const data = await response.json();
 
-    if (!response.ok || (data.errors && Object.keys(data.errors).length > 0)) {
+    let data: FixturesPayload;
+    try {
+      data = (await response.json()) as FixturesPayload;
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "The football data provider returned an invalid response." },
+        { status: 502 }
+      );
+    }
+
+    if (!response.ok || hasFootballApiErrors(data.errors)) {
       return NextResponse.json(
         { success: false, error: "Unable to retrieve fixtures for this date." },
         { status: response.ok ? 502 : response.status }
       );
     }
 
-    const matches = (Array.isArray(data.response) ? data.response : []).filter(
-      (item: any) => {
-        const competition = item.league?.name || "";
-        const home = item.teams?.home?.name || "";
-        const away = item.teams?.away?.name || "";
-        return !youthPattern.test(`${competition} ${home} ${away}`);
-      }
-    );
+    if (!Array.isArray(data.response)) {
+      return NextResponse.json(
+        { success: false, error: "The football data provider returned unexpected fixture data." },
+        { status: 502 }
+      );
+    }
+
+    const matches = data.response.filter((item: any) => {
+      const competition = item.league?.name || "";
+      const home = item.teams?.home?.name || "";
+      const away = item.teams?.away?.name || "";
+      return !youthPattern.test(`${competition} ${home} ${away}`);
+    });
 
     return NextResponse.json({ success: true, date, results: matches.length, matches });
   } catch (error) {
