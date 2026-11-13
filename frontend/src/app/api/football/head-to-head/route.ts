@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
 
   const home = request.nextUrl.searchParams.get("home");
   const away = request.nextUrl.searchParams.get("away");
-  if (!home || !away || !/^\\d+$/.test(home) || !/^\\d+$/.test(away)) {
+  if (!home || !away || !/^\d+$/.test(home) || !/^\d+$/.test(away)) {
     return NextResponse.json({ success: false, error: "Valid home and away team IDs are required." }, { status: 400 });
   }
 
