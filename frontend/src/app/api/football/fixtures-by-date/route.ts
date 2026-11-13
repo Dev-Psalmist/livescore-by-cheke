@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
+import { fetchFootballApiData, FootballApiRequestError } from "@/lib/football-api";
 
 const API = "https://v3.football.api-sports.io";
 const youthPattern =
-  /\b(u\s?17|u\s?18|u\s?19|u\s?20|u\s?21|u\s?23|under[- ]?(17|18|19|20|21|23)|youth|academy|reserve|reserves| ii\b|b team)\b/i;
+  /\\b(u\\s?17|u\\s?18|u\\s?19|u\\s?20|u\\s?21|u\\s?23|under[- ]?(17|18|19|20|21|23)|youth|academy|reserve|reserves| ii\\b|b team)\\b/i;
 
-interface FixturesPayload {
-  errors?: unknown;
-  response?: unknown;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getName(value: unknown): string {
+  return isRecord(value) && typeof value.name === "string" ? value.name : "";
 }
 
 export async function GET(request: NextRequest) {
@@ -22,7 +25,7 @@ export async function GET(request: NextRequest) {
   const date = request.nextUrl.searchParams.get("date");
   const validDate =
     date &&
-    /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+    /^\\d{4}-\\d{2}-\\d{2}$/.test(date) &&
     !Number.isNaN(Date.parse(`${date}T00:00:00Z`)) &&
     new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) === date;
 
@@ -33,53 +36,35 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  try {
-    const url = new URL(`${API}/fixtures`);
-    url.searchParams.set("date", date);
-    url.searchParams.set("timezone", "Africa/Lagos");
+  const url = new URL(`${API}/fixtures`);
+  url.searchParams.set("date", date);
+  url.searchParams.set("timezone", "Africa/Lagos");
 
-    const response = await fetchFootballApi(url, {
-      headers: { "x-apisports-key": key },
+  try {
+    const data = await fetchFootballApiData<unknown>(url, key, {
       next: { revalidate: 60 },
     });
-
-    let data: FixturesPayload;
-    try {
-      data = (await response.json()) as FixturesPayload;
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "The football data provider returned an invalid response." },
-        { status: 502 }
-      );
-    }
-
-    if (!response.ok || hasFootballApiErrors(data.errors)) {
-      return NextResponse.json(
-        { success: false, error: "Unable to retrieve fixtures for this date." },
-        { status: response.ok ? 502 : response.status }
-      );
-    }
-
-    if (!Array.isArray(data.response)) {
-      return NextResponse.json(
-        { success: false, error: "The football data provider returned unexpected fixture data." },
-        { status: 502 }
-      );
-    }
-
-    const matches = data.response.filter((item: any) => {
-      const competition = item.league?.name || "";
-      const home = item.teams?.home?.name || "";
-      const away = item.teams?.away?.name || "";
-      return !youthPattern.test(`${competition} ${home} ${away}`);
+    const matches = data.response.filter((item) => {
+      if (!isRecord(item)) return false;
+      const league = getName(item.league);
+      const teams = isRecord(item.teams) ? item.teams : {};
+      const home = getName(teams.home);
+      const away = getName(teams.away);
+      return !youthPattern.test(`${league} ${home} ${away}`);
     });
 
     return NextResponse.json({ success: true, date, results: matches.length, matches });
   } catch (error) {
     console.error("Fixtures-by-date API error:", error);
+    const status = error instanceof FootballApiRequestError ? error.status : 502;
     return NextResponse.json(
-      { success: false, error: "Unable to fetch fixtures for this date. Please try again." },
-      { status: 502 }
+      {
+        success: false,
+        error: status === 429
+          ? "The football data provider has reached its request limit."
+          : "Unable to fetch fixtures for this date. Please try again.",
+      },
+      { status }
     );
   }
 }
