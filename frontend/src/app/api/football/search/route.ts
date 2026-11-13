@@ -1,40 +1,18 @@
 import { connection, NextRequest, NextResponse } from "next/server";
-import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
+import {
+  fetchFootballApiData,
+  FootballApiRequestError,
+} from "@/lib/football-api";
 
 const API_BASE = "https://v3.football.api-sports.io";
 
 type SearchType = "all" | "teams" | "players" | "leagues" | "matches";
 
-type ProviderPayload = {
-  errors?: unknown;
-  response?: unknown;
-};
-
 async function fetchFootballData(endpoint: string, apiKey: string): Promise<unknown[]> {
-  const response = await fetchFootballApi(`${API_BASE}${endpoint}`, {
+  const data = await fetchFootballApiData<unknown>(`${API_BASE}${endpoint}`, apiKey, {
     method: "GET",
-    headers: { "x-apisports-key": apiKey },
     next: { revalidate: 60 },
   });
-
-  let data: ProviderPayload;
-  try {
-    data = await response.json();
-  } catch {
-    throw new Error("The football provider returned an invalid response.");
-  }
-
-  if (!response.ok || hasFootballApiErrors(data.errors)) {
-    if (response.status === 429) {
-      throw new Error("The football data provider has reached its request limit.");
-    }
-    throw new Error("The football data provider returned an error.");
-  }
-
-  if (!Array.isArray(data.response)) {
-    throw new Error("The football provider returned unexpected search data.");
-  }
-
   return data.response;
 }
 
@@ -99,14 +77,12 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ success: true, type, matchedTeam: null, matches: [] });
       }
 
-      const exactMatch = teams.find(
-        (item) => {
-          if (!item || typeof item !== "object") return false;
-          const team = (item as { team?: { name?: unknown } }).team;
-          return typeof team?.name === "string" &&
-            team.name.toLowerCase() === query.toLowerCase();
-        }
-      );
+      const exactMatch = teams.find((item) => {
+        if (!item || typeof item !== "object") return false;
+        const team = (item as { team?: { name?: unknown } }).team;
+        return typeof team?.name === "string" &&
+          team.name.toLowerCase() === query.toLowerCase();
+      });
       const selectedTeam = exactMatch || teams[0];
       const team = selectedTeam as { team?: { id?: unknown } };
       const teamId = team.team?.id;
@@ -134,18 +110,16 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, type, teams, players, leagues });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "";
-    const rateLimited = message.toLowerCase().includes("request limit");
-
+    const status = error instanceof FootballApiRequestError ? error.status : 502;
     console.error("Football search API error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: rateLimited
+        error: status === 429
           ? "The football data provider has reached its request limit. Please try again later."
           : "Search is temporarily unavailable. Please try again.",
       },
-      { status: rateLimited ? 429 : 502 }
+      { status }
     );
   }
 }
