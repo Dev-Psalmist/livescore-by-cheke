@@ -111,6 +111,7 @@ export default function LiveScoresPage() {
       }));
 
       setMatches(formattedMatches);
+      setError(null);
       setLastUpdated(new Date());
     } catch (err) {
       if (!silent) {
