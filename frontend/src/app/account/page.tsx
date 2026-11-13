@@ -41,7 +41,7 @@ export default async function AccountPage() {
           <div className="space-y-5 p-6 sm:p-8">
             <div>
               <h2 className="text-lg font-black">Your football experience</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-400">Your account is active. We’re preparing account-backed favourites, followed competitions and personal preferences for your next match day.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">Your favourite teams and followed competitions sync to this account, so your match-day preferences stay with you when you sign in on another device. Guest favourites are merged when you sign in.</p>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
