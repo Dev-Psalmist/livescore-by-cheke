@@ -6,32 +6,47 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function AuthNavigation() {
   const [signedIn, setSignedIn] = useState(false);
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
-      setReady(true);
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+    ) {
       return;
     }
 
-    const supabase = createClient();
+    let active = true;
+    let supabase: ReturnType<typeof createClient>;
 
-    void supabase.auth.getUser().then(({ data }) => {
-      setSignedIn(Boolean(data.user));
-      setReady(true);
+    try {
+      supabase = createClient();
+    } catch {
+      // Authentication is optional: keep public navigation available.
+      return;
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setSignedIn(Boolean(session?.user));
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSignedIn(Boolean(session?.user));
-      setReady(true);
-    });
+    // Do not hold up the header while Supabase checks the session.
+    // Visitors can browse the entire public application immediately.
+    void supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        if (active) setSignedIn(Boolean(data.user));
+      })
+      .catch(() => {
+        if (active) setSignedIn(false);
+      });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
   }, []);
-
-  if (!ready) {
-    return <div aria-hidden="true" className="h-9 w-24 animate-pulse rounded-lg bg-white/[0.06]" />;
-  }
 
   if (signedIn) {
     return (
@@ -46,8 +61,18 @@ export default function AuthNavigation() {
 
   return (
     <div className="flex items-center gap-2">
-      <Link href="/login" className="rounded-lg border border-white/10 px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-emerald-400/40 hover:text-white sm:px-4 sm:text-sm">Sign in</Link>
-      <Link href="/register" className="rounded-lg bg-emerald-400 px-3 py-2 text-xs font-black text-[#101820] transition hover:bg-emerald-300 sm:px-4 sm:text-sm">Join free</Link>
+      <Link
+        href="/login"
+        className="rounded-lg border border-white/10 px-3 py-2 text-xs font-bold text-slate-300 transition hover:border-emerald-400/40 hover:text-white sm:px-4 sm:text-sm"
+      >
+        Sign in
+      </Link>
+      <Link
+        href="/register"
+        className="rounded-lg bg-emerald-400 px-3 py-2 text-xs font-black text-[#101820] transition hover:bg-emerald-300 sm:px-4 sm:text-sm"
+      >
+        Join free
+      </Link>
     </div>
   );
 }
