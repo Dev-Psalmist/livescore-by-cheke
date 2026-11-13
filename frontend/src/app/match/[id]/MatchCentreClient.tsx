@@ -225,7 +225,6 @@ interface MatchStatusResponse {
   success?: boolean;
   status?: MatchDetails["fixture"]["status"];
   goals?: MatchDetails["goals"];
-  events?: MatchEvent[];
   error?: unknown;
 }
 
@@ -250,6 +249,13 @@ const LIVE_STATUSES = [
   "INT",
   "SUSP",
   "INTERRUPTED",
+];
+
+const EVENT_ELIGIBLE_STATUSES = [
+  ...LIVE_STATUSES,
+  "FT",
+  "AET",
+  "PEN",
 ];
 
 const TABS = [
@@ -526,6 +532,9 @@ export default function MatchCentreClient({
   }, []);
 
   const statusRefreshInFlight = useRef(false);
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+
   const handleShareMatch = useCallback(async () => {
     const shareUrl = window.location.href;
     const shareTitle = `${match?.teams.home.name ?? "Home"} vs ${match?.teams.away.name ?? "Away"}`;
@@ -681,15 +690,15 @@ export default function MatchCentreClient({
 
         if (cancelled) return;
 
+        const refreshedStatus = data.status.short.toUpperCase();
+        const refreshedScore = {
+          home: data.goals.home,
+          away: data.goals.away,
+        };
+        const finishedStatuses = ["FT", "AET", "PEN"];
+
         setMatch((currentMatch) => {
           if (!currentMatch) return currentMatch;
-
-          const refreshedStatus = data.status!.short.toUpperCase();
-          const refreshedScore = {
-            home: data.goals!.home,
-            away: data.goals!.away,
-          };
-          const finishedStatuses = ["FT", "AET", "PEN"];
 
           return {
             ...currentMatch,
@@ -707,11 +716,48 @@ export default function MatchCentreClient({
                 ? { fulltime: refreshedScore }
                 : {}),
             },
-            events: Array.isArray(data.events)
-              ? data.events
-              : currentMatch.events,
           };
         });
+
+        // Events are only refreshed while the Overview tab is selected.
+        // The score/status refresh remains successful if event retrieval fails.
+        if (
+          activeTabRef.current === "overview" &&
+          EVENT_ELIGIBLE_STATUSES.includes(refreshedStatus)
+        ) {
+          try {
+            const eventsResponse = await fetch(
+              `/api/football/match-events?id=${encodeURIComponent(id)}`,
+              { cache: "no-store" }
+            );
+            const eventsData: {
+              success?: boolean;
+              events?: MatchEvent[];
+            } = await eventsResponse.json();
+
+            if (
+              eventsResponse.ok &&
+              eventsData.success &&
+              Array.isArray(eventsData.events)
+            ) {
+              setMatch((currentMatch) => {
+                if (
+                  !currentMatch ||
+                  String(currentMatch.fixture.id) !== id
+                ) {
+                  return currentMatch;
+                }
+
+                return {
+                  ...currentMatch,
+                  events: eventsData.events!,
+                };
+              });
+            }
+          } catch {
+            // Keep the existing event timeline if event refresh fails.
+          }
+        }
 
         setStatusRefreshError("");
       } catch (refreshError) {
