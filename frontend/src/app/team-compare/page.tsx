@@ -207,7 +207,7 @@ export default function TeamComparePage() {
                 </div>
               )}
             </section>
-            <p className="border-t border-slate-800 px-5 py-4 text-xs leading-5 text-slate-500">Form is ordered newest first by date. A dash is used only where data is unavailable. This comparison covers each team's latest ten completed fixtures, which may span different competitions and seasons.</p>
+            <p className="border-t border-slate-800 px-5 py-4 text-xs leading-5 text-slate-500">Form is ordered newest first by date. A dash is used only where data is unavailable. This comparison covers each team&apos;s latest ten completed fixtures, which may span different competitions and seasons.</p>
           </section>
         ) : !loading && <div className="mt-10 rounded-2xl border border-dashed border-slate-700 bg-slate-900/30 px-6 py-12 text-center"><p className="text-lg font-bold">Choose two teams to get started</p><p className="mt-2 text-sm text-slate-400">Select clubs or national teams above, then compare their recent results.</p></div>}
       </div>

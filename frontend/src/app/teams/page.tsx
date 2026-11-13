@@ -251,7 +251,7 @@ export default function TeamsPage() {
             </h3>
 
             <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-400">
-              We couldn't find any teams matching your search.
+              We couldn&apos;t find any teams matching your search.
               Try another team name or check your spelling.
             </p>
           </div>

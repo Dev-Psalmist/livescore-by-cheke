@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 
 export interface FavouriteTeam {
   team: {
@@ -79,12 +80,12 @@ export function useFavourites() {
       }
 
       const cloudItems = (data ?? [])
-        .map((row) => row.team_data as FavouriteTeam)
-        .filter((item) => item?.team && typeof item.team.id === "number");
+        .map((row: { team_data: unknown }) => row.team_data as FavouriteTeam)
+        .filter((item: FavouriteTeam) => item?.team && typeof item.team.id === "number");
 
       const guestItems = readFavourites();
       const merged = new Map<number, FavouriteTeam>();
-      cloudItems.forEach((item) => merged.set(item.team.id, item));
+      cloudItems.forEach((item: FavouriteTeam) => merged.set(item.team.id, item));
       guestItems.forEach((item) => merged.set(item.team.id, item));
 
       const combined = [...merged.values()];
@@ -122,13 +123,13 @@ export function useFavourites() {
     if (!supabase) {
       showGuestFavourites();
     } else {
-      void supabase.auth.getUser().then(({ data }) => {
+      void supabase.auth.getUser().then(({ data }: { data: { user: User | null } }) => {
         if (!active) return;
         if (data.user) void syncAccountFavourites(data.user.id);
         else showGuestFavourites();
       }).catch(showGuestFavourites);
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
         window.setTimeout(() => {
           if (!active) return;
           if (session?.user) void syncAccountFavourites(session.user.id);

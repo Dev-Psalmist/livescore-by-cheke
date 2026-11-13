@@ -327,7 +327,7 @@ export default function HomePage() {
 
               <div className="rounded-xl border border-white/[0.07] bg-[#141e29] p-4 sm:p-5">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Today's Fixtures
+                  Today&apos;s Fixtures
                 </div>
                 <p className="mt-3 text-3xl font-black text-emerald-400">
                   {fixturesLoading
@@ -476,7 +476,7 @@ export default function HomePage() {
                     Coming Up
                   </p>
                   <h2 className="mt-2 text-xl font-black sm:text-2xl">
-                    Today's Fixtures
+                    Today&apos;s Fixtures
                   </h2>
                 </div>
 
@@ -501,7 +501,7 @@ export default function HomePage() {
 
               {fixturesLoading && (
                 <div className="p-8 text-center text-sm text-slate-400">
-                  Loading today's fixtures...
+                  Loading today&apos;s fixtures...
                 </div>
               )}
 

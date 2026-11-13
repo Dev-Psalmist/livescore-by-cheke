@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 
 export default function AuthNavigation() {
   const [signedIn, setSignedIn] = useState(false);
@@ -27,7 +28,7 @@ export default function AuthNavigation() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       if (active) setSignedIn(Boolean(session?.user));
     });
 
@@ -35,7 +36,7 @@ export default function AuthNavigation() {
     // Visitors can browse the entire public application immediately.
     void supabase.auth
       .getUser()
-      .then(({ data }) => {
+      .then(({ data }: { data: { user: User | null } }) => {
         if (active) setSignedIn(Boolean(data.user));
       })
       .catch(() => {

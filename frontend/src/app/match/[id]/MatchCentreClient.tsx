@@ -533,7 +533,10 @@ export default function MatchCentreClient({
 
   const statusRefreshInFlight = useRef(false);
   const activeTabRef = useRef(activeTab);
-  activeTabRef.current = activeTab;
+
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
 
   const handleShareMatch = useCallback(async () => {
     const shareUrl = window.location.href;
@@ -569,7 +572,7 @@ export default function MatchCentreClient({
 
       window.setTimeout(() => setShareFeedback(""), 3000);
     }
-  }, [match?.teams.home.name, match?.teams.away.name]);
+  }, [match]);
 
   const loadedMatchData = useRef(new Set<string>());
   const matchRequestController = useRef<AbortController | null>(null);

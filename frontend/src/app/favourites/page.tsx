@@ -91,7 +91,7 @@ export default function FavouritesPage() {
               </h2>
 
               <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-slate-400 sm:text-base">
-                You haven't saved any teams yet. Explore the
+                You haven&apos;t saved any teams yet. Explore the
                 football directory and add your favourite clubs
                 or national teams to build your personal collection.
               </p>
