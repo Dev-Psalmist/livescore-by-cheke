@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
+import { fetchFootballApiData } from "@/lib/football-api";
 
 const API_BASE = "https://v3.football.api-sports.io";
 const FINISHED = new Set(["FT", "AET", "PEN"]);
@@ -133,22 +133,10 @@ export async function GET(request: NextRequest) {
 
   try {
     const fetchFixtures = async (url: URL): Promise<Fixture[]> => {
-      const response = await fetchFootballApi(url, {
-        headers: { "x-apisports-key": apiKey },
+      const data = await fetchFootballApiData<unknown>(url, apiKey, {
         next: { revalidate: 900 },
       });
-      if (!response.ok) throw new Error("Provider request failed");
-
-      const payload: unknown = await response.json();
-      if (
-        !isRecord(payload) ||
-        hasFootballApiErrors(payload.errors) ||
-        !Array.isArray(payload.response)
-      ) {
-        throw new Error("Invalid provider response");
-      }
-
-      return payload.response.filter(isFixture);
+      return data.response.filter(isFixture);
     };
 
     const homeUrl = new URL(`${API_BASE}/fixtures`);
