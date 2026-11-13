@@ -3,15 +3,14 @@ import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
 export async function GET() {
   await connection();
+
   try {
     const apiKey = process.env.API_FOOTBALL_KEY;
 
     if (!apiKey) {
-      console.error("API_FOOTBALL_KEY is missing.");
-
       return NextResponse.json(
-        { error: "Football API key is missing." },
-        { status: 500 }
+        { success: false, error: "Football API is not configured." },
+        { status: 503 }
       );
     }
 
@@ -19,30 +18,32 @@ export async function GET() {
       "https://v3.football.api-sports.io/fixtures?live=all",
       {
         method: "GET",
-        headers: {
-          "x-apisports-key": apiKey,
-        },
+        headers: { "x-apisports-key": apiKey },
         next: { revalidate: 60 },
-        signal: AbortSignal.timeout(10000),
       }
     );
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("API-Football HTTP error:", response.status);
-
+    let data: { errors?: unknown; results?: number; response?: unknown };
+    try {
+      data = await response.json();
+    } catch {
       return NextResponse.json(
-        { error: "Unable to retrieve live football data." },
-        { status: response.status }
+        { success: false, error: "The football provider returned an invalid response." },
+        { status: 502 }
       );
     }
 
-    if (hasFootballApiErrors(data.errors)) {
-      console.error("API-Football returned errors:", data.errors);
-
+    if (!response.ok || hasFootballApiErrors(data.errors)) {
+      console.error("API-Football live request failed:", response.status);
       return NextResponse.json(
-        { error: "Unable to retrieve live football data." },
+        { success: false, error: "Unable to retrieve live football data." },
+        { status: response.status === 429 ? 429 : 502 }
+      );
+    }
+
+    if (!Array.isArray(data.response)) {
+      return NextResponse.json(
+        { success: false, error: "The football provider returned unexpected live match data." },
         { status: 502 }
       );
     }
@@ -52,13 +53,11 @@ export async function GET() {
       results: data.results,
       matches: data.response,
     });
-
   } catch (error) {
     console.error("Live football route failed:", error);
-
     return NextResponse.json(
-      { error: "Something went wrong while fetching live matches." },
-      { status: 500 }
+      { success: false, error: "Something went wrong while fetching live matches." },
+      { status: 502 }
     );
   }
 }
