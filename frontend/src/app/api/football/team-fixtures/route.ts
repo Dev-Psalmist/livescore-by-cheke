@@ -1,20 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
+import { fetchFootballApiData, FootballApiRequestError } from "@/lib/football-api";
 
 const API = "https://v3.football.api-sports.io";
-const YOUTH = /\b(u\s?17|u\s?18|u\s?19|u\s?20|u\s?21|u\s?23|under[- ]?(17|18|19|20|21|23)|youth|academy|reserve|reserves| ii\b|b team)\b/i;
+const YOUTH = /\\b(u\\s?17|u\\s?18|u\\s?19|u\\s?20|u\\s?21|u\\s?23|under[- ]?(17|18|19|20|21|23)|youth|academy|reserve|reserves| ii\\b|b team)\\b/i;
 
-interface TeamFixture {
-  league?: { name?: string | null };
-  teams?: {
-    home?: { name?: string | null };
-    away?: { name?: string | null };
-  };
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-interface TeamFixturesPayload {
-  errors?: unknown;
-  response?: unknown;
+function getName(value: unknown): string {
+  return isRecord(value) && typeof value.name === "string" ? value.name : "";
 }
 
 function lagosDate(date: Date) {
@@ -37,7 +32,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!team || !/^\d+$/.test(team)) {
+  if (!team || !/^\\d+$/.test(team) || Number(team) <= 0) {
     return NextResponse.json(
       { success: false, error: "A valid team ID is required." },
       { status: 400 }
@@ -49,54 +44,36 @@ export async function GET(request: NextRequest) {
   from.setUTCDate(from.getUTCDate() - 10);
   to.setUTCDate(to.getUTCDate() + 21);
 
-  try {
-    const url = new URL(`${API}/fixtures`);
-    url.searchParams.set("team", team);
-    url.searchParams.set("from", lagosDate(from));
-    url.searchParams.set("to", lagosDate(to));
-    url.searchParams.set("timezone", "Africa/Lagos");
+  const url = new URL(`${API}/fixtures`);
+  url.searchParams.set("team", team);
+  url.searchParams.set("from", lagosDate(from));
+  url.searchParams.set("to", lagosDate(to));
+  url.searchParams.set("timezone", "Africa/Lagos");
 
-    const response = await fetchFootballApi(url, {
-      headers: { "x-apisports-key": key },
+  try {
+    const data = await fetchFootballApiData<unknown>(url, key, {
       next: { revalidate: 900 },
     });
-
-    let data: TeamFixturesPayload;
-    try {
-      data = (await response.json()) as TeamFixturesPayload;
-    } catch {
-      return NextResponse.json(
-        { success: false, error: "The football data provider returned an invalid response." },
-        { status: 502 }
+    const matches = data.response.filter((item) => {
+      if (!isRecord(item)) return false;
+      const teams = isRecord(item.teams) ? item.teams : {};
+      return !YOUTH.test(
+        `${getName(item.league)} ${getName(teams.home)} ${getName(teams.away)}`
       );
-    }
-
-    if (!response.ok || hasFootballApiErrors(data.errors)) {
-      return NextResponse.json(
-        { success: false, error: "Unable to load team fixtures." },
-        { status: response.ok ? 502 : response.status }
-      );
-    }
-
-    if (!Array.isArray(data.response)) {
-      return NextResponse.json(
-        { success: false, error: "The football data provider returned unexpected fixture data." },
-        { status: 502 }
-      );
-    }
-
-    const matches = (data.response as TeamFixture[]).filter((item) =>
-      !YOUTH.test(
-        `${item.league?.name || ""} ${item.teams?.home?.name || ""} ${item.teams?.away?.name || ""}`
-      )
-    );
+    });
 
     return NextResponse.json({ success: true, matches });
   } catch (error) {
     console.error("Team fixtures API error:", error);
+    const status = error instanceof FootballApiRequestError ? error.status : 502;
     return NextResponse.json(
-      { success: false, error: "Unable to load team fixtures." },
-      { status: 502 }
+      {
+        success: false,
+        error: status === 429
+          ? "The football data provider has reached its request limit."
+          : "Unable to load team fixtures.",
+      },
+      { status }
     );
   }
 }
