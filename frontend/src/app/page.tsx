@@ -186,6 +186,7 @@ export default function HomePage() {
         status: "UPCOMING",
         kickoff: formatKickoff(item.fixture.date),
         homeTeam: {
+          id: item.teams.home.id,
           name: item.teams.home.name,
           shortName:
             item.teams.home.code ||
@@ -193,6 +194,7 @@ export default function HomePage() {
           logo: item.teams.home.logo,
         },
         awayTeam: {
+          id: item.teams.away.id,
           name: item.teams.away.name,
           shortName:
             item.teams.away.code ||
