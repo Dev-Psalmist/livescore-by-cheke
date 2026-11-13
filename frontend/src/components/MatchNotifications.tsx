@@ -78,14 +78,18 @@ export default function MatchNotifications({
   const seenEvents = useRef<Set<string>>(new Set());
   const eventsInitialised = useRef(false);
   const previousStatus = useRef(status.toUpperCase());
+  const previousMatchId = useRef(matchId);
 
   useEffect(() => {
+    if (previousMatchId.current === matchId) return;
+
+    previousMatchId.current = matchId;
     seenEvents.current.clear();
     eventsInitialised.current = false;
     previousStatus.current = status.toUpperCase();
     setEnabled(false);
     setMessage("");
-  }, [matchId]);
+  }, [matchId, status]);
 
   // Seed existing events without notifying for moments that happened
   // before the user opened the Match Centre. Later updates are live events.
