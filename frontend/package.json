@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "verify": "node scripts/check-api-validation.mjs && npm run build"
+    "verify": "node scripts/check-api-validation.mjs && npm run build",
+    "smoke:api": "node scripts/smoke-test-api.mjs"
   },
   "dependencies": {
     "next": "16.4.6",
