@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
 const API_BASE_URL = "https://v3.football.api-sports.io";
+
+interface OddsPayload {
+  errors?: unknown;
+  response?: unknown;
+}
 
 export async function GET(request: NextRequest) {
   const fixtureId = request.nextUrl.searchParams.get("id");
@@ -24,25 +30,23 @@ export async function GET(request: NextRequest) {
     const url = new URL(`${API_BASE_URL}/odds`);
     url.searchParams.set("fixture", fixtureId);
 
-    const response = await fetch(url.toString(), {
+    const response = await fetchFootballApi(url, {
       headers: { "x-apisports-key": apiKey },
       next: { revalidate: 10800 },
-      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
       return NextResponse.json({ success: true, available: false, bookmakers: [] });
     }
 
-    const payload = await response.json();
-    const apiErrors = payload?.errors;
-    const hasErrors = Array.isArray(apiErrors)
-      ? apiErrors.length > 0
-      : apiErrors && typeof apiErrors === "object"
-        ? Object.keys(apiErrors).length > 0
-        : Boolean(apiErrors);
+    let payload: OddsPayload;
+    try {
+      payload = (await response.json()) as OddsPayload;
+    } catch {
+      return NextResponse.json({ success: true, available: false, bookmakers: [] });
+    }
 
-    if (hasErrors || !Array.isArray(payload?.response)) {
+    if (hasFootballApiErrors(payload.errors) || !Array.isArray(payload.response)) {
       return NextResponse.json({ success: true, available: false, bookmakers: [] });
     }
 
