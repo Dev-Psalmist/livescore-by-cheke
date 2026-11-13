@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
       next: {
         revalidate: 3600,
       },
+      signal: AbortSignal.timeout(10000),
     });
 
     const data = await response.json();
