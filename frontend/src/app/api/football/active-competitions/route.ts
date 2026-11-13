@@ -31,6 +31,11 @@ const POPULARITY: Array<[RegExp, number]> = [
   [/caf confederation cup/i, 75],
 ];
 
+interface FixturesPayload {
+  errors?: unknown;
+  response?: unknown;
+}
+
 function popularity(name: string): number {
   return POPULARITY.find(([pattern]) => pattern.test(name))?.[1] ?? 45;
 }
@@ -44,25 +49,39 @@ function isInternational(league: any): boolean {
 export async function GET() {
   const key = process.env.API_FOOTBALL_KEY;
   if (!key) {
-    return NextResponse.json({ success: false, error: "Football API key is missing." }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: "Football API is not configured." },
+      { status: 503 }
+    );
   }
 
   try {
     const headers = { "x-apisports-key": key };
     const urls = [
-      API + "/fixtures?next=100&timezone=Africa%2FLagos",
-      API + "/fixtures?live=all&timezone=Africa%2FLagos",
+      new URL(`${API}/fixtures?next=100&timezone=Africa%2FLagos`),
+      new URL(`${API}/fixtures?live=all&timezone=Africa%2FLagos`),
     ];
+
     const responses = await Promise.all(
       urls.map((url) => fetchFootballApi(url, { headers, next: { revalidate: 900 } }))
     );
-    const payloads = await Promise.all(responses.map((response) => response.json()));
+
+    const payloads = await Promise.all(
+      responses.map(async (response) => {
+        try {
+          return (await response.json()) as FixturesPayload;
+        } catch {
+          throw new Error("The football data provider returned invalid JSON.");
+        }
+      })
+    );
 
     for (let index = 0; index < responses.length; index++) {
       if (!responses[index].ok || hasFootballApiErrors(payloads[index].errors)) {
-        throw new Error(
-          JSON.stringify(payloads[index].errors || "Competition data is temporarily unavailable.")
-        );
+        throw new Error("Competition data is temporarily unavailable.");
+      }
+      if (!Array.isArray(payloads[index].response)) {
+        throw new Error("The football data provider returned unexpected fixture data.");
       }
     }
 
@@ -70,7 +89,7 @@ export async function GET() {
     const windowEnd = now + WINDOW_DAYS * 24 * 60 * 60 * 1000;
     const fixtures = new Map<number, any>();
 
-    for (const fixture of payloads.flatMap((payload) => payload.response || [])) {
+    for (const fixture of payloads.flatMap((payload) => payload.response as any[])) {
       const fixtureId = fixture.fixture?.id;
       const league = fixture.league;
       if (!fixtureId || !league?.id) continue;
