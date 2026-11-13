@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     const response = await fetch(url, {
       headers: { "x-apisports-key": apiKey },
       next: { revalidate: 900 },
+      signal: AbortSignal.timeout(10000),
     });
     const data = await response.json();
     if (!response.ok || (data.errors && Object.keys(data.errors).length > 0)) {
