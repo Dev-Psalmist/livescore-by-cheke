@@ -42,6 +42,7 @@ interface LineupPlayer {
 
 interface MatchLineup {
   team: {
+    id: number;
     name: string;
     logo: string;
   };
@@ -1519,7 +1520,13 @@ export default function MatchCentreClient({
                           )}
                           <div className="min-w-0">
                             <h3 className="truncate font-black text-white">
-                              {lineup.team.name}
+                              <Link
+                                href={`/team/${lineup.team.id}`}
+                                aria-label={`View ${lineup.team.name} team profile`}
+                                className="transition-colors hover:text-emerald-400 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                              >
+                                {lineup.team.name}
+                              </Link>
                             </h3>
                             <p className="mt-1 text-xs text-slate-500">
                               {startingPlayers.length === 11
