@@ -5,7 +5,7 @@ export async function updateSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-  // Keep the public site usable before Supabase credentials are configured.
+  // Public football browsing must work even before Supabase is configured.
   if (!url || !key) return NextResponse.next({ request });
 
   let supabaseResponse = NextResponse.next({ request });
@@ -31,8 +31,14 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  // Verify and refresh cookie-backed sessions; do not trust getSession() here.
-  await supabase.auth.getClaims();
+  // Refresh/validate an existing session when possible, but never let an
+  // authentication-provider outage block public pages or match data.
+  try {
+    await supabase.auth.getClaims();
+  } catch {
+    // Fail open for public browsing. Protected account pages still validate
+    // the user independently with supabase.auth.getUser().
+  }
 
   return supabaseResponse;
 }
