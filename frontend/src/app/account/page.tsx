@@ -50,10 +50,10 @@ export default async function AccountPage() {
                 <h3 className="mt-2 font-bold">Favourite teams</h3>
                 <p className="mt-1 text-xs text-slate-500">See the teams you follow.</p>
               </Link>
-              <Link href="/leagues" className="rounded-xl border border-white/10 bg-[#0c151e] p-4 transition hover:border-emerald-400/40">
+              <Link href="/leagues#followed-competitions" className="rounded-xl border border-white/10 bg-[#0c151e] p-4 transition hover:border-emerald-400/40">
                 <span className="text-xl">🏆</span>
                 <h3 className="mt-2 font-bold">Competitions</h3>
-                <p className="mt-1 text-xs text-slate-500">Explore leagues and cups.</p>
+                <p className="mt-1 text-xs text-slate-500">See and manage the competitions you follow.</p>
               </Link>
             </div>
 
