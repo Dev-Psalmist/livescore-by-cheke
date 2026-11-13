@@ -85,7 +85,7 @@ export default function MatchNotifications({
     previousStatus.current = status.toUpperCase();
     setEnabled(false);
     setMessage("");
-  }, [matchId, status]);
+  }, [matchId]);
 
   // Seed existing events without notifying for moments that happened
   // before the user opened the Match Centre. Later updates are live events.
