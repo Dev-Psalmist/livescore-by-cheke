@@ -1649,7 +1649,15 @@ export default function MatchCentreClient({
                           </span>
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-bold text-white">{absence.player.name}</p>
+                          <p className="truncate text-sm font-bold text-white">
+                            <Link
+                              href={`/player/${absence.player.id}`}
+                              title={`View ${absence.player.name}'s player profile`}
+                              className="transition-colors hover:text-emerald-300 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                            >
+                              {absence.player.name}
+                            </Link>
+                          </p>
                           <p className="truncate text-xs text-slate-400">{absence.team.name} · {reason}</p>
                         </div>
                         <span className={`shrink-0 rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-wider ${isSuspension ? "bg-amber-500/10 text-amber-300" : "bg-red-500/10 text-red-300"}`}>
