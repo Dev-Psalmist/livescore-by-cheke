@@ -1348,6 +1348,8 @@ export default function MatchCentreClient({
               events={events}
               homeTeam={homeTeam}
               awayTeam={awayTeam}
+              homeTeamId={match.teams.home.id}
+              awayTeamId={match.teams.away.id}
             />
           </section>
         )}
