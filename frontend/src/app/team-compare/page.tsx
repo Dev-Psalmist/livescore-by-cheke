@@ -185,14 +185,14 @@ export default function TeamComparePage() {
                       <div key={match.id} className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/70 p-3 sm:p-4">
                         <div className="flex min-w-0 items-center gap-2">
                           {match.homeLogo && <img src={match.homeLogo} alt="" className="h-7 w-7 shrink-0 object-contain" />}
-                          <span className={`truncate text-xs font-bold sm:text-sm ${homeWon ? "text-emerald-300" : "text-slate-200"}`}>{match.home}</span>
+                          <Link href={`/team/${match.homeId}`} aria-label={`View ${match.home} team profile`} className={`truncate text-xs font-bold transition hover:text-emerald-400 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 sm:text-sm ${homeWon ? "text-emerald-300" : "text-slate-200"}`}>{match.home}</Link>
                         </div>
                         <div className="text-center">
                           <p className="text-lg font-black tabular-nums">{match.homeGoals ?? "–"} <span className="text-slate-500">:</span> {match.awayGoals ?? "–"}</p>
                           <p className="mt-1 text-[10px] text-slate-500">{new Date(match.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</p>
                         </div>
                         <div className="flex min-w-0 items-center justify-end gap-2">
-                          <span className={`truncate text-right text-xs font-bold sm:text-sm ${awayWon ? "text-emerald-300" : "text-slate-200"}`}>{match.away}</span>
+                          <Link href={`/team/${match.awayId}`} aria-label={`View ${match.away} team profile`} className={`truncate text-right text-xs font-bold transition hover:text-emerald-400 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 sm:text-sm ${awayWon ? "text-emerald-300" : "text-slate-200"}`}>{match.away}</Link>
                           {match.awayLogo && <img src={match.awayLogo} alt="" className="h-7 w-7 shrink-0 object-contain" />}
                         </div>
                         <p className="col-span-3 -mt-1 text-center text-[10px] text-slate-500">{match.competition}</p>
