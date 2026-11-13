@@ -1,4 +1,5 @@
 import { connection, NextRequest, NextResponse } from "next/server";
+import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
 export async function GET(request: NextRequest) {
   await connection();
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
     url.searchParams.set("league", league);
     url.searchParams.set("season", season);
 
-    const response = await fetch(url.toString(), {
+    const response = await fetchFootballApi(url.toString(), {
       method: "GET",
       headers: {
         "x-apisports-key": apiKey,
@@ -49,9 +50,9 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
 
-    if (!response.ok || (data.errors && Object.keys(data.errors).length > 0)) {
+    if (!response.ok || hasFootballApiErrors(data.errors)) {
       return NextResponse.json(
-        { error: data.errors || "Unable to retrieve league standings." },
+        { error: "Unable to retrieve league standings." },
         { status: response.ok ? 502 : response.status }
       );
     }

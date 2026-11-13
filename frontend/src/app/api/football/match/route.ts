@@ -1,4 +1,5 @@
 import { connection, NextRequest, NextResponse } from "next/server";
+import { fetchFootballApi } from "@/lib/football-api";
 
 const API_BASE_URL = "https://v3.football.api-sports.io";
 
@@ -26,14 +27,14 @@ async function fetchOptionalMatchData(
 
     const revalidateSeconds =
       endpoint === "fixtures/events"
-        ? 30
+        ? 60
         : endpoint === "fixtures/lineups"
           ? 3600
           : endpoint === "injuries"
             ? 600
             : 300;
 
-    const response = await fetch(url.toString(), {
+    const response = await fetchFootballApi(url.toString(), {
       method: "GET",
       headers: {
         "x-apisports-key": apiKey,
@@ -120,6 +121,20 @@ async function fetchOptionalMatchData(
   }
 }
 
+function skippedOptionalMatchData(endpoint: string): EndpointResult {
+  return {
+    data: [],
+    diagnostic: {
+      endpoint,
+      httpStatus: null,
+      success: true,
+      results: 0,
+      errors: null,
+      message: "Skipped because the fixture has not started.",
+    },
+  };
+}
+
 export async function GET(request: NextRequest) {
   await connection();
   try {
@@ -146,7 +161,7 @@ export async function GET(request: NextRequest) {
     const fixtureUrl = new URL(`${API_BASE_URL}/fixtures`);
     fixtureUrl.searchParams.set("id", matchId);
 
-    const fixtureResponse = await fetch(fixtureUrl.toString(), {
+    const fixtureResponse = await fetchFootballApi(fixtureUrl.toString(), {
       method: "GET",
       headers: {
         "x-apisports-key": apiKey,
@@ -188,6 +203,13 @@ export async function GET(request: NextRequest) {
     // 2. Retrieve optional match information independently.
     // A failure in one optional endpoint will not prevent
     // the other match information from being returned.
+    const isScheduled = ["NS", "TBD"].includes(
+      String(match.fixture?.status?.short || "").toUpperCase()
+    );
+
+    // Before kickoff, statistics, player ratings and events are not useful.
+    // Deferring those three requests reduces scheduled-match loads from six
+    // provider calls to four while keeping lineups and injury information.
     const [
       eventsResult,
       lineupsResult,
@@ -195,35 +217,17 @@ export async function GET(request: NextRequest) {
       playersResult,
       injuriesResult,
     ] = await Promise.all([
-      fetchOptionalMatchData(
-        "fixtures/events",
-        matchId,
-        apiKey
-      ),
-
-      fetchOptionalMatchData(
-        "fixtures/lineups",
-        matchId,
-        apiKey
-      ),
-
-      fetchOptionalMatchData(
-        "fixtures/statistics",
-        matchId,
-        apiKey
-      ),
-
-      fetchOptionalMatchData(
-        "fixtures/players",
-        matchId,
-        apiKey
-      ),
-
-      fetchOptionalMatchData(
-        "injuries",
-        matchId,
-        apiKey
-      ),
+      isScheduled
+        ? Promise.resolve(skippedOptionalMatchData("fixtures/events"))
+        : fetchOptionalMatchData("fixtures/events", matchId, apiKey),
+      fetchOptionalMatchData("fixtures/lineups", matchId, apiKey),
+      isScheduled
+        ? Promise.resolve(skippedOptionalMatchData("fixtures/statistics"))
+        : fetchOptionalMatchData("fixtures/statistics", matchId, apiKey),
+      isScheduled
+        ? Promise.resolve(skippedOptionalMatchData("fixtures/players"))
+        : fetchOptionalMatchData("fixtures/players", matchId, apiKey),
+      fetchOptionalMatchData("injuries", matchId, apiKey),
     ]);
 
     // 3. Return match data and diagnostics.

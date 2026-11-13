@@ -1,4 +1,5 @@
 import { connection, NextRequest, NextResponse } from "next/server";
+import { fetchFootballApi } from "@/lib/football-api";
 
 function getLagosDate(date: Date) {
   return new Intl.DateTimeFormat("en-CA", {
@@ -57,12 +58,12 @@ export async function GET(request: NextRequest) {
     url.searchParams.set("status", "NS");
     url.searchParams.set("timezone", "Africa/Lagos");
 
-    const response = await fetch(url.toString(), {
+    const response = await fetchFootballApi(url.toString(), {
       method: "GET",
       headers: {
         "x-apisports-key": apiKey,
       },
-      cache: "no-store",
+      next: { revalidate: 900 },
     });
 
     const data = await response.json();

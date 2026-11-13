@@ -1,4 +1,5 @@
 import { connection, NextResponse } from "next/server";
+import { fetchFootballApi } from "@/lib/football-api";
 
 export async function GET() {
   await connection();
@@ -18,12 +19,12 @@ export async function GET() {
 
     url.searchParams.set("current", "true");
 
-    const response = await fetch(url.toString(), {
+    const response = await fetchFootballApi(url.toString(), {
       method: "GET",
       headers: {
         "x-apisports-key": apiKey,
       },
-      cache: "no-store",
+      next: { revalidate: 3600 },
     });
 
     const data = await response.json();

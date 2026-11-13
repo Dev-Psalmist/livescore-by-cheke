@@ -1,4 +1,5 @@
 import { connection, NextResponse } from "next/server";
+import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
 export async function GET() {
   await connection();
@@ -28,7 +29,7 @@ export async function GET() {
     url.searchParams.set("status", "NS");
     url.searchParams.set("timezone", "Africa/Lagos");
 
-    const response = await fetch(url.toString(), {
+    const response = await fetchFootballApi(url.toString(), {
       method: "GET",
       headers: {
         "x-apisports-key": apiKey,
@@ -39,9 +40,9 @@ export async function GET() {
 
     const data = await response.json();
 
-    if (!response.ok || (data.errors && Object.keys(data.errors).length > 0)) {
+    if (!response.ok || hasFootballApiErrors(data.errors)) {
       return NextResponse.json(
-        { error: data.errors || "Unable to retrieve fixtures." },
+        { error: "Unable to retrieve fixtures." },
         { status: response.ok ? 502 : response.status }
       );
     }

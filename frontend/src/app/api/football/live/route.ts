@@ -1,4 +1,5 @@
 import { connection, NextResponse } from "next/server";
+import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
 export async function GET() {
   await connection();
@@ -14,7 +15,7 @@ export async function GET() {
       );
     }
 
-    const response = await fetch(
+    const response = await fetchFootballApi(
       "https://v3.football.api-sports.io/fixtures?live=all",
       {
         method: "GET",
@@ -37,11 +38,11 @@ export async function GET() {
       );
     }
 
-    if (data.errors && Object.keys(data.errors).length > 0) {
+    if hasFootballApiErrors(data.errors) {
       console.error("API-Football returned errors:", data.errors);
 
       return NextResponse.json(
-        { error: data.errors },
+        { error: "Unable to retrieve live football data." },
         { status: 502 }
       );
     }

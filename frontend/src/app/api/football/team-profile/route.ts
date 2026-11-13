@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchFootballApi } from "@/lib/football-api";
 
 const API = "https://v3.football.api-sports.io";
 
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     const url = new URL(`${API}/teams`);
     url.searchParams.set("id", teamId);
 
-    const response = await fetch(url, {
+    const response = await fetchFootballApi(url, {
       headers: { "x-apisports-key": key },
       next: { revalidate: 3600 },
     });

@@ -1,4 +1,5 @@
 import { connection, NextRequest, NextResponse } from "next/server";
+import { fetchFootballApi } from "@/lib/football-api";
 
 const API_BASE_URL = "https://v3.football.api-sports.io";
 
@@ -41,12 +42,12 @@ export async function GET(request: NextRequest) {
     const eventsUrl = new URL(`${API_BASE_URL}/fixtures/events`);
     eventsUrl.searchParams.set("fixture", matchId);
 
-    const response = await fetch(eventsUrl.toString(), {
+    const response = await fetchFootballApi(eventsUrl.toString(), {
       method: "GET",
       headers: {
         "x-apisports-key": apiKey,
       },
-      cache: "no-store",
+      next: { revalidate: 30 },
     });
 
     const data = await response.json();

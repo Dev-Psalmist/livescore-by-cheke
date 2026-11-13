@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { fetchFootballApi } from "@/lib/football-api";
 
 const API = "https://v3.football.api-sports.io";
 const WINDOW_DAYS = 14;
@@ -53,7 +54,7 @@ export async function GET() {
       API + "/fixtures?live=all&timezone=Africa%2FLagos",
     ];
     const responses = await Promise.all(
-      urls.map((url) => fetch(url, { headers, next: { revalidate: 900 } }))
+      urls.map((url) => fetchFootballApi(url, { headers, next: { revalidate: 900 } }))
     );
     const payloads = await Promise.all(responses.map((response) => response.json()));
 

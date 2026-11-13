@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchFootballApi } from "@/lib/football-api";
 const API = "https://v3.football.api-sports.io";
 const YOUTH = /\b(u\s?17|u\s?18|u\s?19|u\s?20|u\s?21|u\s?23|under[- ]?(17|18|19|20|21|23)|youth|academy|reserve|reserves| ii\b|b team)\b/i;
 function lagosDate(date: Date) {
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
     url.searchParams.set("from", lagosDate(from));
     url.searchParams.set("to", lagosDate(to));
     url.searchParams.set("timezone", "Africa/Lagos");
-    const response = await fetch(url, { headers: { "x-apisports-key": key }, next: { revalidate: 900 } });
+    const response = await fetchFootballApi(url, { headers: { "x-apisports-key": key }, next: { revalidate: 900 } });
     const data = await response.json();
     const hasErrors = data.errors && (Array.isArray(data.errors) ? data.errors.length > 0 : Object.keys(data.errors).length > 0);
     if (!response.ok || hasErrors) return NextResponse.json({ success: false, error: "Unable to load team fixtures." }, { status: response.ok ? 502 : response.status });

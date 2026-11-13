@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
 export async function GET(request: NextRequest) {
   const apiKey = process.env.API_FOOTBALL_KEY;
@@ -18,13 +19,13 @@ export async function GET(request: NextRequest) {
     url.searchParams.set("last", "5");
     url.searchParams.set("timezone", "Africa/Lagos");
 
-    const response = await fetch(url, {
+    const response = await fetchFootballApi(url, {
       headers: { "x-apisports-key": apiKey },
       next: { revalidate: 900 },
       signal: AbortSignal.timeout(10000),
     });
     const data = await response.json();
-    if (!response.ok || (data.errors && Object.keys(data.errors).length > 0)) {
+    if (!response.ok || hasFootballApiErrors(data.errors)) {
       return NextResponse.json({ success: false, error: "Head-to-head data is temporarily unavailable." }, { status: 502 });
     }
 

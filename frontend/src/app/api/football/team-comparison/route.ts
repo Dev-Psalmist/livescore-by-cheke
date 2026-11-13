@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchFootballApi } from "@/lib/football-api";
 
 const API_BASE = "https://v3.football.api-sports.io";
 const FINISHED = new Set(["FT", "AET", "PEN"]);
@@ -78,7 +79,7 @@ export async function GET(request: NextRequest) {
       url.searchParams.set("team", teamId);
       url.searchParams.set("last", "10");
       url.searchParams.set("timezone", "Africa/Lagos");
-      const response = await fetch(url, {
+      const response = await fetchFootballApi(url, {
         headers: { "x-apisports-key": apiKey },
         next: { revalidate: 900 },
       });
@@ -94,7 +95,7 @@ export async function GET(request: NextRequest) {
       url.searchParams.set("h2h", `${home}-${away}`);
       url.searchParams.set("last", "5");
       url.searchParams.set("timezone", "Africa/Lagos");
-      const response = await fetch(url, {
+      const response = await fetchFootballApi(url, {
         headers: { "x-apisports-key": apiKey },
         next: { revalidate: 900 },
       });
