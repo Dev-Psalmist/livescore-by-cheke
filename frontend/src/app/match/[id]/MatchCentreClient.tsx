@@ -609,11 +609,15 @@ export default function MatchCentreClient({
     setDiagnostics(undefined);
     setStandings([]);
     setTableError("");
+    setStandingsLoading(false);
     setMatchNews([]);
+    setNewsLoading(false);
     setNewsError("");
     setTeamForm(null);
+    setTeamFormLoading(false);
     setTeamFormError("");
     setHeadToHead([]);
+    setHeadToHeadLoading(false);
     setHeadToHeadError("");
     setStatusRefreshError("");
     void loadMatch();
