@@ -1,64 +1,48 @@
 import { connection, NextRequest, NextResponse } from "next/server";
 import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
+interface TeamsPayload {
+  errors?: unknown;
+  results?: number;
+  response?: unknown;
+}
+
 export async function GET(request: NextRequest) {
   await connection();
   try {
     const apiKey = process.env.API_FOOTBALL_KEY;
 
     if (!apiKey) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Football API key is missing.",
-        },
-        { status: 500 }
-      );
+      return NextResponse.json({ success: false, error: "Football API is not configured." }, { status: 503 });
     }
 
-    const search = request.nextUrl.searchParams
-      .get("search")
-      ?.trim();
-
-    if (!search || search.length < 3) {
+    const search = request.nextUrl.searchParams.get("search")?.trim();
+    if (!search || search.length < 3 || search.length > 80) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Enter at least three characters to search for a team.",
-        },
+        { success: false, error: "Enter between 3 and 80 characters to search for a team." },
         { status: 400 }
       );
     }
 
-    const url = new URL(
-      "https://v3.football.api-sports.io/teams"
-    );
-
+    const url = new URL("https://v3.football.api-sports.io/teams");
     url.searchParams.set("search", search);
 
-    const response = await fetchFootballApi(url.toString(), {
+    const response = await fetchFootballApi(url, {
       method: "GET",
-      headers: {
-        "x-apisports-key": apiKey,
-      },
+      headers: { "x-apisports-key": apiKey },
       next: { revalidate: 60 },
     });
 
-    const data = await response.json();
+    let data: TeamsPayload;
+    try {
+      data = (await response.json()) as TeamsPayload;
+    } catch {
+      return NextResponse.json({ success: false, error: "The football data provider returned an invalid response." }, { status: 502 });
+    }
 
-    if (
-      !response.ok ||
-      hasFootballApiErrors(data.errors)
-    ) {
-      const errorMessage =
-        typeof data.errors === "object"
-          ? JSON.stringify(data.errors)
-          : "Unable to retrieve teams.";
-
-      const isRateLimited =
-        response.status === 429 ||
-        errorMessage.toLowerCase().includes("request limit");
-
+    if (!response.ok || hasFootballApiErrors(data.errors)) {
+      const errorMessage = JSON.stringify(data.errors ?? "");
+      const isRateLimited = response.status === 429 || errorMessage.toLowerCase().includes("request limit");
       return NextResponse.json(
         {
           success: false,
@@ -70,18 +54,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (!Array.isArray(data.response)) {
+      return NextResponse.json({ success: false, error: "The football data provider returned unexpected team data." }, { status: 502 });
+    }
+
     return NextResponse.json({
       success: true,
-      results: data.results,
-      teams: data.response || [],
+      results: typeof data.results === "number" ? data.results : data.response.length,
+      teams: data.response,
     });
-  } catch {
+  } catch (error) {
+    console.error("Team search API error:", error);
     return NextResponse.json(
-      {
-        success: false,
-        error: "Something went wrong while searching for teams.",
-      },
-      { status: 500 }
+      { success: false, error: "Something went wrong while searching for teams." },
+      { status: 502 }
     );
   }
 }
