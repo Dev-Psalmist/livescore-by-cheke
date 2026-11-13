@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     url.searchParams.set("team", team);
     url.searchParams.set("last", "10");
     url.searchParams.set("timezone", "Africa/Lagos");
-    const response = await fetch(url, { headers: { "x-apisports-key": key }, next: { revalidate: 900 } });
+    const response = await fetch(url, { headers: { "x-apisports-key": key }, next: { revalidate: 900 }, signal: AbortSignal.timeout(10000) });
     const data = await response.json();
     if (!response.ok || (data.errors && Object.keys(data.errors).length)) throw new Error("Recent form is temporarily unavailable.");
     return (data.response || []).filter((item: any) => ["FT", "AET", "PEN"].includes(item.fixture.status.short)).slice(0, 5).map((item: any) => ({
