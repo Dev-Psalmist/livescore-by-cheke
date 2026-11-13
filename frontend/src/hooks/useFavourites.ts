@@ -56,9 +56,11 @@ export function useFavourites() {
   useEffect(() => {
     let active = true;
     let supabase: ReturnType<typeof createClient> | null = null;
+    let activeUserId: string | null = null;
 
     const showGuestFavourites = () => {
       if (!active) return;
+      activeUserId = null;
       setUserId(null);
       setFavourites(readFavourites());
       setLoaded(true);
@@ -103,6 +105,7 @@ export function useFavourites() {
       }
 
       if (!active) return;
+      activeUserId = id;
       setUserId(id);
       setFavourites(combined);
       setLoaded(true);
@@ -134,12 +137,12 @@ export function useFavourites() {
       });
 
       const handleStorageChange = (event: StorageEvent) => {
-        if (!userId && (event.key === STORAGE_KEY || event.key === null)) {
+        if (!activeUserId && (event.key === STORAGE_KEY || event.key === null)) {
           setFavourites(readFavourites());
         }
       };
       const handleLocalChange = () => {
-        if (!userId) setFavourites(readFavourites());
+        if (!activeUserId) setFavourites(readFavourites());
       };
       window.addEventListener("storage", handleStorageChange);
       window.addEventListener(CHANGE_EVENT, handleLocalChange);
