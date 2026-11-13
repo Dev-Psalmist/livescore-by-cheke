@@ -1,44 +1,41 @@
 import { connection, NextRequest, NextResponse } from "next/server";
+import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
 const API_BASE = "https://v3.football.api-sports.io";
 
 type SearchType = "all" | "teams" | "players" | "leagues" | "matches";
 
-async function fetchFootballData(endpoint: string, apiKey: string) {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+type ProviderPayload = {
+  errors?: unknown;
+  response?: unknown;
+};
+
+async function fetchFootballData(endpoint: string, apiKey: string): Promise<unknown[]> {
+  const response = await fetchFootballApi(`${API_BASE}${endpoint}`, {
     method: "GET",
     headers: { "x-apisports-key": apiKey },
     next: { revalidate: 60 },
-    signal: AbortSignal.timeout(10000),
   });
 
-  let data: any;
+  let data: ProviderPayload;
   try {
     data = await response.json();
   } catch {
-    throw new Error("The football data provider returned an invalid response.");
+    throw new Error("The football provider returned an invalid response.");
   }
 
-  const providerErrors =
-    data.errors && Object.keys(data.errors).length > 0
-      ? JSON.stringify(data.errors)
-      : "";
-
-  if (!response.ok || providerErrors) {
-    const message =
-      providerErrors || "The football data provider returned an error.";
-    const rateLimited =
-      response.status === 429 ||
-      message.toLowerCase().includes("request limit");
-
-    throw new Error(
-      rateLimited
-        ? "The football data provider has reached its request limit. Please try again later."
-        : message
-    );
+  if (!response.ok || hasFootballApiErrors(data.errors)) {
+    if (response.status === 429) {
+      throw new Error("The football data provider has reached its request limit.");
+    }
+    throw new Error("The football data provider returned an error.");
   }
 
-  return Array.isArray(data.response) ? data.response : [];
+  if (!Array.isArray(data.response)) {
+    throw new Error("The football provider returned unexpected search data.");
+  }
+
+  return data.response;
 }
 
 export async function GET(request: NextRequest) {
@@ -103,11 +100,16 @@ export async function GET(request: NextRequest) {
       }
 
       const exactMatch = teams.find(
-        (item: { team?: { name?: string } }) =>
-          item.team?.name?.toLowerCase() === query.toLowerCase()
+        (item) => {
+          if (!item || typeof item !== "object") return false;
+          const team = (item as { team?: { name?: unknown } }).team;
+          return typeof team?.name === "string" &&
+            team.name.toLowerCase() === query.toLowerCase();
+        }
       );
       const selectedTeam = exactMatch || teams[0];
-      const teamId = selectedTeam.team?.id;
+      const team = selectedTeam as { team?: { id?: unknown } };
+      const teamId = team.team?.id;
 
       if (!teamId || !/^\d+$/.test(String(teamId))) {
         throw new Error("The team search did not return a valid team ID.");
@@ -132,10 +134,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, type, teams, players, leagues });
   } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Something went wrong while searching.";
+    const message = error instanceof Error ? error.message : "";
     const rateLimited = message.toLowerCase().includes("request limit");
 
     console.error("Football search API error:", error);
@@ -143,7 +142,7 @@ export async function GET(request: NextRequest) {
       {
         success: false,
         error: rateLimited
-          ? message
+          ? "The football data provider has reached its request limit. Please try again later."
           : "Search is temporarily unavailable. Please try again.",
       },
       { status: rateLimited ? 429 : 502 }
