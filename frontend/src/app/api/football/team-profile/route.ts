@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchFootballApi } from "@/lib/football-api";
+import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
 const API = "https://v3.football.api-sports.io";
+
+interface TeamProfilePayload {
+  errors?: unknown;
+  response?: unknown;
+}
 
 export async function GET(request: NextRequest) {
   const key = process.env.API_FOOTBALL_KEY;
@@ -9,8 +14,8 @@ export async function GET(request: NextRequest) {
 
   if (!key) {
     return NextResponse.json(
-      { success: false, error: "Unable to load team information." },
-      { status: 500 }
+      { success: false, error: "Football API is not configured." },
+      { status: 503 }
     );
   }
 
@@ -29,17 +34,36 @@ export async function GET(request: NextRequest) {
       headers: { "x-apisports-key": key },
       next: { revalidate: 3600 },
     });
-    const data = await response.json();
 
-    if (!response.ok || (data.errors && Object.keys(data.errors).length > 0)) {
+    let data: TeamProfilePayload;
+    try {
+      data = (await response.json()) as TeamProfilePayload;
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "The football data provider returned an invalid response." },
+        { status: 502 }
+      );
+    }
+
+    if (!response.ok || hasFootballApiErrors(data.errors)) {
       return NextResponse.json(
         { success: false, error: "Unable to load team information." },
         { status: response.ok ? 502 : response.status }
       );
     }
 
-    const item = data.response?.[0];
-    if (!item) {
+    if (!Array.isArray(data.response)) {
+      return NextResponse.json(
+        { success: false, error: "The football data provider returned unexpected team data." },
+        { status: 502 }
+      );
+    }
+
+    const item = data.response[0] as
+      | { team?: unknown; venue?: unknown }
+      | undefined;
+
+    if (!item?.team || typeof item.team !== "object") {
       return NextResponse.json(
         { success: false, error: "Team not found." },
         { status: 404 }
@@ -49,12 +73,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       team: item.team,
-      venue: item.venue,
+      venue: item.venue ?? null,
     });
-  } catch {
+  } catch (error) {
+    console.error("Team profile API error:", error);
     return NextResponse.json(
       { success: false, error: "Unable to load team information." },
-      { status: 500 }
+      { status: 502 }
     );
   }
 }
