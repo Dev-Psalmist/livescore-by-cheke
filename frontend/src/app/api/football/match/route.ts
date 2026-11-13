@@ -24,12 +24,22 @@ async function fetchOptionalMatchData(
     const url = new URL(`${API_BASE_URL}/${endpoint}`);
     url.searchParams.set("fixture", matchId);
 
+    const revalidateSeconds =
+      endpoint === "fixtures/events"
+        ? 30
+        : endpoint === "fixtures/lineups"
+          ? 3600
+          : endpoint === "injuries"
+            ? 600
+            : 300;
+
     const response = await fetch(url.toString(), {
       method: "GET",
       headers: {
         "x-apisports-key": apiKey,
       },
-      cache: "no-store",
+      next: { revalidate: revalidateSeconds },
+      signal: AbortSignal.timeout(10000),
     });
 
     let data: any;
@@ -141,7 +151,8 @@ export async function GET(request: NextRequest) {
       headers: {
         "x-apisports-key": apiKey,
       },
-      cache: "no-store",
+      next: { revalidate: 30 },
+      signal: AbortSignal.timeout(10000),
     });
 
     const fixtureData = await fixtureResponse.json();
