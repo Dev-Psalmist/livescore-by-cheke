@@ -563,9 +563,14 @@ export default function MatchCentreClient({
   }, [match?.teams.home.name, match?.teams.away.name]);
 
   const loadedMatchData = useRef(new Set<string>());
+  const matchRequestController = useRef<AbortController | null>(null);
 
   const loadMatch = useCallback(
     async (isRefresh = false) => {
+      matchRequestController.current?.abort();
+      const controller = new AbortController();
+      matchRequestController.current = controller;
+
       try {
         if (isRefresh) {
           setRefreshing(true);
@@ -577,7 +582,7 @@ export default function MatchCentreClient({
 
         const response = await fetch(
           `/api/football/match?id=${encodeURIComponent(id)}`,
-          { cache: "no-store" }
+          { cache: "no-store", signal: controller.signal }
         );
 
         const data: MatchResponse = await response.json();
@@ -586,18 +591,23 @@ export default function MatchCentreClient({
           throw new Error(getErrorMessage(data.error));
         }
 
+        if (controller.signal.aborted) return;
         setMatch(data.match);
         setDiagnostics(data.diagnostics);
         setStatusRefreshError("");
       } catch (err) {
+        if (controller.signal.aborted) return;
         setError(
           err instanceof Error
             ? err.message
             : "Something went wrong while loading this match."
         );
       } finally {
-        setLoading(false);
-        setRefreshing(false);
+        if (matchRequestController.current === controller) {
+          matchRequestController.current = null;
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     },
     [id]
@@ -621,6 +631,10 @@ export default function MatchCentreClient({
     setHeadToHeadError("");
     setStatusRefreshError("");
     void loadMatch();
+
+    return () => {
+      matchRequestController.current?.abort();
+    };
   }, [loadMatch]);
 
   // Refresh the score and event timeline together, with a conservative
