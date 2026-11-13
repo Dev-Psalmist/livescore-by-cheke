@@ -38,7 +38,7 @@ export async function GET() {
       );
     }
 
-    if hasFootballApiErrors(data.errors) {
+    if (hasFootballApiErrors(data.errors)) {
       console.error("API-Football returned errors:", data.errors);
 
       return NextResponse.json(
