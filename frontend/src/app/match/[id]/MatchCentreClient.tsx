@@ -1255,6 +1255,8 @@ export default function MatchCentreClient({
             events={events}
             homeTeam={homeTeam}
             awayTeam={awayTeam}
+            homeTeamId={match.teams.home.id}
+            awayTeamId={match.teams.away.id}
             homeGoals={match.goals.home}
             awayGoals={match.goals.away}
             status={match.fixture.status.short}
