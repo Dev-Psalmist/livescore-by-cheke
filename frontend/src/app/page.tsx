@@ -121,8 +121,10 @@ export default function HomePage() {
     liveRequestInFlight.current = true;
 
     try {
-      if (!silent) setLiveLoading(true);
-      setLiveError("");
+      if (!silent) {
+        setLiveLoading(true);
+        setLiveError("");
+      }
 
       const response = await fetch("/api/football/live", {
         cache: "no-store",
@@ -163,6 +165,7 @@ export default function HomePage() {
       }));
 
       setLiveMatches(formattedMatches);
+      setLiveError("");
     } catch (error) {
       if (!silent) {
         setLiveError("Unable to load data right now. Please try again later.");
@@ -178,8 +181,10 @@ export default function HomePage() {
     fixturesRequestInFlight.current = true;
 
     try {
-      if (!silent) setFixturesLoading(true);
-      setFixturesError("");
+      if (!silent) {
+        setFixturesLoading(true);
+        setFixturesError("");
+      }
 
       const response = await fetch("/api/football/fixtures", {
         cache: "no-store",
@@ -217,6 +222,7 @@ export default function HomePage() {
       }));
 
       setUpcomingMatches(formattedMatches);
+      setFixturesError("");
     } catch (error) {
       if (!silent) {
         setFixturesError("Unable to load data right now. Please try again later.");
