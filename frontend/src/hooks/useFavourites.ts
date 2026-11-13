@@ -12,7 +12,6 @@ export interface FavouriteTeam {
     national: boolean;
     logo: string;
   };
-
   venue: {
     name: string | null;
     city: string | null;
@@ -22,24 +21,40 @@ export interface FavouriteTeam {
 }
 
 const STORAGE_KEY = "livescore-cheke-favourites";
+const CHANGE_EVENT = "livescore:favourites-changed";
 
 function readFavourites(): FavouriteTeam[] {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+  if (typeof window === "undefined") return [];
 
-    if (!saved) {
-      return [];
-    }
+  try {
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    if (!saved) return [];
 
     const parsed: unknown = JSON.parse(saved);
+    if (!Array.isArray(parsed)) return [];
 
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed as FavouriteTeam[];
+    return parsed.filter(
+      (item): item is FavouriteTeam =>
+        Boolean(
+          item &&
+          typeof item === "object" &&
+          "team" in item &&
+          item.team &&
+          typeof item.team.id === "number" &&
+          typeof item.team.name === "string"
+        )
+    );
   } catch {
     return [];
+  }
+}
+
+function saveFavourites(favourites: FavouriteTeam[]) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(favourites));
+    window.dispatchEvent(new Event(CHANGE_EVENT));
+  } catch {
+    // Keep the current page usable if browser storage is unavailable.
   }
 }
 
@@ -48,36 +63,32 @@ export function useFavourites() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setFavourites(readFavourites());
+    const syncFavourites = () => setFavourites(readFavourites());
+
+    syncFavourites();
     setLoaded(true);
 
-    function handleStorageChange(event: StorageEvent) {
-      if (event.key === STORAGE_KEY) {
-        setFavourites(readFavourites());
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEY || event.key === null) {
+        syncFavourites();
       }
-    }
+    };
 
     window.addEventListener("storage", handleStorageChange);
+    window.addEventListener(CHANGE_EVENT, syncFavourites);
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener(CHANGE_EVENT, syncFavourites);
     };
   }, []);
 
   function addFavourite(team: FavouriteTeam) {
     const current = readFavourites();
-
-    const alreadySaved = current.some(
-      (item) => item.team.id === team.team.id
-    );
-
-    if (alreadySaved) {
-      return;
-    }
+    if (current.some((item) => item.team.id === team.team.id)) return;
 
     const updated = [...current, team];
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    saveFavourites(updated);
     setFavourites(updated);
   }
 
@@ -86,14 +97,12 @@ export function useFavourites() {
       (item) => item.team.id !== teamId
     );
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    saveFavourites(updated);
     setFavourites(updated);
   }
 
   function isFavourite(teamId: number) {
-    return favourites.some(
-      (item) => item.team.id === teamId
-    );
+    return favourites.some((item) => item.team.id === teamId);
   }
 
   return {
