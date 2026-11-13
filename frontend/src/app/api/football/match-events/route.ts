@@ -1,21 +1,7 @@
 import { connection, NextRequest, NextResponse } from "next/server";
-import { fetchFootballApi } from "@/lib/football-api";
+import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
 const API_BASE_URL = "https://v3.football.api-sports.io";
-
-function hasApiErrors(errors: unknown): boolean {
-  if (!errors) return false;
-
-  if (Array.isArray(errors)) {
-    return errors.length > 0;
-  }
-
-  if (typeof errors === "object") {
-    return Object.keys(errors).length > 0;
-  }
-
-  return Boolean(errors);
-}
 
 export async function GET(request: NextRequest) {
   await connection();
@@ -52,13 +38,11 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
 
-    if (!response.ok || hasApiErrors(data.errors)) {
+    if (!response.ok || hasFootballApiErrors(data.errors)) {
       return NextResponse.json(
         {
           success: false,
-          error:
-            data.errors ||
-            "Unable to retrieve the latest match events.",
+          error: "Unable to retrieve the latest match events.",
         },
         { status: response.ok ? 502 : response.status }
       );

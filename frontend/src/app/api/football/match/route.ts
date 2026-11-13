@@ -1,5 +1,5 @@
 import { connection, NextRequest, NextResponse } from "next/server";
-import { fetchFootballApi } from "@/lib/football-api";
+import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
 const API_BASE_URL = "https://v3.football.api-sports.io";
 
@@ -62,14 +62,7 @@ async function fetchOptionalMatchData(
     }
 
     const apiErrors = data.errors ?? null;
-
-    const hasApiErrors =
-      apiErrors !== null &&
-      (Array.isArray(apiErrors)
-        ? apiErrors.length > 0
-        : typeof apiErrors === "object"
-          ? Object.keys(apiErrors).length > 0
-          : Boolean(apiErrors));
+    const hasApiErrors = hasFootballApiErrors(apiErrors);
 
     const results = Array.isArray(data.response)
       ? data.response
@@ -174,14 +167,11 @@ export async function GET(request: NextRequest) {
 
     if (
       !fixtureResponse.ok ||
-      (fixtureData.errors &&
-        Object.keys(fixtureData.errors).length > 0)
+      hasFootballApiErrors(fixtureData.errors)
     ) {
       return NextResponse.json(
         {
-          error:
-            fixtureData.errors ||
-            "Unable to retrieve match information.",
+          error: "Unable to retrieve match information.",
         },
         {
           status: fixtureResponse.ok

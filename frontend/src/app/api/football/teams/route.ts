@@ -1,5 +1,5 @@
 import { connection, NextRequest, NextResponse } from "next/server";
-import { fetchFootballApi } from "@/lib/football-api";
+import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
 export async function GET(request: NextRequest) {
   await connection();
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
     if (
       !response.ok ||
-      (data.errors && Object.keys(data.errors).length > 0)
+      hasFootballApiErrors(data.errors)
     ) {
       const errorMessage =
         typeof data.errors === "object"
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
           success: false,
           error: isRateLimited
             ? "The football data provider has reached its request limit. Please try again later."
-            : errorMessage,
+            : "Unable to retrieve teams right now. Please try again later.",
         },
         { status: isRateLimited ? 429 : response.ok ? 502 : response.status }
       );

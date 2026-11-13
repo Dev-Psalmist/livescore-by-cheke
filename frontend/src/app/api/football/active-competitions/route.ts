@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchFootballApi } from "@/lib/football-api";
+import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
 const API = "https://v3.football.api-sports.io";
 const WINDOW_DAYS = 14;
@@ -59,7 +59,7 @@ export async function GET() {
     const payloads = await Promise.all(responses.map((response) => response.json()));
 
     for (let index = 0; index < responses.length; index++) {
-      if (!responses[index].ok || (payloads[index].errors && Object.keys(payloads[index].errors).length)) {
+      if (!responses[index].ok || hasFootballApiErrors(payloads[index].errors)) {
         throw new Error(
           JSON.stringify(payloads[index].errors || "Competition data is temporarily unavailable.")
         );
@@ -170,9 +170,10 @@ export async function GET() {
       competitions,
     });
   } catch (error) {
+    console.error("Active competitions API error:", error);
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : "Unable to load active competitions.",
+      error: "Unable to load active competitions right now. Please try again later.",
     }, { status: 502 });
   }
 }

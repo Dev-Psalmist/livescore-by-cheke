@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchFootballApi } from "@/lib/football-api";
+import { fetchFootballApi, hasFootballApiErrors } from "@/lib/football-api";
 
 const API_BASE = "https://v3.football.api-sports.io";
 const FINISHED = new Set(["FT", "AET", "PEN"]);
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
       });
       if (!response.ok) throw new Error("Provider request failed");
       const payload = await response.json();
-      const hasErrors = payload?.errors && Object.keys(payload.errors).length > 0;
+      const hasErrors = hasFootballApiErrors(payload?.errors);
       if (hasErrors || !Array.isArray(payload?.response)) throw new Error("Invalid provider response");
       return payload.response as Fixture[];
     };
