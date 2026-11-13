@@ -199,7 +199,7 @@ export async function GET(request: NextRequest) {
 
     // Before kickoff, statistics, player ratings and events are not useful.
     // Deferring those three requests reduces scheduled-match loads from six
-    // provider calls to four while keeping lineups and injury information.
+    // provider calls to three while keeping lineups and injury information.
     const [
       eventsResult,
       lineupsResult,
