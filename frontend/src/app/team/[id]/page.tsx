@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import TeamFavouriteButton from "@/components/TeamFavouriteButton";
 
 interface Team {
   id: number;
@@ -166,6 +167,7 @@ function TeamProfileContent() {
                   <span className="rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-300">Founded: {team.founded || "N/A"}</span>
                   <span className="rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-300">{team.national ? "International" : "Club football"}</span>
                   <Link href={`/team-compare?first=${team.id}`} className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-bold text-emerald-300 hover:bg-emerald-500/20">Compare this team →</Link>
+                  <TeamFavouriteButton team={team} venue={venue} />
                 </div>
               </div>
             </div>
