@@ -73,7 +73,10 @@ export default function DateFixtureBrowser() {
   }, []);
 
   useEffect(() => {
-    if (selected) void load(selected);
+    if (!selected) return;
+    void load(selected);
+    const refresh = window.setInterval(() => void load(selected), 60_000);
+    return () => window.clearInterval(refresh);
   }, [load, selected]);
 
   const grouped = useMemo(() => {
@@ -145,10 +148,10 @@ export default function DateFixtureBrowser() {
                     {game.teams.home.logo && <img src={game.teams.home.logo} alt="" className="h-5 w-5 shrink-0 object-contain" />}
                     <Link href={`/team/${game.teams.home.id}`} className="min-w-0 truncate transition-colors hover:text-emerald-400">{game.teams.home.name}</Link>
                   </div>
-                  <div className="row-span-2 text-center sm:row-span-1">
+                  <Link href={`/match/${game.fixture.id}`} className="row-span-2 text-center sm:row-span-1">
                     {finished || live ? <span className="whitespace-nowrap text-sm font-black tabular-nums text-white">{game.goals.home ?? "—"} <span className="text-slate-500">-</span> {game.goals.away ?? "—"}</span> : <span className="text-xs font-bold tabular-nums text-slate-300 sm:hidden">{kickoff}</span>}
                     <span className={`block text-[9px] font-black uppercase tracking-wider ${live ? "text-red-400" : finished ? "text-slate-500" : postponed ? "text-amber-400" : "text-emerald-400"}`}>{statusLabel}</span>
-                  </div>
+                  </Link>
                   <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-slate-200 sm:flex-row-reverse sm:justify-end sm:text-left">
                     {game.teams.away.logo && <img src={game.teams.away.logo} alt="" className="h-5 w-5 shrink-0 object-contain" />}
                     <Link href={`/team/${game.teams.away.id}`} className="min-w-0 truncate transition-colors hover:text-emerald-400">{game.teams.away.name}</Link>
@@ -156,7 +159,6 @@ export default function DateFixtureBrowser() {
                   <div className="hidden text-right sm:block">
                     <Link href={`/match/${game.fixture.id}`} className="text-[9px] font-bold uppercase tracking-wide text-slate-500 transition hover:text-emerald-400">Match centre →</Link>
                   </div>
-                  <Link href={`/match/${game.fixture.id}`} aria-label={`View ${game.teams.home.name} versus ${game.teams.away.name}`} className="col-start-2 row-start-1 row-span-2 flex h-full items-center justify-end text-[10px] font-bold text-slate-500 sm:hidden">›</Link>
                 </article>
               );
             })}
