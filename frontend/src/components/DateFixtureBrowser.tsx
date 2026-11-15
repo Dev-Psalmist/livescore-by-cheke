@@ -143,7 +143,7 @@ export default function DateFixtureBrowser() {
               const kickoff = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Africa/Lagos" }).format(new Date(game.fixture.date));
               const statusLabel = live ? (game.fixture.status.elapsed ? `${game.fixture.status.elapsed}'` : "LIVE") : finished ? (status === "AET" ? "After ET" : status === "PEN" ? "Penalties" : "FT") : postponed ? (status === "PST" ? "Postponed" : "Cancelled") : kickoff;
               return (
-                <article key={game.fixture.id} className="group grid grid-cols-[minmax(0,1fr)_54px] items-center gap-2 border-b border-white/[0.06] px-3 py-3 last:border-0 hover:bg-white/[0.035] sm:grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)_82px] sm:gap-3 sm:px-4 sm:py-2.5">
+                <article key={game.fixture.id} className="group mx-2 my-2 grid grid-cols-[minmax(0,1fr)_54px] items-center gap-2 rounded-lg border border-white/[0.06] bg-[#202225] px-3 py-3 hover:bg-[#282a2d] sm:mx-0 sm:my-0 sm:grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)_82px] sm:gap-3 sm:rounded-none sm:border-0 sm:border-b sm:border-white/[0.06] sm:bg-transparent sm:px-4 sm:py-2.5 sm:hover:bg-white/[0.035] sm:last:border-0">
                   <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-slate-200 sm:justify-end sm:text-right">
                     {game.teams.home.logo && <img src={game.teams.home.logo} alt="" className="h-5 w-5 shrink-0 object-contain" />}
                     <Link href={`/team/${game.teams.home.id}`} className="min-w-0 truncate transition-colors hover:text-emerald-400">{game.teams.home.name}</Link>
