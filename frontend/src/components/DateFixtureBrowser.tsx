@@ -149,7 +149,7 @@ export default function DateFixtureBrowser() {
                     <Link href={`/team/${game.teams.home.id}`} className="min-w-0 truncate transition-colors hover:text-emerald-400">{game.teams.home.name}</Link>
                   </div>
                   <Link href={`/match/${game.fixture.id}`} className="row-span-2 text-center sm:row-span-1">
-                    {finished || live ? <span className="whitespace-nowrap text-sm font-black tabular-nums text-white">{game.goals.home ?? "—"} <span className="text-slate-500">-</span> {game.goals.away ?? "—"}</span> : <span className="text-xs font-bold tabular-nums text-slate-300 sm:hidden">{kickoff}</span>}
+                    {finished || live ? <span className="whitespace-nowrap text-sm font-black tabular-nums text-white">{game.goals.home ?? "—"} <span className="text-slate-500">-</span> {game.goals.away ?? "—"}</span> : null}
                     <span className={`block text-[9px] font-black uppercase tracking-wider ${live ? "text-red-400" : finished ? "text-slate-500" : postponed ? "text-amber-400" : "text-emerald-400"}`}>{statusLabel}</span>
                   </Link>
                   <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-slate-200 sm:flex-row-reverse sm:justify-end sm:text-left">
