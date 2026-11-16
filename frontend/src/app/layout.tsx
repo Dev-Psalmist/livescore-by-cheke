@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import StartupSplash from "@/components/StartupSplash";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,6 +26,7 @@ export const metadata: Metadata = {
     "LiveScore by Cheke brings you live sports scores, match fixtures, results, league standings, team information and match updates from around the world.",
 
   applicationName: "LiveScore by Cheke",
+  manifest: "/manifest.webmanifest",
 
   keywords: [
     "LiveScore",
@@ -48,6 +50,12 @@ export const metadata: Metadata = {
     apple: "/brand/livescore-icon.svg",
   },
 
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "LiveScore",
+  },
+
   openGraph: {
     title: "LiveScore by Cheke",
     description:
@@ -55,6 +63,12 @@ export const metadata: Metadata = {
     siteName: "LiveScore by Cheke",
     type: "website",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#050b09",
 };
 
 export default function RootLayout({
@@ -72,6 +86,7 @@ export default function RootLayout({
           <StartupSplash />
         </Suspense>
         {children}
+        <PWAInstallPrompt />
       </body>
     </html>
   );
