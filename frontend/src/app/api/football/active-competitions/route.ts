@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server";
-import { fetchFootballApiData, FootballApiRequestError } from "@/lib/football-api";
+import {
+  fetchFootballApiData,
+  FootballApiRequestError,
+} from "@/lib/football-api";
 
 const API = "https://v3.football.api-sports.io";
 const WINDOW_DAYS = 14;
-const EXCLUDED = /\\b(u\\s?17|u\\s?18|u\\s?19|u\\s?20|u\\s?21|u\\s?23|under[- ]?(17|18|19|20|21|23)|youth|academy|reserve|reserves| ii\\b|b team)\\b/i;
+
+const EXCLUDED =
+  /\b(u\s?17|u\s?18|u\s?19|u\s?20|u\s?21|u\s?23|under[- ]?(17|18|19|20|21|23)|youth|academy|reserve|reserves| ii\b|b team)\b/i;
+
 const LIVE_STATUSES = ["1H", "HT", "2H", "ET", "BT", "P", "LIVE", "INT", "SUSP"];
-const INTERNATIONAL = /world cup|world cup qualifier|qualification.*world cup|nations league|african cup of nations|afcon|africa cup|euro qualifier|european championship|uefa euro|copa america|asian cup|afc asian|gold cup|concacaf|copa afric|international friendly/i;
-const CLUB_CONTINENTAL = /club world cup|champions league|confederation cup|copa libertadores|copa sudamericana|europa league|conference league/i;
+
+const INTERNATIONAL =
+  /world cup|world cup qualifier|qualification.*world cup|nations league|african cup of nations|afcon|africa cup|euro qualifier|european championship|uefa euro|copa america|asian cup|afc asian|gold cup|concacaf|copa afric|international friendly/i;
+
+const CLUB_CONTINENTAL =
+  /club world cup|champions league|confederation cup|copa libertadores|copa sudamericana|europa league|conference league/i;
 
 const POPULARITY: Array<[RegExp, number]> = [
   [/fifa world cup|world cup qualifier/i, 110],
@@ -69,6 +79,7 @@ function isRecord(value: unknown): value is RecordValue {
 
 function getRecord(value: unknown, key: string): RecordValue | null {
   if (!isRecord(value)) return null;
+
   const nested = value[key];
   return isRecord(nested) ? nested : null;
 }
@@ -78,10 +89,49 @@ function getString(value: unknown): string | null {
 }
 
 function getNumber(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : null;
 }
 
-function toCompetitionFixture(value: unknown): CompetitionFixture | null {
+/**
+ * Returns the current calendar date in Lagos.
+ */
+function getLagosDate(): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Africa/Lagos",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+
+  if (!year || !month || !day) {
+    throw new Error("Unable to determine the current Lagos date.");
+  }
+
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Creates the next 15 calendar dates, starting from today in Lagos.
+ */
+function getDateWindow(): string[] {
+  const today = getLagosDate();
+  const [year, month, day] = today.split("-").map(Number);
+
+  return Array.from({ length: WINDOW_DAYS + 1 }, (_, index) => {
+    const date = new Date(Date.UTC(year, month - 1, day + index));
+    return date.toISOString().slice(0, 10);
+  });
+}
+
+function toCompetitionFixture(
+  value: unknown
+): CompetitionFixture | null {
   const fixture = getRecord(value, "fixture");
   const league = getRecord(value, "league");
   const teams = getRecord(value, "teams");
@@ -96,8 +146,11 @@ function toCompetitionFixture(value: unknown): CompetitionFixture | null {
   const leagueName = getString(league?.name);
 
   if (
-    fixtureId === null || leagueId === null || !date ||
-    !statusShort || !leagueName
+    fixtureId === null ||
+    leagueId === null ||
+    !date ||
+    !statusShort ||
+    !leagueName
   ) {
     return null;
   }
@@ -129,61 +182,102 @@ function isInternational(leagueName: string): boolean {
 
 export async function GET() {
   const key = process.env.API_FOOTBALL_KEY;
+
   if (!key) {
     return NextResponse.json(
-      { success: false, error: "Football API is not configured." },
+      {
+        success: false,
+        error: "Football API is not configured.",
+      },
       { status: 503 }
     );
   }
 
   try {
-    const urls = [
-      new URL(`${API}/fixtures?next=100&timezone=Africa%2FLagos`),
-      new URL(`${API}/fixtures?live=all&timezone=Africa%2FLagos`),
-    ];
+    const dates = getDateWindow();
 
-    const payloads = await Promise.all(
-      urls.map((url) =>
-        fetchFootballApiData<unknown>(url, key, { next: { revalidate: 900 } })
-      )
+    // Use the supported date parameter instead of the restricted next parameter.
+    const dateRequests = dates.map((date) => {
+      const url = new URL(`${API}/fixtures`);
+      url.searchParams.set("date", date);
+      url.searchParams.set("timezone", "Africa/Lagos");
+
+      return fetchFootballApiData<unknown>(url, key, {
+        next: { revalidate: 86400 },
+      });
+    });
+
+    // Live fixtures are requested separately so ongoing matches remain visible.
+    const liveUrl = new URL(`${API}/fixtures`);
+    liveUrl.searchParams.set("live", "all");
+    liveUrl.searchParams.set("timezone", "Africa/Lagos");
+
+    const liveRequest = fetchFootballApiData<unknown>(
+      liveUrl,
+      key,
+      { next: { revalidate: 60 } }
     );
+
+    const payloads = await Promise.all([
+      ...dateRequests,
+      liveRequest,
+    ]);
 
     const now = Date.now();
     const windowEnd = now + WINDOW_DAYS * 24 * 60 * 60 * 1000;
+
     const fixtures = new Map<number, CompetitionFixture>();
 
-    for (const rawFixture of payloads.flatMap((payload) => payload.response)) {
+    for (const rawFixture of payloads.flatMap(
+      (payload) => payload.response
+    )) {
       const fixture = toCompetitionFixture(rawFixture);
+
       if (!fixture) continue;
 
       const { league, status, date } = fixture;
       const teams = `${fixture.homeName} ${fixture.awayName}`;
+
       if (EXCLUDED.test(`${league.name} ${teams}`)) continue;
 
       const kickoff = new Date(date).getTime();
       const live = LIVE_STATUSES.includes(status);
       const upcoming = ["NS", "TBD"].includes(status);
 
-      if (!live && (!upcoming || !Number.isFinite(kickoff) || kickoff > windowEnd)) continue;
-      if (upcoming && kickoff < now - 60 * 60 * 1000) continue;
+      if (
+        !live &&
+        (!upcoming || !Number.isFinite(kickoff) || kickoff > windowEnd)
+      ) {
+        continue;
+      }
+
+      if (upcoming && kickoff < now - 60 * 60 * 1000) {
+        continue;
+      }
 
       fixtures.set(fixture.fixtureId, fixture);
     }
 
     const grouped = new Map<number, CompetitionSummary>();
+
     let internationalFixtureCount = 0;
     let clubFixtureCount = 0;
 
     for (const fixture of fixtures.values()) {
       const { league, status, date } = fixture;
+
       const kickoff = new Date(date).getTime();
       const live = LIVE_STATUSES.includes(status);
       const international = isInternational(league.name);
 
-      if (international) internationalFixtureCount++;
-      else clubFixtureCount++;
+      if (international) {
+        internationalFixtureCount++;
+      } else {
+        clubFixtureCount++;
+      }
 
       let current = grouped.get(league.id);
+
       if (!current) {
         current = {
           id: league.id,
@@ -205,11 +299,16 @@ export async function GET() {
         current.liveMatches++;
       } else {
         current.upcomingMatches++;
+
         if (kickoff < current.nextMatchTime) {
           current.nextMatchTime = kickoff;
           current.nextMatch = date;
         }
-        if (kickoff <= now + 7 * 24 * 60 * 60 * 1000) current.matchesNext7Days++;
+
+        if (kickoff <= now + 7 * 24 * 60 * 60 * 1000) {
+          current.matchesNext7Days++;
+        }
+
         current.matchesNext14Days++;
       }
 
@@ -223,14 +322,22 @@ export async function GET() {
           competition.liveMatches * 18 +
           competition.matchesNext7Days * 9 +
           competition.matchesNext14Days * 3 +
-          (competition.nextMatchTime <= now + 48 * 60 * 60 * 1000 ? 8 : 0);
+          (
+            competition.nextMatchTime <= now + 48 * 60 * 60 * 1000
+              ? 8
+              : 0
+          );
 
-        return { ...competition, relevanceScore: score };
+        return {
+          ...competition,
+          relevanceScore: score,
+        };
       })
-      .sort((a, b) =>
-        b.relevanceScore - a.relevanceScore ||
-        a.nextMatchTime - b.nextMatchTime ||
-        a.name.localeCompare(b.name)
+      .sort(
+        (a, b) =>
+          b.relevanceScore - a.relevanceScore ||
+          a.nextMatchTime - b.nextMatchTime ||
+          a.name.localeCompare(b.name)
       )
       .slice(0, 30)
       .map(({ nextMatchTime, ...competition }) => competition);
@@ -254,12 +361,21 @@ export async function GET() {
     });
   } catch (error) {
     console.error("Active competitions API error:", error);
-    const status = error instanceof FootballApiRequestError ? error.status : 502;
-    return NextResponse.json({
-      success: false,
-      error: status === 429
-        ? "The football data provider has reached its request limit. Please try again later."
-        : "Unable to load active competitions right now. Please try again later.",
-    }, { status });
+
+    const status =
+      error instanceof FootballApiRequestError
+        ? error.status
+        : 502;
+
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          status === 429
+            ? "The football data provider has reached its request limit. Please try again later."
+            : "Unable to load active competitions right now. Please try again later.",
+      },
+      { status }
+    );
   }
 }
