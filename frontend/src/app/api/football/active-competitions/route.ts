@@ -137,10 +137,24 @@ export async function GET() {
   }
 
   try {
-    const urls = [
-      new URL(`${API}/fixtures?next=100&timezone=Africa%2FLagos`),
-      new URL(`${API}/fixtures?live=all&timezone=Africa%2FLagos`),
-    ];
+    // The API-Football free plan does not support the "next" parameter.
+    // Use today's Lagos fixtures and fetch live fixtures separately.
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Africa/Lagos",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+
+    const scheduledUrl = new URL(`${API}/fixtures`);
+    scheduledUrl.searchParams.set("date", today);
+    scheduledUrl.searchParams.set("timezone", "Africa/Lagos");
+
+    const liveUrl = new URL(`${API}/fixtures`);
+    liveUrl.searchParams.set("live", "all");
+    liveUrl.searchParams.set("timezone", "Africa/Lagos");
+
+    const urls = [scheduledUrl, liveUrl];
 
     const payloads = await Promise.all(
       urls.map((url) =>
