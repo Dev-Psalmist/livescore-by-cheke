@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { fetchFootballApiData, FootballApiRequestError } from "@/lib/football-api";
 
 const API = "https://v3.football.api-sports.io";
-const WINDOW_DAYS = 14;
+const WINDOW_DAYS = 1;
 const EXCLUDED = /\\b(u\\s?17|u\\s?18|u\\s?19|u\\s?20|u\\s?21|u\\s?23|under[- ]?(17|18|19|20|21|23)|youth|academy|reserve|reserves| ii\\b|b team)\\b/i;
 const LIVE_STATUSES = ["1H", "HT", "2H", "ET", "BT", "P", "LIVE", "INT", "SUSP"];
 const INTERNATIONAL = /world cup|world cup qualifier|qualification.*world cup|nations league|african cup of nations|afcon|africa cup|euro qualifier|european championship|uefa euro|copa america|asian cup|afc asian|gold cup|concacaf|copa afric|international friendly/i;
