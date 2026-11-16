@@ -73,7 +73,10 @@ export default function DateFixtureBrowser() {
   }, []);
 
   useEffect(() => {
-    if (selected) void load(selected);
+    if (!selected) return;
+    void load(selected);
+    const refresh = window.setInterval(() => void load(selected), 60_000);
+    return () => window.clearInterval(refresh);
   }, [load, selected]);
 
   const grouped = useMemo(() => {
@@ -96,7 +99,7 @@ export default function DateFixtureBrowser() {
           </div>
           <span className="text-xs text-slate-500">Nigeria time · GMT+1</span>
         </div>
-        <div className="mt-5 grid grid-cols-7 gap-1.5 sm:gap-2">
+        <div className="date-strip mt-5 grid grid-cols-7 gap-1.5 sm:gap-2">
           {dates.map((date) => {
             const label = dayLabel(date);
             const active = selected === date;
@@ -125,45 +128,36 @@ export default function DateFixtureBrowser() {
           </div>
         )}
         {!loading && !error && grouped.map(([competition, games]) => (
-          <section key={competition} className="mb-4 overflow-hidden rounded-xl border border-white/[0.06] last:mb-0">
-            <h3 className="border-b border-white/[0.06] bg-[#101a26] px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-300">{competition}</h3>
+          <section key={competition} className="mb-4 overflow-hidden rounded-xl border border-white/[0.07] bg-[#181a1d] last:mb-0">
+            <h3 className="flex items-center gap-2 border-b border-white/[0.08] bg-[#202225] px-3 py-3 text-xs font-extrabold text-slate-100 sm:px-4">
+              {games[0]?.league.logo && <img src={games[0].league.logo} alt="" className="h-5 w-5 object-contain" />}
+              <span className="min-w-0 flex-1 truncate">{competition}</span>
+              {games[0]?.league.country && <span className="hidden text-[10px] font-medium text-slate-500 sm:inline">{games[0].league.country}</span>}
+              <span className="text-[10px] font-medium text-slate-500">{games.length} {games.length === 1 ? "match" : "matches"}</span>
+            </h3>
             {games.map((game) => {
               const status = game.fixture.status.short;
               const finished = isFinished(status);
               const live = isLive(status);
+              const postponed = ["PST", "CANC", "ABD", "AWD", "WO"].includes(status);
+              const kickoff = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Africa/Lagos" }).format(new Date(game.fixture.date));
+              const statusLabel = live ? (game.fixture.status.elapsed ? `${game.fixture.status.elapsed}'` : "LIVE") : finished ? (status === "AET" ? "After ET" : status === "PEN" ? "Penalties" : "FT") : postponed ? (status === "PST" ? "Postponed" : "Cancelled") : kickoff;
               return (
-                <article key={game.fixture.id}
-                  className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-white/[0.05] px-3 py-3.5 last:border-0 hover:bg-white/[0.025] sm:px-4">
-                  <div className="min-w-0 space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
-                      {game.teams.home.logo && <img src={game.teams.home.logo} alt="" className="h-5 w-5 object-contain" />}
-                      <Link href={`/team/${game.teams.home.id}`} className="truncate transition-colors hover:text-emerald-400">
-                        {game.teams.home.name}
-                      </Link>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
-                      {game.teams.away.logo && <img src={game.teams.away.logo} alt="" className="h-5 w-5 object-contain" />}
-                      <Link href={`/team/${game.teams.away.id}`} className="truncate transition-colors hover:text-emerald-400">
-                        {game.teams.away.name}
-                      </Link>
-                    </div>
+                <article key={game.fixture.id} className="group mx-2 my-2 grid grid-cols-[minmax(0,1fr)_54px] items-center gap-2 rounded-lg border border-white/[0.06] bg-[#202225] px-3 py-3 hover:bg-[#282a2d] sm:mx-0 sm:my-0 sm:grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)_82px] sm:gap-3 sm:rounded-none sm:border-0 sm:border-b sm:border-white/[0.06] sm:bg-transparent sm:px-4 sm:py-2.5 sm:hover:bg-white/[0.035] sm:last:border-0">
+                  <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-slate-200 sm:justify-end sm:text-right">
+                    {game.teams.home.logo && <img src={game.teams.home.logo} alt="" className="h-5 w-5 shrink-0 object-contain" />}
+                    <Link href={`/team/${game.teams.home.id}`} className="min-w-0 truncate transition-colors hover:text-emerald-400">{game.teams.home.name}</Link>
                   </div>
-                  <div className="min-w-[76px] text-right">
-                    {finished || live ? (
-                      <div className="text-sm font-black leading-6 text-white">
-                        <div>{game.goals.home ?? "—"}</div><div>{game.goals.away ?? "—"}</div>
-                      </div>
-                    ) : (
-                      <div className="text-sm font-bold text-emerald-400">
-                        {new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Africa/Lagos" }).format(new Date(game.fixture.date))}
-                      </div>
-                    )}
-                    <span className={`mt-1 block text-[9px] font-black uppercase tracking-wider ${live ? "text-red-400" : finished ? "text-slate-500" : "text-emerald-400"}`}>
-                      {live ? (game.fixture.status.elapsed ? `${game.fixture.status.elapsed}'` : "Live") : finished ? "Full time" : "Kick-off"}
-                    </span>
-                    <Link href={`/match/${game.fixture.id}`} className="mt-2 inline-block text-[9px] font-black uppercase tracking-wider text-slate-400 transition hover:text-emerald-400">
-                      Match Centre →
-                    </Link>
+                  <Link href={`/match/${game.fixture.id}`} className="row-span-2 text-center sm:row-span-1">
+                    {finished || live ? <span className="whitespace-nowrap text-sm font-black tabular-nums text-white">{game.goals.home ?? "—"} <span className="text-slate-500">-</span> {game.goals.away ?? "—"}</span> : null}
+                    <span className={`block text-[9px] font-black uppercase tracking-wider ${live ? "text-red-400" : finished ? "text-slate-500" : postponed ? "text-amber-400" : "text-emerald-400"}`}>{statusLabel}</span>
+                  </Link>
+                  <div className="flex min-w-0 items-center gap-2 text-xs font-semibold text-slate-200 sm:flex-row-reverse sm:justify-end sm:text-left">
+                    {game.teams.away.logo && <img src={game.teams.away.logo} alt="" className="h-5 w-5 shrink-0 object-contain" />}
+                    <Link href={`/team/${game.teams.away.id}`} className="min-w-0 truncate transition-colors hover:text-emerald-400">{game.teams.away.name}</Link>
+                  </div>
+                  <div className="hidden text-right sm:block">
+                    <Link href={`/match/${game.fixture.id}`} className="text-[9px] font-bold uppercase tracking-wide text-slate-500 transition hover:text-emerald-400">Match centre →</Link>
                   </div>
                 </article>
               );
