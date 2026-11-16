@@ -1,0 +1,53 @@
+name: Generate Android-compatible PWA icons
+
+on:
+  push:
+    branches:
+      - feature/installable-pwa
+    paths:
+      - "frontend/public/brand/livescore-icon-192.svg"
+      - "frontend/public/brand/livescore-icon-512.svg"
+      - ".github/workflows/generate-android-icons.yml"
+      - "frontend/src/app/manifest.ts"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate-icons:
+    name: Generate PNG launcher icons
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: feature/installable-pwa
+
+      - name: Install ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+
+      - name: Convert source SVG icons to PNG
+        run: |
+          mkdir -p frontend/public/brand
+          convert -background none frontend/public/brand/livescore-icon-192.svg -resize 192x192 -gravity center -extent 192x192 frontend/public/brand/livescore-icon-192.png
+          convert -background none frontend/public/brand/livescore-icon-512.svg -resize 512x512 -gravity center -extent 512x512 frontend/public/brand/livescore-icon-512.png
+          convert -background none frontend/public/brand/livescore-icon-512.svg -resize 360x360 /tmp/livescore-maskable-logo.png
+          convert -size 512x512 xc:'#071A2B' /tmp/livescore-maskable-logo.png -gravity center -composite frontend/public/brand/livescore-icon-maskable-512.png
+          identify frontend/public/brand/livescore-icon-192.png
+          identify frontend/public/brand/livescore-icon-512.png
+          identify frontend/public/brand/livescore-icon-maskable-512.png
+
+      - name: Commit generated icons
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/public/brand/livescore-icon-192.png frontend/public/brand/livescore-icon-512.png frontend/public/brand/livescore-icon-maskable-512.png
+          if git diff --cached --quiet; then
+            echo "PNG icons are already up to date."
+          else
+            git commit -m "build: generate Android-compatible PWA PNG icons"
+            git push origin HEAD:feature/installable-pwa
+          fi
