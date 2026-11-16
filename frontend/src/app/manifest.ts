@@ -25,7 +25,13 @@ export default function manifest(): MetadataRoute.Manifest {
         src: "/brand/livescore-icon-512.svg",
         sizes: "512x512",
         type: "image/svg+xml",
-        purpose: "any maskable",
+        purpose: "any",
+      },
+      {
+        src: "/brand/livescore-icon-512.svg",
+        sizes: "512x512",
+        type: "image/svg+xml",
+        purpose: "maskable",
       },
     ],
   };
