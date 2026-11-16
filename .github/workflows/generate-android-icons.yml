@@ -8,6 +8,7 @@ on:
       - "frontend/public/brand/livescore-icon-192.svg"
       - "frontend/public/brand/livescore-icon-512.svg"
       - ".github/workflows/generate-android-icons.yml"
+      - "frontend/src/app/manifest.ts"
   workflow_dispatch:
 
 permissions:
