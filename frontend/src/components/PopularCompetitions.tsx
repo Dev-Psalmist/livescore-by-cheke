@@ -59,11 +59,8 @@ export default function PopularCompetitions() {
     };
 
     void loadCompetitions();
-    const refresh = window.setInterval(loadCompetitions, 15 * 60 * 1000);
-
     return () => {
       cancelled = true;
-      window.clearInterval(refresh);
     };
   }, []);
 
@@ -72,7 +69,7 @@ export default function PopularCompetitions() {
       ? "International football is in focus"
       : focus === "club"
         ? "Club football is in focus"
-        : "What's active across football right now";
+        : "Upcoming football across competitions";
 
   return (
     <section className="overflow-hidden rounded-xl border border-white/[0.07] bg-[#141e29]">
