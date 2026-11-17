@@ -310,7 +310,6 @@ export async function GET() {
       .map((competition) => {
         const score =
           popularity(competition.name) +
-          competition.liveMatches * 18 +
           competition.matchesNext7Days * 9 +
           (
             competition.nextMatchTime <= now + 48 * 60 * 60 * 1000
