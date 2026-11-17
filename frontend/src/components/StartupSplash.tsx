@@ -7,6 +7,7 @@ import { LiquidGlassLogo } from "@/components/liquid-glass-logo";
 export default function StartupSplash() {
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
+  const [isFadingOut, setIsFadingOut] = useState(false);
 
   useEffect(() => {
     // The branded intro is only for the public home page. It must never
@@ -28,14 +29,22 @@ export default function StartupSplash() {
     }
 
     setVisible(true);
+    setIsFadingOut(false);
 
-    // The logo-only ReactDrops sequence lasts 1.8 seconds at speed 1.
-    // This gives it room to finish before the splash fades away.
-    const timer = window.setTimeout(() => {
+    // The logo-only sequence completes in about 1.95 seconds at speed 0.9.
+    // Keep the fully revealed LiveScore by Cheke wordmark on screen for
+    // another 2.7 seconds so users can read the complete brand before exit.
+    const fadeTimer = window.setTimeout(() => {
+      setIsFadingOut(true);
+    }, 4700);
+    const removeTimer = window.setTimeout(() => {
       setVisible(false);
-    }, 2450);
+    }, 5200);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(fadeTimer);
+      window.clearTimeout(removeTimer);
+    };
   }, [pathname]);
 
   if (!visible || pathname !== "/") {
@@ -46,7 +55,7 @@ export default function StartupSplash() {
     <div
       role="status"
       aria-label="Loading LiveScore by Cheke"
-      className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-[#030907] px-3"
+      className={`fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-[#030907] px-3 transition-opacity duration-500 ease-out ${isFadingOut ? "opacity-0" : "opacity-100"}`}
     >
       {/* Subtle emerald atmosphere that matches the app's accent palette. */}
       <div
