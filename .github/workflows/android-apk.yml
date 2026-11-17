@@ -3,6 +3,7 @@ name: Build Livescore Android APK
 on:
   push:
     branches:
+      - main
       - feature/installable-pwa
     paths:
       - 'android-twa/**'
