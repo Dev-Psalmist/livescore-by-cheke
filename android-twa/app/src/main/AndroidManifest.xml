@@ -92,7 +92,6 @@
                 android:value="@integer/splashScreenFadeOutDuration" />
             <meta-data
                 android:name="android.support.customtabs.trusted.FILE_PROVIDER_AUTHORITY"
-                android:name="android.support.customtabs.trusted.FILE_PROVIDER_AUTHORITY"
                 android:value="@string/providerAuthority" />
             <meta-data
                 android:name="android.app.shortcuts"
