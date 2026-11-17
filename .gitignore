@@ -1,0 +1,19 @@
+# Android signing credentials
+*.keystore
+*.jks
+key.properties
+
+# Android build files
+android-twa/.gradle/
+android-twa/build/
+android-twa/app/build/
+android-twa/local.properties
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+.next/

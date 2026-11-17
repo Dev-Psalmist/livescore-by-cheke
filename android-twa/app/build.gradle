@@ -1,0 +1,109 @@
+plugins {
+    id 'com.android.application'
+}
+
+def twaManifest = [
+    applicationId: 'com.livescorebycheke.app',
+    hostName: 'livescore-by-cheke.vercel.app',
+    launchUrl: '/',
+    name: 'Livescore by Cheke',
+    launcherName: 'Livescore',
+    themeColor: '#071A2B',
+    themeColorDark: '#000000',
+    navigationColor: '#000000',
+    navigationColorDark: '#000000',
+    navigationDividerColor: '#000000',
+    navigationDividerColorDark: '#000000',
+    backgroundColor: '#071A2B',
+    enableNotifications: true,
+    shortcuts: [],
+    splashScreenFadeOutDuration: 300,
+    generatorApp: 'bubblewrap-cli',
+    fallbackType: 'customtabs',
+    enableSiteSettingsShortcut: true,
+    orientation: 'default',
+    webManifestUrl: 'https://livescore-by-cheke.vercel.app/manifest.webmanifest',
+    fullScopeUrl: 'https://livescore-by-cheke.vercel.app/'
+]
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.withInputStream {
+        keystoreProperties.load(it)
+    }
+}
+
+android {
+    namespace 'com.livescorebycheke.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.livescorebycheke.app'
+        minSdk 24
+        targetSdk 36
+        versionCode 1
+        versionName '1'
+
+        resValue 'string', 'appName', twaManifest.name
+        resValue 'string', 'launcherName', twaManifest.launcherName
+        resValue 'string', 'launchUrl', "https://${twaManifest.hostName}${twaManifest.launchUrl}"
+        resValue 'string', 'webManifestUrl', twaManifest.webManifestUrl
+        resValue 'string', 'fullScopeUrl', twaManifest.fullScopeUrl
+        resValue 'string', 'hostName', twaManifest.hostName
+
+        resValue 'color', 'colorPrimary', twaManifest.themeColor
+        resValue 'color', 'colorPrimaryDark', twaManifest.themeColorDark
+        resValue 'color', 'navigationColor', twaManifest.navigationColor
+        resValue 'color', 'navigationColorDark', twaManifest.navigationColorDark
+        resValue 'color', 'navigationDividerColor', twaManifest.navigationDividerColor
+        resValue 'color', 'navigationDividerColorDark', twaManifest.navigationDividerColorDark
+        resValue 'color', 'backgroundColor', twaManifest.backgroundColor
+
+        resValue 'string', 'providerAuthority', "${twaManifest.applicationId}.fileprovider"
+        resValue 'bool', 'enableNotification', twaManifest.enableNotifications.toString()
+        resValue 'integer', 'splashScreenFadeOutDuration', twaManifest.splashScreenFadeOutDuration.toString()
+        resValue 'string', 'generatorApp', twaManifest.generatorApp
+        resValue 'string', 'fallbackType', twaManifest.fallbackType
+        resValue 'bool', 'enableSiteSettingsShortcut', twaManifest.enableSiteSettingsShortcut.toString()
+        resValue 'string', 'orientation', twaManifest.orientation
+
+        twaManifest.shortcuts.eachWithIndex { shortcut, index ->
+            resValue 'string', "shortcut_name_${index}", shortcut.name
+            resValue 'string', "shortcut_short_name_${index}", shortcut.short_name
+        }
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lint {
+        checkReleaseBuilds false
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.4'
+}
