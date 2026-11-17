@@ -1,0 +1,38 @@
+name: Publish Android APK Release
+
+on:
+  push:
+    branches:
+      - feature/installable-pwa
+    paths:
+      - '.github/workflows/publish-android-release.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the verified APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: livescore-by-cheke-release-apk
+          path: release-assets
+          repository: Dev-Psalmist/livescore-by-cheke
+          run-id: 44109710436
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish public GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: Livescore by Cheke 1.0.0 (Android)
+          target_commitish: feature/installable-pwa
+          body: |
+            First public Android release of Livescore by Cheke.
+
+            Download the APK below and install it on an Android device. Android may ask you to allow installation from your browser or file manager.
+          files: release-assets/*.apk
+          make_latest: true
