@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -66,10 +66,30 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon --stacktrace assembleRelease
 
-      - name: Upload APK
+      - name: Upload APK build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: livescore-by-cheke-release-apk
+          name: livescore-by-cheke-v2.0.0-apk
           path: android-twa/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish public Android download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-v2.0.0
+          name: LiveScore by Cheke Android v2.0.0
+          body: |
+            LiveScore by Cheke Android v2.0.0
+
+            - Updated glass-inspired LiveScore launcher icon.
+            - Branded Android launch screen.
+            - Animated glass loading experience when the app opens.
+            - Signed release APK for direct Android installation.
+
+            Download the APK below and install it on your Android device.
+          files: android-twa/app/build/outputs/apk/release/app-release.apk
+          draft: false
+          prerelease: false
+          make_latest: true
+          fail_on_unmatched_files: true

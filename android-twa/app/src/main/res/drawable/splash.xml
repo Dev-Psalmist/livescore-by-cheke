@@ -2,42 +2,58 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="512"
-    android:viewportHeight="512">
-
-    <!-- Transparent adaptive-icon foreground: the system supplies the background. -->
+    android:viewportWidth="176"
+    android:viewportHeight="180">
+    <!-- Glass-inspired LiveScore shield mark, kept inside Android's adaptive safe zone. -->
+    <group
+        android:pivotX="88"
+        android:pivotY="90"
+        android:scaleX="0.72"
+        android:scaleY="0.72">
     <path
         android:fillColor="#102B25"
-        android:strokeColor="#DCEBE5"
-        android:strokeWidth="13"
+        android:strokeColor="#F4F8F6"
+        android:strokeWidth="3"
         android:strokeLineJoin="round"
-        android:pathData="M256,54 L423,111 L406,300 Q391,392 256,458 Q121,392 106,300 L89,111 Z" />
-
+        android:pathData="M88,10 L158,34 L151,112 Q145,145 88,169 Q31,145 25,112 L18,34 Z" />
     <path
         android:fillColor="#00000000"
         android:strokeColor="#00C982"
-        android:strokeWidth="10"
+        android:strokeWidth="2.5"
         android:strokeLineJoin="round"
-        android:pathData="M256,82 L394,128 L379,292 Q366,365 256,423 Q146,365 133,292 L118,128 Z" />
-
-    <path
-        android:fillColor="#071A2B"
-        android:strokeColor="#D7E3DE"
-        android:strokeWidth="10"
-        android:pathData="M256,157 A99,99 0,1 0,256 355 A99,99 0,1 0,256 157" />
-
+        android:pathData="M88,20 L148,41 L142,109 Q136,137 88,158 Q40,137 34,109 L28,41 Z" />
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#B8CBC3"
-        android:strokeWidth="7"
+        android:strokeColor="#00C982"
+        android:strokeWidth="3"
         android:strokeLineCap="round"
-        android:pathData="M256,166 C211,207 211,305 256,346 M256,166 C301,207 301,305 256,346 M165,256 L347,256 M183,216 C225,244 287,244 329,216 M183,296 C225,268 287,268 329,296" />
-
+        android:pathData="M48,58 H75 M42,68 H68 M108,58 H132 M112,68 H136" />
+    <circle
+        android:fillColor="#071310"
+        android:strokeColor="#DCEBE5"
+        android:strokeWidth="3"
+        android:centerX="88"
+        android:centerY="88"
+        android:radius="34" />
+    <circle
+        android:fillColor="#00000000"
+        android:strokeColor="#00C982"
+        android:strokeWidth="1.5"
+        android:centerX="88"
+        android:centerY="88"
+        android:radius="29" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#D7E3DE"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M88,54 C72,68 72,108 88,122 M88,54 C104,68 104,108 88,122 M59,88 H117 M64,72 C78,82 98,82 112,72 M64,104 C78,94 98,94 112,104" />
     <path
         android:fillColor="#00000000"
         android:strokeColor="#6DFFBD"
-        android:strokeWidth="17"
+        android:strokeWidth="4"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M173,264 L218,264 L242,226 L274,292 L301,251 L339,251" />
+        android:pathData="M62,90 H76 L83,78 L94,101 L101,88 H115" />
+    </group>
 </vector>
