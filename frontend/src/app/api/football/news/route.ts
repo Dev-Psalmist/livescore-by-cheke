@@ -23,6 +23,12 @@ const NEWS_SOURCES = [
   },
 ];
 
+const TRUSTED_IMAGE_CDNS = [
+  "bbci.co.uk",
+  "guim.co.uk",
+  "skyassets.com",
+];
+
 function cleanText(value: string): string {
   return value
     .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
@@ -56,6 +62,102 @@ function isAllowedArticleUrl(
   } catch {
     return false;
   }
+}
+
+function isAllowedImageUrl(
+  value: string,
+  allowedHosts: string[],
+): boolean {
+  try {
+    const url = new URL(value);
+
+    return (
+      url.protocol === "https:" &&
+      [...allowedHosts, ...TRUSTED_IMAGE_CDNS].some(
+        (host) =>
+          url.hostname === host ||
+          url.hostname.endsWith(`.${host}`),
+      )
+    );
+  } catch {
+    return false;
+  }
+}
+
+function getUrlFromMediaField(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      const url = getUrlFromMediaField(entry);
+      if (url) return url;
+    }
+    return undefined;
+  }
+
+  if (value && typeof value === "object") {
+    const media = value as Record<string, unknown>;
+    for (const key of ["url", "href", "$", "src"]) {
+      if (typeof media[key] === "string") {
+        return media[key] as string;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function getArticleImage(
+  item: Parser.Item,
+  allowedHosts: string[],
+): string | undefined {
+  const rawItem = item as unknown as Record<string, unknown>;
+  const enclosure = item.enclosure?.url;
+  const mediaCandidates = [
+    enclosure,
+    getUrlFromMediaField(rawItem["media:content"]),
+    getUrlFromMediaField(rawItem["media:thumbnail"]),
+    getUrlFromMediaField(rawItem["itunes:image"]),
+    getUrlFromMediaField(rawItem.image),
+  ];
+
+  for (const candidate of mediaCandidates) {
+    if (
+      typeof candidate === "string" &&
+      isAllowedImageUrl(candidate, allowedHosts)
+    ) {
+      return candidate;
+    }
+  }
+
+  // Some publishers embed the article thumbnail in the RSS description
+  // rather than exposing it as an enclosure or media namespace field.
+  const html = [
+    item.content,
+    item.contentSnippet,
+    item.summary,
+    typeof rawItem["content:encoded"] === "string"
+      ? rawItem["content:encoded"]
+      : "",
+  ]
+    .filter((value): value is string => typeof value === "string")
+    .join(" ");
+
+  const imageTags = html.match(/<img\b[^>]*>/gi) || [];
+
+  for (const tag of imageTags) {
+    const source =
+      tag.match(/\b(?:src|data-src)=["']([^"']+)["']/i)?.[1] ||
+      tag.match(/\bsrc=["']([^"']+)["']/i)?.[1];
+
+    if (source && isAllowedImageUrl(source, allowedHosts)) {
+      return source;
+    }
+  }
+
+  return undefined;
 }
 
 async function fetchNewsSource(
@@ -99,11 +201,6 @@ async function fetchNewsSource(
           "",
       );
 
-      const imageUrl =
-        item.enclosure?.type?.startsWith("image/")
-          ? item.enclosure.url
-          : undefined;
-
       return {
         id: item.guid || item.link!,
         title: cleanText(item.title || ""),
@@ -114,7 +211,7 @@ async function fetchNewsSource(
             : summary,
         publishedAt: item.isoDate || item.pubDate || "",
         source: source.name,
-        imageUrl,
+        imageUrl: getArticleImage(item, source.allowedHosts),
       };
     });
 }

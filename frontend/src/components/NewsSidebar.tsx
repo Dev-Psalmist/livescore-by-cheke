@@ -21,6 +21,43 @@ function timeAgo(value: string) {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
+function NewsImage({
+  article,
+  featured = false,
+}: {
+  article: NewsArticle;
+  featured?: boolean;
+}) {
+  const [failed, setFailed] = useState(false);
+  const imageHeight = featured ? "h-40" : "h-28";
+
+  if (!article.imageUrl || failed) {
+    return (
+      <div
+        role="img"
+        aria-label={`Football news image unavailable for: ${article.title}`}
+        className={`relative flex ${imageHeight} w-full items-center justify-center overflow-hidden rounded-lg border border-white/[0.06] bg-[radial-gradient(ellipse_at_50%_20%,rgba(0,230,118,0.20),transparent_65%),linear-gradient(135deg,#202b29,#111719)]`}
+      >
+        <span aria-hidden="true" className="text-4xl opacity-70">⚽</span>
+        <span className="absolute bottom-2 left-3 text-[9px] font-black uppercase tracking-[0.2em] text-emerald-300/80">
+          Around the game
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={article.imageUrl}
+      alt=""
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className={`${imageHeight} w-full rounded-lg object-cover transition duration-300 group-hover:scale-[1.02] group-hover:opacity-90`}
+    />
+  );
+}
+
 export default function NewsSidebar() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,14 +97,29 @@ export default function NewsSidebar() {
       </div>
 
       <div className="p-3">
-        {loading && <div className="space-y-3" aria-live="polite"><div className="h-32 animate-pulse rounded-lg bg-white/[0.06]" /><div className="h-14 animate-pulse rounded-lg bg-white/[0.06]" /><div className="h-14 animate-pulse rounded-lg bg-white/[0.06]" /></div>}
-        {!loading && error && <div className="rounded-lg bg-white/[0.04] p-3 text-xs leading-5 text-slate-400">{error}<button onClick={() => { setLoading(true); void loadNews(); }} className="mt-2 block font-bold text-emerald-400">Try again</button></div>}
+        {loading && (
+          <div className="space-y-3" aria-live="polite">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="space-y-2">
+                <div className="h-32 animate-pulse rounded-lg bg-white/[0.06]" />
+                <div className="h-4 animate-pulse rounded bg-white/[0.06]" />
+                <div className="h-3 w-2/3 animate-pulse rounded bg-white/[0.06]" />
+              </div>
+            ))}
+          </div>
+        )}
+        {!loading && error && (
+          <div className="rounded-lg bg-white/[0.04] p-3 text-xs leading-5 text-slate-400">
+            {error}
+            <button onClick={() => { setLoading(true); void loadNews(); }} className="mt-2 block font-bold text-emerald-400">Try again</button>
+          </div>
+        )}
         {!loading && !error && !featured && <p className="p-3 text-xs text-slate-400">No football stories are available right now.</p>}
 
         {!loading && !error && featured && (
-          <article>
+          <article className="border-b border-white/[0.08] pb-4">
             <a href={featured.link} target="_blank" rel="noopener noreferrer" className="group block">
-              {featured.imageUrl ? <img src={featured.imageUrl} alt="" loading="lazy" className="h-40 w-full rounded-lg object-cover transition group-hover:opacity-90" /> : <div className="flex h-28 items-center justify-center rounded-lg bg-[#242629] text-3xl">⚽</div>}
+              <NewsImage article={featured} featured />
               <p className="mt-3 text-[9px] font-bold uppercase tracking-wider text-emerald-400">{featured.source} · {timeAgo(featured.publishedAt)}</p>
               <h3 className="mt-1 text-sm font-extrabold leading-5 text-white group-hover:text-emerald-300">{featured.title}</h3>
               {featured.summary && <p className="mt-2 line-clamp-3 text-[11px] leading-5 text-slate-400">{featured.summary}</p>}
@@ -76,11 +128,12 @@ export default function NewsSidebar() {
         )}
 
         {!loading && !error && remaining.length > 0 && (
-          <div className="mt-3 divide-y divide-white/[0.07] border-t border-white/[0.08]">
+          <div className="space-y-4 pt-4">
             {remaining.map((article) => (
-              <article key={article.id} className="py-3 first:pt-3 last:pb-1">
+              <article key={article.id}>
                 <a href={article.link} target="_blank" rel="noopener noreferrer" className="group block">
-                  <p className="text-[9px] font-semibold uppercase tracking-wide text-slate-500">{article.source} · {timeAgo(article.publishedAt)}</p>
+                  <NewsImage article={article} />
+                  <p className="mt-2 text-[9px] font-semibold uppercase tracking-wide text-slate-500">{article.source} · {timeAgo(article.publishedAt)}</p>
                   <h3 className="mt-1 text-xs font-bold leading-5 text-slate-200 group-hover:text-emerald-300">{article.title}</h3>
                 </a>
               </article>
