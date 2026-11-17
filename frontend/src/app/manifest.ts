@@ -2,20 +2,36 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: "/",
     name: "LiveScore by Cheke",
     short_name: "LiveScore",
-    description: "Every Match. Every Goal. Every Moment.",
+    description:
+      "Follow live sports scores, fixtures, results, leagues and match updates with LiveScore by Cheke.",
     start_url: "/",
+    scope: "/",
     display: "standalone",
-    background_color: "#020617",
-    theme_color: "#020617",
-    orientation: "portrait",
+    orientation: "any",
+    background_color: "#071A2B",
+    theme_color: "#071A2B",
+    categories: ["sports", "news"],
     icons: [
       {
-        src: "/favicon.ico",
-        sizes: "any",
-        type: "image/x-icon",
+        src: "/brand/livescore-icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
         purpose: "any",
+      },
+      {
+        src: "/brand/livescore-icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/brand/livescore-icon-maskable-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
       },
     ],
   };
