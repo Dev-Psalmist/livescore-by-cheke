@@ -186,7 +186,10 @@ export async function fetchFootballApiData<T>(
       providerErrors,
     });
 
-    const status = response.status === 429 ? 429 : 502;
+    const errorText = providerErrors.toLowerCase();
+    const quotaExhausted =
+      /request limit for the day|daily request limit|daily quota|reached.*quota/.test(errorText);
+    const status = response.status === 429 || quotaExhausted ? 429 : 502;
 
     throw new FootballApiRequestError(
       "The football provider request failed.",
