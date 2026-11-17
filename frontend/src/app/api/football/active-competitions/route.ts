@@ -215,7 +215,7 @@ export async function GET() {
     const liveRequest = fetchFootballApiData<unknown>(
       liveUrl,
       key,
-      { next: { revalidate: 60 } }
+      { next: { revalidate: 1800 } }
     );
 
     const payloads = await Promise.all([
