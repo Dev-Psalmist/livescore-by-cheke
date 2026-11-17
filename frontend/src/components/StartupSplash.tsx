@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { LiquidGlassLogo } from "@/components/liquid-glass-logo";
 
 export default function StartupSplash() {
   const pathname = usePathname();
@@ -18,8 +18,6 @@ export default function StartupSplash() {
 
     try {
       if (sessionStorage.getItem("livescore-splash-shown") === "yes") {
-        // Explicitly hide on subsequent effect runs (including React
-        // Strict Mode's development setup/cleanup cycle).
         setVisible(false);
         return;
       }
@@ -31,9 +29,11 @@ export default function StartupSplash() {
 
     setVisible(true);
 
+    // The logo-only ReactDrops sequence lasts 1.8 seconds at speed 1.
+    // This gives it room to finish before the splash fades away.
     const timer = window.setTimeout(() => {
       setVisible(false);
-    }, 1400);
+    }, 2450);
 
     return () => window.clearTimeout(timer);
   }, [pathname]);
@@ -46,49 +46,48 @@ export default function StartupSplash() {
     <div
       role="status"
       aria-label="Loading LiveScore by Cheke"
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#030907] px-6 transition-opacity"
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-[#030907] px-3"
     >
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(0,201,130,0.13),_transparent_65%)]" />
+      {/* Subtle emerald atmosphere that matches the app's accent palette. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse at 50% 48%, rgba(0,230,118,0.14) 0%, rgba(0,230,118,0.055) 27%, transparent 66%), radial-gradient(ellipse at 50% 100%, rgba(0,70,48,0.2), transparent 58%)",
+        }}
+      />
 
-      <div className="relative flex flex-col items-center">
-        <Image
-          src="/brand/livescore-logo.svg"
-          alt="LiveScore by Cheke"
-          width={420}
-          height={122}
-          priority
-          className="h-auto w-[min(82vw,360px)]"
+      <div className="relative z-10 flex w-full max-w-[820px] items-center justify-center">
+        <LiquidGlassLogo
+          logo="/brand/livescore-logo.svg"
+          ending="logo"
+          theme="dark"
+          logoColor="original"
+          logoSize={420}
+          logoScale={0.9}
+          finalLogoScale={1}
+          tile
+          tileColor="#06251b"
+          background="#030907"
+          depth={2.9}
+          dispersion={1.2}
+          relief={1.1}
+          caustics={1.15}
+          highlights={1.3}
+          bloom={0.7}
+          echoTint={0.95}
+          speed={0.9}
+          loop={false}
+          maxDpr={2}
+          aria-label="LiveScore by Cheke"
+          style={{
+            width: "100%",
+            height: "min(78svh, 560px)",
+            background: "transparent",
+          }}
         />
-
-        <p className="mt-5 text-center text-xs font-semibold uppercase tracking-[0.3em] text-slate-400 sm:text-sm">
-          Every sport. Every moment.
-        </p>
-
-        <div className="mt-10 flex items-center gap-3" aria-hidden="true">
-          {[0, 1, 2].map((dot) => (
-            <span
-              key={dot}
-              className="h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.7)] animate-[synchronized-bounce_0.7s_ease-in-out_infinite] motion-reduce:animate-none"
-              style={{ animationDelay: `${dot * 0.18}s` }}
-            />
-          ))}
-        </div>
-
-        <p className="mt-4 text-[10px] font-medium tracking-[0.2em] text-slate-500">
-          LOADING YOUR SPORTS WORLD
-        </p>
       </div>
-
-      <style jsx>{`
-        @keyframes synchronized-bounce {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-12px);
-          }
-        }
-      `}</style>
     </div>
   );
 }
