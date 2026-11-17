@@ -60,9 +60,21 @@ export default function Header() {
   return <>
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#101820]/95 backdrop-blur-xl">
       <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-5 px-4 py-4 sm:px-6">
-        <Link href="/" className="group shrink-0" aria-label="LiveScore by Cheke home">
-          <div className="text-xl font-black tracking-tighter text-white sm:text-2xl">LIVE<span className="text-emerald-400">SCORE</span></div>
-          <div className="mt-1 text-[9px] font-bold tracking-[0.35em] text-slate-400">BY CHEKE</div>
+        <Link
+          href="/"
+          className="group relative isolate flex shrink-0 items-center overflow-hidden rounded-xl border border-white/[0.10] bg-white/[0.035] px-2 py-1 shadow-[0_0_24px_rgba(0,230,118,0.08)] backdrop-blur-xl transition duration-300 hover:border-emerald-400/30 hover:shadow-[0_0_30px_rgba(0,230,118,0.16)]"
+          aria-label="LiveScore by Cheke home"
+        >
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_25%_50%,rgba(0,230,118,0.13),transparent_65%)]"
+          />
+          <img
+            src="/brand/livescore-logo.svg"
+            alt="LiveScore by Cheke"
+            className="relative z-10 block h-auto w-[154px] object-contain drop-shadow-[0_0_8px_rgba(0,230,118,0.16)] sm:w-[196px]"
+            fetchPriority="high"
+          />
         </Link>
         <div className="flex shrink-0 items-center gap-2">
           <Link href="/search" className="hidden rounded-lg border border-white/10 px-4 py-2 text-sm font-semibold text-slate-300 transition hover:border-emerald-500 hover:text-emerald-400 sm:block">Search</Link>
