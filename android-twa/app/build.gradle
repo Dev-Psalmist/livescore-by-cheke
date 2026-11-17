@@ -1,6 +1,3 @@
-import groovy.xml.MarkupBuilder
-import groovy.xml.IndentPrinter
-
 plugins {
     id 'com.android.application'
 }
@@ -104,42 +101,6 @@ android {
     lint {
         checkReleaseBuilds false
     }
-}
-
-tasks.register('generateShorcutsFile') {
-    doLast {
-        def shortcutsFile = file('src/main/res/xml/shortcuts.xml')
-        shortcutsFile.parentFile.mkdirs()
-
-        def writer = new StringWriter()
-        def xml = new MarkupBuilder(new IndentPrinter(writer, '    '))
-
-        xml.shortcuts('xmlns:android': 'http://schemas.android.com/apk/res/android') {
-            twaManifest.shortcuts.eachWithIndex { shortcut, index ->
-                shortcut(
-                    'android:shortcutId': "shortcut${index}",
-                    'android:enabled': 'true',
-                    'android:icon': "@drawable/${shortcut.icon}",
-                    'android:shortcutShortLabel': "@string/shortcut_short_name_${index}",
-                    'android:shortcutLongLabel': "@string/shortcut_name_${index}"
-                ) {
-                    intent(
-                        'android:action': 'android.intent.action.VIEW',
-                        'android:targetPackage': twaManifest.applicationId,
-                        'android:targetClass': "${twaManifest.applicationId}.LauncherActivity",
-                        'android:data': shortcut.url
-                    )
-                    categories('android:name': 'android.intent.category.LAUNCHER')
-                }
-            }
-        }
-
-        shortcutsFile.text = writer.toString() + '\n'
-    }
-}
-
-tasks.named('preBuild').configure {
-    dependsOn 'generateShorcutsFile'
 }
 
 dependencies {
