@@ -5,7 +5,7 @@ import {
 } from "@/lib/football-api";
 
 const API = "https://v3.football.api-sports.io";
-const WINDOW_DAYS = 14;
+const WINDOW_DAYS = 7;
 
 const EXCLUDED =
   /\b(u\s?17|u\s?18|u\s?19|u\s?20|u\s?21|u\s?23|under[- ]?(17|18|19|20|21|23)|youth|academy|reserve|reserves| ii\b|b team)\b/i;
@@ -117,7 +117,7 @@ function getLagosDate(): string {
 }
 
 /**
- * Creates the next 15 calendar dates, starting from today in Lagos.
+ * Creates the next 8 calendar dates, starting from today in Lagos.
  */
 function getDateWindow(): string[] {
   const today = getLagosDate();
@@ -180,6 +180,9 @@ function isInternational(leagueName: string): boolean {
   return INTERNATIONAL.test(leagueName);
 }
 
+// This is a discovery summary, not a live-score feed. Cache it once per day.
+export const revalidate = 86400;
+
 export async function GET() {
   const key = process.env.API_FOOTBALL_KEY;
 
@@ -196,7 +199,9 @@ export async function GET() {
   try {
     const dates = getDateWindow();
 
-    // Use the supported date parameter instead of the restricted next parameter.
+    // One cached request per calendar day across a 7-day discovery window.
+    // Today's date response already includes fixtures in progress, so a
+    // separate live=all request would duplicate data and consume more quota.
     const dateRequests = dates.map((date) => {
       const url = new URL(`${API}/fixtures`);
       url.searchParams.set("date", date);
@@ -207,21 +212,7 @@ export async function GET() {
       });
     });
 
-    // Live fixtures are requested separately so ongoing matches remain visible.
-    const liveUrl = new URL(`${API}/fixtures`);
-    liveUrl.searchParams.set("live", "all");
-    liveUrl.searchParams.set("timezone", "Africa/Lagos");
-
-    const liveRequest = fetchFootballApiData<unknown>(
-      liveUrl,
-      key,
-      { next: { revalidate: 1800 } }
-    );
-
-    const payloads = await Promise.all([
-      ...dateRequests,
-      liveRequest,
-    ]);
+    const payloads = await Promise.all(dateRequests);
 
     const now = Date.now();
     const windowEnd = now + WINDOW_DAYS * 24 * 60 * 60 * 1000;
@@ -321,7 +312,6 @@ export async function GET() {
           popularity(competition.name) +
           competition.liveMatches * 18 +
           competition.matchesNext7Days * 9 +
-          competition.matchesNext14Days * 3 +
           (
             competition.nextMatchTime <= now + 48 * 60 * 60 * 1000
               ? 8
