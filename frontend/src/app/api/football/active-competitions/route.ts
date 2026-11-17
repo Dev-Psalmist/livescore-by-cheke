@@ -180,8 +180,8 @@ function isInternational(leagueName: string): boolean {
   return INTERNATIONAL.test(leagueName);
 }
 
-// This is a discovery summary, not a live-score feed. Cache it once per day.
-export const revalidate = 86400;
+// Individual provider fetches are cached for 24 hours. Route-segment
+// revalidation is omitted because this project enables cacheComponents.
 
 export async function GET() {
   const key = process.env.API_FOOTBALL_KEY;
