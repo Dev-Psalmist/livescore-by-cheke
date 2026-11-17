@@ -81,7 +81,7 @@ export default function PopularCompetitions() {
           Competitions in Focus
         </h2>
         <p className="mt-1 text-[10px] leading-4 text-emerald-400">{focusLabel}</p>
-        <p className="mt-1 text-[10px] text-slate-500">Ranked by popularity, live action and fixtures in the next 14 days</p>
+        <p className="mt-1 text-[10px] text-slate-500">Ranked by popularity and scheduled fixtures in the next 7 days</p>
       </div>
 
       <div className="max-h-[70vh] space-y-1 overflow-y-auto p-2">
@@ -109,11 +109,6 @@ export default function PopularCompetitions() {
               <span className="mt-0.5 block truncate text-[10px] text-slate-500">{item.country}</span>
               {followedIds.has(item.id) && <span className="mt-1 inline-block rounded bg-emerald-400/10 px-1.5 py-0.5 text-[8px] font-black uppercase text-emerald-300">Following</span>}
               <span className="mt-1 flex flex-wrap gap-1.5">
-                {item.liveMatches > 0 && (
-                  <span className="rounded bg-red-500/10 px-1.5 py-0.5 text-[9px] font-bold text-red-300">
-                    {item.liveMatches} LIVE
-                  </span>
-                )}
                 {item.upcomingMatches > 0 && (
                   <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-300">
                     {item.upcomingMatches} UPCOMING
