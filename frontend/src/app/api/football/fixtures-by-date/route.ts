@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchFootballApiData, FootballApiRequestError } from "@/lib/football-api";
+import { FOOTBALL_CACHE_SECONDS, FREE_PLAN_TODAY_ONLY, getLagosDate } from "@/lib/football-plan";
 
 const API = "https://v3.football.api-sports.io";
 const youthPattern =
@@ -36,13 +37,20 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  if (FREE_PLAN_TODAY_ONLY && date !== getLagosDate()) {
+    return NextResponse.json(
+      { success: false, error: "The free-plan mode currently loads today's fixtures only." },
+      { status: 400 }
+    );
+  }
+
   const url = new URL(`${API}/fixtures`);
   url.searchParams.set("date", date);
   url.searchParams.set("timezone", "Africa/Lagos");
 
   try {
     const data = await fetchFootballApiData<unknown>(url, key, {
-      next: { revalidate: 60 },
+      next: { revalidate: FOOTBALL_CACHE_SECONDS },
     });
     const matches = data.response.filter((item) => {
       if (!isRecord(item)) return false;
