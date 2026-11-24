@@ -3,6 +3,7 @@ import {
   fetchFootballApiData,
   FootballApiRequestError,
 } from "@/lib/football-api";
+import { FOOTBALL_CACHE_SECONDS, FREE_PLAN_TODAY_ONLY } from "@/lib/football-plan";
 
 const API = "https://v3.football.api-sports.io";
 const WINDOW_DAYS = 7;
@@ -197,7 +198,7 @@ export async function GET() {
   }
 
   try {
-    const dates = getDateWindow();
+    const dates = FREE_PLAN_TODAY_ONLY ? [getLagosDate()] : getDateWindow();
 
     // One cached request per calendar day across a 7-day discovery window.
     // Today's date response already includes fixtures in progress, so a
@@ -208,14 +209,16 @@ export async function GET() {
       url.searchParams.set("timezone", "Africa/Lagos");
 
       return fetchFootballApiData<unknown>(url, key, {
-        next: { revalidate: 86400 },
+        next: { revalidate: FOOTBALL_CACHE_SECONDS },
       });
     });
 
     const payloads = await Promise.all(dateRequests);
 
     const now = Date.now();
-    const windowEnd = now + WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    const windowEnd = FREE_PLAN_TODAY_ONLY
+      ? Date.parse(`${dates[0]}T23:59:59+01:00`)
+      : now + WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
     const fixtures = new Map<number, CompetitionFixture>();
 
@@ -341,7 +344,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       focus,
-      windowDays: WINDOW_DAYS,
+      windowDays: FREE_PLAN_TODAY_ONLY ? 0 : WINDOW_DAYS,
       fixtureCounts: {
         international: internationalFixtureCount,
         club: clubFixtureCount,

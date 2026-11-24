@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { FREE_PLAN_TODAY_ONLY } from "@/lib/football-plan";
 
 type ApiFixture = {
   fixture: { id: number; date: string; status: { short: string; long: string; elapsed: number | null } };
@@ -64,7 +65,7 @@ export default function DateFixtureBrowser() {
     const currentDay = localDate(new Date());
     setToday(currentDay);
     const base = new Date(`${currentDay}T12:00:00+01:00`);
-    setDates(Array.from({ length: 7 }, (_, index) => {
+    setDates(FREE_PLAN_TODAY_ONLY ? [currentDay] : Array.from({ length: 7 }, (_, index) => {
       const date = new Date(base);
       date.setDate(date.getDate() + index - 3);
       return localDate(date);
@@ -95,7 +96,7 @@ export default function DateFixtureBrowser() {
         <div className="mt-1 flex flex-wrap items-end justify-between gap-2">
           <div>
             <h2 className="text-xl font-black sm:text-2xl">Scores & Fixtures</h2>
-            <p className="mt-1 text-xs text-slate-400">Recent results, today&apos;s action and upcoming matches.</p>
+            <p className="mt-1 text-xs text-slate-400">Today&apos;s football fixtures, results and live action.</p>
           </div>
           <span className="text-xs text-slate-500">Nigeria time · GMT+1</span>
         </div>
