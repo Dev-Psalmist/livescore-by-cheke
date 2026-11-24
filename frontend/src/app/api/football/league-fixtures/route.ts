@@ -27,9 +27,9 @@ export async function GET(request: NextRequest) {
   if (
     !league ||
     !season ||
-    !/^\\d+$/.test(league) ||
+    !/^\d+$/.test(league) ||
     Number(league) <= 0 ||
-    !/^\\d{4}$/.test(season)
+    !/^\d{4}$/.test(season)
   ) {
     return NextResponse.json(
       { success: false, error: "A valid league ID and season are required." },
@@ -40,9 +40,8 @@ export async function GET(request: NextRequest) {
   const url = new URL("https://v3.football.api-sports.io/fixtures");
 
   if (FREE_PLAN_TODAY_ONLY) {
-    // The free API plan supports today's date but not the current Champions
-    // League season parameter. Fetch the shared daily fixture list, then
-    // select this competition locally to avoid a season-access rejection.
+    // Fetch the shared daily fixture list, then select this competition locally.
+    // This avoids the unsupported current-season parameter on the free API plan.
     url.searchParams.set("date", getLagosDate());
   } else {
     // Preserve the existing multi-day, season-specific behaviour for paid plans.
